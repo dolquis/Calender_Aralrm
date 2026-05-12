@@ -65,7 +65,7 @@ public enum ShareImporter {
     public static func apply(bundle: ShiftBundle, container: ModelContainer, calendar: Calendar = .current) throws {
         let context = ModelContext(container)
 
-        let existingPresets: [UUID: ShiftPreset] = ((try? context.fetch(FetchDescriptor<ShiftPreset>())) ?? [])
+        var existingPresets: [UUID: ShiftPreset] = ((try? context.fetch(FetchDescriptor<ShiftPreset>())) ?? [])
             .reduce(into: [:]) { $0[$1.id] = $1 }
 
         for p in bundle.presets {
@@ -87,13 +87,13 @@ public enum ShareImporter {
                     note: p.note
                 )
                 context.insert(new)
+                existingPresets[p.id] = new
             }
         }
 
-        let presetsByID: [UUID: ShiftPreset] = ((try? context.fetch(FetchDescriptor<ShiftPreset>())) ?? [])
-            .reduce(into: [:]) { $0[$1.id] = $1 }
+        let presetsByID = existingPresets
 
-        let existingPatterns: [UUID: RotationPattern] = ((try? context.fetch(FetchDescriptor<RotationPattern>())) ?? [])
+        var existingPatterns: [UUID: RotationPattern] = ((try? context.fetch(FetchDescriptor<RotationPattern>())) ?? [])
             .reduce(into: [:]) { $0[$1.id] = $1 }
         for r in bundle.patterns {
             guard let anchor = r.anchorDate.date(in: calendar) else { continue }
@@ -121,10 +121,11 @@ public enum ShareImporter {
                     isActive: r.isActive
                 )
                 context.insert(new)
+                existingPatterns[r.id] = new
             }
         }
 
-        let existingAssignments: [Date: DayAssignment] = ((try? context.fetch(FetchDescriptor<DayAssignment>())) ?? [])
+        var existingAssignments: [Date: DayAssignment] = ((try? context.fetch(FetchDescriptor<DayAssignment>())) ?? [])
             .reduce(into: [:]) { $0[calendar.startOfDay(for: $1.date)] = $1 }
         for a in bundle.assignments {
             guard let day = a.date.date(in: calendar) else { continue }
@@ -145,10 +146,11 @@ public enum ShareImporter {
                     note: a.note
                 )
                 context.insert(new)
+                existingAssignments[day] = new
             }
         }
 
-        let existingOverrides: [Date: HolidayOverride] = ((try? context.fetch(FetchDescriptor<HolidayOverride>())) ?? [])
+        var existingOverrides: [Date: HolidayOverride] = ((try? context.fetch(FetchDescriptor<HolidayOverride>())) ?? [])
             .reduce(into: [:]) { $0[calendar.startOfDay(for: $1.date)] = $1 }
         for o in bundle.overrides {
             guard let day = o.date.date(in: calendar) else { continue }
@@ -167,6 +169,7 @@ public enum ShareImporter {
                     replacementPreset: replacement
                 )
                 context.insert(new)
+                existingOverrides[day] = new
             }
         }
 

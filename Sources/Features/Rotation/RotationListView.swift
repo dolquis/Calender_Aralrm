@@ -69,6 +69,9 @@ public struct RotationListView: View {
             modelContext.delete(patterns[i])
         }
         try? modelContext.save()
-        Task { await dependencies.alarmScheduler.refreshScheduledAlarms() }
+        Task {
+            await dependencies.alarmScheduler.refreshScheduledAlarms()
+            await dependencies.liveActivityController.evaluate()
+        }
     }
 }

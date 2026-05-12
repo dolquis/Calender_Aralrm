@@ -29,7 +29,10 @@ public struct SettingsView: View {
                     set: { newValue in
                         s.lookaheadDays = newValue
                         try? modelContext.save()
-                        Task { await dependencies.alarmScheduler.refreshScheduledAlarms() }
+                        Task {
+                            await dependencies.alarmScheduler.refreshScheduledAlarms()
+                            await dependencies.liveActivityController.evaluate()
+                        }
                     }
                 ), in: 7...90) {
                     Text(String(localized: "settings.lookahead_days") + ": \(s.lookaheadDays)")
@@ -51,7 +54,10 @@ public struct SettingsView: View {
                     set: { newValue in
                         s.defaultSoundID = newValue
                         try? modelContext.save()
-                        Task { await dependencies.alarmScheduler.refreshScheduledAlarms() }
+                        Task {
+                            await dependencies.alarmScheduler.refreshScheduledAlarms()
+                            await dependencies.liveActivityController.evaluate()
+                        }
                     }
                 )) {
                     ForEach(AlarmSound.allBuiltIn) { sound in

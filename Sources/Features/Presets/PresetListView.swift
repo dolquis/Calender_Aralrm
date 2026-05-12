@@ -75,6 +75,9 @@ public struct PresetListView: View {
             modelContext.delete(presets[i])
         }
         try? modelContext.save()
-        Task { await dependencies.alarmScheduler.refreshScheduledAlarms() }
+        Task {
+            await dependencies.alarmScheduler.refreshScheduledAlarms()
+            await dependencies.liveActivityController.evaluate()
+        }
     }
 }

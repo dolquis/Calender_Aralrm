@@ -162,7 +162,10 @@ public struct RotationEditorView: View {
             modelContext.insert(new)
         }
         try? modelContext.save()
-        Task { await dependencies.alarmScheduler.refreshScheduledAlarms() }
+        Task {
+            await dependencies.alarmScheduler.refreshScheduledAlarms()
+            await dependencies.liveActivityController.evaluate()
+        }
         dismiss()
     }
 }

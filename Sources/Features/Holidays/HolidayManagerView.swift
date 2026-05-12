@@ -96,7 +96,10 @@ public struct HolidayManagerView: View {
             modelContext.insert(override)
         }
         try? modelContext.save()
-        Task { await dependencies.alarmScheduler.refreshScheduledAlarms() }
+        Task {
+            await dependencies.alarmScheduler.refreshScheduledAlarms()
+            await dependencies.liveActivityController.evaluate()
+        }
     }
 
     private func addEntry() {
@@ -121,7 +124,10 @@ public struct HolidayManagerView: View {
         try? modelContext.save()
         addingLabel = ""
         addingReplacementID = nil
-        Task { await dependencies.alarmScheduler.refreshScheduledAlarms() }
+        Task {
+            await dependencies.alarmScheduler.refreshScheduledAlarms()
+            await dependencies.liveActivityController.evaluate()
+        }
     }
 
     private func delete(at offsets: IndexSet) {
@@ -129,7 +135,10 @@ public struct HolidayManagerView: View {
             modelContext.delete(overrides[i])
         }
         try? modelContext.save()
-        Task { await dependencies.alarmScheduler.refreshScheduledAlarms() }
+        Task {
+            await dependencies.alarmScheduler.refreshScheduledAlarms()
+            await dependencies.liveActivityController.evaluate()
+        }
     }
 
     private func dateString(_ date: Date) -> String {

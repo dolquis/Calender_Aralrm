@@ -50,10 +50,6 @@ public final class AlarmScheduler {
                 if existingAlarm.fireDate != entry.fireDate
                     || existingAlarm.label != entry.label
                     || existingAlarm.soundID != entry.soundID {
-                    if let kitID = existingAlarm.alarmKitID {
-                        try? await service.cancel(id: kitID)
-                    }
-                    existingAlarm.alarmKitID = nil
                     let newID = UUID()
                     do {
                         try await service.schedule(
@@ -62,13 +58,16 @@ public final class AlarmScheduler {
                             label: entry.label,
                             soundID: entry.soundID
                         )
-                        existingAlarm.fireDate = entry.fireDate
-                        existingAlarm.label = entry.label
-                        existingAlarm.soundID = entry.soundID
-                        existingAlarm.alarmKitID = newID
                     } catch {
                         continue
                     }
+                    if let oldID = existingAlarm.alarmKitID {
+                        try? await service.cancel(id: oldID)
+                    }
+                    existingAlarm.fireDate = entry.fireDate
+                    existingAlarm.label = entry.label
+                    existingAlarm.soundID = entry.soundID
+                    existingAlarm.alarmKitID = newID
                 }
             } else {
                 let newID = UUID()
