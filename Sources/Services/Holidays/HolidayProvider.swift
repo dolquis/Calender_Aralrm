@@ -14,11 +14,24 @@ public enum HolidayProvider {
         return (try? JSONDecoder().decode([HolidayEntry].self, from: data)) ?? []
     }
 
-    public static func entries(in range: ClosedRange<Date>, bundle: Bundle = .main) -> [(Date, String)] {
-        let formatter = ISO8601DateFormatter()
-        formatter.formatOptions = [.withFullDate]
-        return loadJapaneseHolidays(in: bundle).compactMap { entry in
-            guard let date = formatter.date(from: entry.date) else { return nil }
+    /// Parses a "YYYY-MM-DD" string as the start of day in the supplied calendar's time zone, so
+    /// users in offsets behind GMT don't see the date shift to the previous day.
+    public static func parseLocalDay(_ raw: String, calendar: Calendar = .current) -> Date? {
+        let parts = raw.split(separator: "-")
+        guard parts.count == 3,
+              let year = Int(parts[0]),
+              let month = Int(parts[1]),
+              let day = Int(parts[2]) else { return nil }
+        var components = DateComponents()
+        components.year = year
+        components.month = month
+        components.day = day
+        return calendar.date(from: components).map { calendar.startOfDay(for: $0) }
+    }
+
+    public static func entries(in range: ClosedRange<Date>, calendar: Calendar = .current, bundle: Bundle = .main) -> [(Date, String)] {
+        loadJapaneseHolidays(in: bundle).compactMap { entry in
+            guard let date = parseLocalDay(entry.date, calendar: calendar) else { return nil }
             guard range.contains(date) else { return nil }
             return (date, entry.name)
         }

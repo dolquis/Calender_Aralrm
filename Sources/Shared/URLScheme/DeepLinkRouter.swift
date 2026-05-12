@@ -17,22 +17,12 @@ public enum DeepLinkRouter {
         return .importPayload(bundle)
     }
 
-    /// Applies a parsed action. The import flow defers UI confirmation to ImportView, so this entry
-    /// is intentionally conservative: it stores the bundle into a transient holder.
     public static func handle(_ url: URL, dependencies: AppDependencies) {
-        let action = parse(url)
-        switch action {
+        switch parse(url) {
         case .importPayload(let bundle):
-            DeepLinkInbox.shared.pending = bundle
+            dependencies.pendingImportBundle = bundle
         case .unknown:
             break
         }
     }
-}
-
-@MainActor
-public final class DeepLinkInbox {
-    public static let shared = DeepLinkInbox()
-    public var pending: ShiftBundle?
-    private init() {}
 }

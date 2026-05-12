@@ -10,7 +10,11 @@ public struct ImportView: View {
     @State private var errorMessage: String?
     @State private var applied = false
 
-    public init() {}
+    private let initialBundle: ShiftBundle?
+
+    public init(initialBundle: ShiftBundle? = nil) {
+        self.initialBundle = initialBundle
+    }
 
     private var bundleType: UTType {
         UTType(filenameExtension: "shiftalarm") ?? UTType.json
@@ -58,6 +62,18 @@ public struct ImportView: View {
         ) { result in
             handlePicker(result)
         }
+        .task {
+            if let bundle = initialBundle, loadedBundle == nil {
+                load(bundle: bundle)
+            }
+        }
+    }
+
+    private func load(bundle: ShiftBundle) {
+        loadedBundle = bundle
+        preview = ShareImporter.preview(bundle: bundle, container: dependencies.modelContainer)
+        applied = false
+        errorMessage = nil
     }
 
     private func row(_ key: LocalizedStringKey, value: Int) -> some View {
@@ -79,8 +95,7 @@ public struct ImportView: View {
             do {
                 let data = try Data(contentsOf: url)
                 let bundle = try ShiftBundleCodec.decode(data)
-                loadedBundle = bundle
-                preview = ShareImporter.preview(bundle: bundle, container: dependencies.modelContainer)
+                load(bundle: bundle)
             } catch {
                 errorMessage = error.localizedDescription
             }

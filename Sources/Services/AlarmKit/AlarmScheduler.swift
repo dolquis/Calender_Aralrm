@@ -53,34 +53,43 @@ public final class AlarmScheduler {
                     if let kitID = existingAlarm.alarmKitID {
                         try? await service.cancel(id: kitID)
                     }
+                    existingAlarm.alarmKitID = nil
                     let newID = UUID()
-                    try? await service.schedule(
+                    do {
+                        try await service.schedule(
+                            id: newID,
+                            fireDate: entry.fireDate,
+                            label: entry.label,
+                            soundID: entry.soundID
+                        )
+                        existingAlarm.fireDate = entry.fireDate
+                        existingAlarm.label = entry.label
+                        existingAlarm.soundID = entry.soundID
+                        existingAlarm.alarmKitID = newID
+                    } catch {
+                        continue
+                    }
+                }
+            } else {
+                let newID = UUID()
+                do {
+                    try await service.schedule(
                         id: newID,
                         fireDate: entry.fireDate,
                         label: entry.label,
                         soundID: entry.soundID
                     )
-                    existingAlarm.fireDate = entry.fireDate
-                    existingAlarm.label = entry.label
-                    existingAlarm.soundID = entry.soundID
-                    existingAlarm.alarmKitID = newID
+                    let alarm = ShiftAlarm(
+                        fireDate: entry.fireDate,
+                        label: entry.label,
+                        soundID: entry.soundID,
+                        isEnabled: true,
+                        alarmKitID: newID
+                    )
+                    context.insert(alarm)
+                } catch {
+                    continue
                 }
-            } else {
-                let newID = UUID()
-                try? await service.schedule(
-                    id: newID,
-                    fireDate: entry.fireDate,
-                    label: entry.label,
-                    soundID: entry.soundID
-                )
-                let alarm = ShiftAlarm(
-                    fireDate: entry.fireDate,
-                    label: entry.label,
-                    soundID: entry.soundID,
-                    isEnabled: true,
-                    alarmKitID: newID
-                )
-                context.insert(alarm)
             }
         }
 

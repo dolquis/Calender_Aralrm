@@ -1,6 +1,7 @@
 import SwiftUI
 
 public struct RootTabView: View {
+    @Environment(AppDependencies.self) private var dependencies
     @State private var selection: Tab = .calendar
 
     public init() {}
@@ -10,6 +11,7 @@ public struct RootTabView: View {
     }
 
     public var body: some View {
+        @Bindable var deps = dependencies
         TabView(selection: $selection) {
             NavigationStack {
                 CalendarMonthView()
@@ -43,5 +45,18 @@ public struct RootTabView: View {
             }
             .tag(Tab.settings)
         }
+        .sheet(item: Binding(
+            get: { deps.pendingImportBundle.map(PendingImport.init) },
+            set: { _ in deps.pendingImportBundle = nil }
+        )) { wrapper in
+            NavigationStack {
+                ImportView(initialBundle: wrapper.bundle)
+            }
+        }
     }
+}
+
+private struct PendingImport: Identifiable {
+    let bundle: ShiftBundle
+    let id = UUID()
 }

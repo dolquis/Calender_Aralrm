@@ -10,6 +10,7 @@ public final class AppDependencies {
     public let alarmAuthorization: AlarmAuthorization
     public let alarmScheduler: AlarmScheduler
     public let liveActivityController: LiveActivityController
+    public var pendingImportBundle: ShiftBundle?
 
     public init(modelContainer: ModelContainer? = nil) {
         let container = modelContainer ?? SharedPersistence.makeContainer()

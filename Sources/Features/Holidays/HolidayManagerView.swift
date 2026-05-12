@@ -83,12 +83,9 @@ public struct HolidayManagerView: View {
     private func importJapaneseHolidays() {
         let entries = HolidayProvider.loadJapaneseHolidays()
         let calendar = Calendar.current
-        let formatter = ISO8601DateFormatter()
-        formatter.formatOptions = [.withFullDate]
         let existingDates: Set<Date> = Set(overrides.map { calendar.startOfDay(for: $0.date) })
         for entry in entries {
-            guard let date = formatter.date(from: entry.date) else { continue }
-            let day = calendar.startOfDay(for: date)
+            guard let day = HolidayProvider.parseLocalDay(entry.date, calendar: calendar) else { continue }
             if existingDates.contains(day) { continue }
             let override = HolidayOverride(
                 date: day,
