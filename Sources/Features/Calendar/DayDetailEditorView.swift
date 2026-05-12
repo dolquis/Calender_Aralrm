@@ -75,6 +75,12 @@ public struct DayDetailEditorView: View {
     }
 
     private func load() {
+        selectedPresetID = nil
+        customTimeEnabled = false
+        customTime = date
+        skipAlarm = false
+        note = ""
+
         guard let assignment = existingAssignment else { return }
         selectedPresetID = assignment.preset?.id
         skipAlarm = assignment.skipAlarm
@@ -84,7 +90,7 @@ public struct DayDetailEditorView: View {
             var dc = Calendar.current.dateComponents([.year, .month, .day], from: date)
             dc.hour = h
             dc.minute = m
-            customTime = Calendar.current.date(from: dc) ?? Date()
+            customTime = Calendar.current.date(from: dc) ?? date
         }
     }
 
