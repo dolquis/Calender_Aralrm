@@ -45,18 +45,10 @@ public struct RootTabView: View {
             }
             .tag(Tab.settings)
         }
-        .sheet(item: Binding(
-            get: { deps.pendingImportBundle.map(PendingImport.init) },
-            set: { _ in deps.pendingImportBundle = nil }
-        )) { wrapper in
+        .sheet(item: $deps.pendingImport) { item in
             NavigationStack {
-                ImportView(initialBundle: wrapper.bundle)
+                ImportView(initialBundle: item.bundle)
             }
         }
     }
-}
-
-private struct PendingImport: Identifiable {
-    let bundle: ShiftBundle
-    let id = UUID()
 }

@@ -28,7 +28,10 @@ struct ShiftAlarmApp: App {
             case .background:
                 BGRefreshController.scheduleNext()
             case .active:
-                Task { await dependencies.alarmScheduler.refreshScheduledAlarms() }
+                Task {
+                    await dependencies.alarmScheduler.refreshScheduledAlarms()
+                    await dependencies.liveActivityController.evaluate()
+                }
             default:
                 break
             }

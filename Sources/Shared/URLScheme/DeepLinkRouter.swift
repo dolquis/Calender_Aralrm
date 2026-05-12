@@ -20,7 +20,7 @@ public enum DeepLinkRouter {
     public static func handle(_ url: URL, dependencies: AppDependencies) {
         switch parse(url) {
         case .importPayload(let bundle):
-            dependencies.pendingImportBundle = bundle
+            dependencies.pendingImport = PendingImportBundle(bundle: bundle)
         case .unknown:
             break
         }
