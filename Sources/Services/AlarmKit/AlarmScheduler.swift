@@ -96,7 +96,12 @@ public final class AlarmScheduler {
 
         for (day, alarm) in existingByDay where !expectedDays.contains(day) {
             if let kitID = alarm.alarmKitID {
-                try? await service.cancel(id: kitID)
+                do {
+                    try await service.cancel(id: kitID)
+                } catch {
+                    // Cancel failed; leave the DB row so the next refresh can retry.
+                    continue
+                }
             }
             context.delete(alarm)
         }
