@@ -174,6 +174,9 @@ public enum DayResolver {
                 if let preset = input.presets[presetID] {
                     return .rotation(presetID: presetID, alarmTime: preset.alarmTime)
                 }
+                // If the referenced preset no longer exists, keep looking at lower-priority
+                // rotations instead of treating it as an explicit rest day.
+                continue
             }
             return .none
         }
