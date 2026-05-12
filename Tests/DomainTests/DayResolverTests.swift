@@ -129,4 +129,37 @@ final class DayResolverTests: XCTestCase {
             XCTFail("Expected rotation")
         }
     }
+
+    func testTopPriorityRestDayBlocksFallthrough() {
+        // Highest-priority rotation marks the day as rest (nil slot). A lower-priority
+        // rotation would otherwise schedule an alarm, but the top-priority rest day must win.
+        let lowID = UUID()
+        let presets: [UUID: ShiftPresetSnapshot] = [
+            lowID: ShiftPresetSnapshot(id: lowID, name: "Low", colorHex: "#0", alarmTime: DateComponents(hour: 5, minute: 0), soundID: "s"),
+        ]
+        let day = date(2026, 5, 12)
+        let topRest = RotationPatternSnapshot(
+            id: UUID(), name: "rest", anchorDate: day,
+            cycleLength: 1, slots: [nil],
+            startDate: nil, endDate: nil, priority: 10, isActive: true
+        )
+        let lowDay = RotationPatternSnapshot(
+            id: UUID(), name: "low", anchorDate: day,
+            cycleLength: 1, slots: [lowID],
+            startDate: nil, endDate: nil, priority: 0, isActive: true
+        )
+        let input = DayResolverInput(
+            manualAssignments: [:],
+            holidays: [:],
+            rotations: [topRest, lowDay],
+            presets: presets,
+            calendar: calendar
+        )
+        let resolved = DayResolver.resolve(date: day, input: input)
+        if case .none = resolved {
+            // ok
+        } else {
+            XCTFail("Expected .none from top-priority rest day, got \(resolved)")
+        }
+    }
 }
