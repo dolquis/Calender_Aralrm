@@ -67,6 +67,10 @@ public struct DayDetailEditorView: View {
         }
     }
 
+    private func isNonEmpty(preset: ShiftPreset?, timeComponents: (Int, Int)?, skipAlarm: Bool, note: String) -> Bool {
+        preset != nil || timeComponents != nil || skipAlarm || !note.trimmingCharacters(in: .whitespaces).isEmpty
+    }
+
     private var formattedDate: String {
         let formatter = DateFormatter()
         formatter.locale = .current
@@ -102,7 +106,10 @@ public struct DayDetailEditorView: View {
             assignment.note = note
             assignment.overrideAlarmHour = timeComponents?.0
             assignment.overrideAlarmMinute = timeComponents?.1
-        } else {
+        } else if isNonEmpty(preset: preset, timeComponents: timeComponents, skipAlarm: skipAlarm, note: note) {
+            // Only create a new manual assignment when the user actually specified something.
+            // A blank record would take precedence over rotation/holiday rules in DayResolver
+            // and suppress the alarm for that day.
             let assignment = DayAssignment(
                 date: day,
                 preset: preset,

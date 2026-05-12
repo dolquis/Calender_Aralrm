@@ -121,8 +121,7 @@ public enum ShareImporter {
             }
         }
 
-        let existingAssignments: [Date: DayAssignment] = ((try? context.fetch(FetchDescriptor<DayAssignment>())) ?? [])
-            .reduce(into: [:]) { $0[calendar.startOfDay(for: $1.date)] = $1 }
+        var seenAssignmentDays = Set(existingAssignments.keys)
         for a in bundle.assignments {
             let day = calendar.startOfDay(for: a.date)
             let preset = a.presetID.flatMap { presetsByID[$0] }
@@ -132,7 +131,8 @@ public enum ShareImporter {
                 existing.overrideAlarmMinute = a.overrideAlarmMinute
                 existing.skipAlarm = a.skipAlarm
                 existing.note = a.note
-            } else {
+            } else if !seenAssignmentDays.contains(day) {
+                seenAssignmentDays.insert(day)
                 let new = DayAssignment(
                     date: day,
                     preset: preset,
@@ -147,6 +147,7 @@ public enum ShareImporter {
 
         let existingOverrides: [Date: HolidayOverride] = ((try? context.fetch(FetchDescriptor<HolidayOverride>())) ?? [])
             .reduce(into: [:]) { $0[calendar.startOfDay(for: $1.date)] = $1 }
+        var seenOverrideDays = Set(existingOverrides.keys)
         for o in bundle.overrides {
             let day = calendar.startOfDay(for: o.date)
             let replacement = o.replacementPresetID.flatMap { presetsByID[$0] }
@@ -155,7 +156,8 @@ public enum ShareImporter {
                 existing.label = o.label
                 existing.skipAlarm = o.skipAlarm
                 existing.replacementPreset = replacement
-            } else {
+            } else if !seenOverrideDays.contains(day) {
+                seenOverrideDays.insert(day)
                 let new = HolidayOverride(
                     date: day,
                     kind: o.kind,
