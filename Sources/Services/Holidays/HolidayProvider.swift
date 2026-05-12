@@ -14,19 +14,22 @@ public enum HolidayProvider {
         return (try? JSONDecoder().decode([HolidayEntry].self, from: data)) ?? []
     }
 
-    /// Parses a "YYYY-MM-DD" string as the start of day in the supplied calendar's time zone, so
-    /// users in offsets behind GMT don't see the date shift to the previous day.
+    /// Parses a Gregorian "YYYY-MM-DD" string as the start of day in the caller's time zone.
+    /// The Y/M/D fields are always interpreted in the Gregorian calendar so devices with a
+    /// non-Gregorian preferred calendar (e.g. Japanese) don't remap the numeric year.
     public static func parseLocalDay(_ raw: String, calendar: Calendar = .current) -> Date? {
         let parts = raw.split(separator: "-")
         guard parts.count == 3,
               let year = Int(parts[0]),
               let month = Int(parts[1]),
               let day = Int(parts[2]) else { return nil }
+        var gregorian = Calendar(identifier: .gregorian)
+        gregorian.timeZone = calendar.timeZone
         var components = DateComponents()
         components.year = year
         components.month = month
         components.day = day
-        return calendar.date(from: components).map { calendar.startOfDay(for: $0) }
+        return gregorian.date(from: components).map { gregorian.startOfDay(for: $0) }
     }
 
     public static func entries(in range: ClosedRange<Date>, calendar: Calendar = .current, bundle: Bundle = .main) -> [(Date, String)] {
