@@ -80,6 +80,20 @@ final class ShiftBundleCodecTests: XCTestCase {
         XCTAssertThrowsError(try ShiftBundleCodec.decode(Data("{not json}".utf8)))
     }
 
+    func testCalendarDayIsGregorianAcrossNonGregorianPreferences() {
+        // Caller uses Japanese imperial calendar. CalendarDay should still encode Gregorian
+        // year (e.g. 2026), not the Japanese era year, so bundles stay interoperable.
+        var japanese = Calendar(identifier: .japanese)
+        japanese.timeZone = TimeZone(identifier: "Asia/Tokyo")!
+        var dc = DateComponents()
+        dc.year = 2026; dc.month = 5; dc.day = 12
+        var gregorian = Calendar(identifier: .gregorian)
+        gregorian.timeZone = TimeZone(identifier: "Asia/Tokyo")!
+        let date = gregorian.date(from: dc)!
+        let encoded = CalendarDay(date: date, calendar: japanese)!
+        XCTAssertEqual(encoded, CalendarDay(year: 2026, month: 5, day: 12))
+    }
+
     func testCalendarDayDecoderRejectsImpossibleDates() {
         let decoder = JSONDecoder()
         XCTAssertThrowsError(try decoder.decode(CalendarDay.self, from: Data("\"2026-13-40\"".utf8)))

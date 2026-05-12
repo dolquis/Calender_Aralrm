@@ -19,7 +19,11 @@ public struct PermissionStatusView: View {
                 Button {
                     isRequesting = true
                     Task {
-                        await dependencies.alarmAuthorization.request()
+                        let result = await dependencies.alarmAuthorization.request()
+                        if result == .authorized {
+                            await dependencies.alarmScheduler.refreshScheduledAlarms()
+                            await dependencies.liveActivityController.evaluate()
+                        }
                         isRequesting = false
                     }
                 } label: {

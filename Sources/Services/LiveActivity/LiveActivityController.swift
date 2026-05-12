@@ -32,7 +32,7 @@ public final class LiveActivityController {
         }
         let interval = next.fireDate.timeIntervalSinceNow
         guard interval > 0 && interval <= lead else {
-            if next.id != currentAlarmID { await endAll() }
+            await endAll()
             return
         }
 

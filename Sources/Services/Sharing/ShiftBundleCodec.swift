@@ -1,7 +1,9 @@
 import Foundation
 
-/// Calendar-day value (year/month/day) used for fields that represent "the same day" regardless of
-/// the device time zone. Encoded as a "YYYY-MM-DD" string so bundles round-trip across time zones.
+/// Calendar-day value (year/month/day in the proleptic Gregorian calendar) used for fields that
+/// represent "the same day" regardless of the device time zone or preferred calendar system.
+/// Encoded as a "YYYY-MM-DD" string so bundles round-trip across time zones and non-Gregorian
+/// calendar preferences.
 public struct CalendarDay: Codable, Equatable, Sendable, Hashable {
     public let year: Int
     public let month: Int
@@ -14,7 +16,9 @@ public struct CalendarDay: Codable, Equatable, Sendable, Hashable {
     }
 
     public init?(date: Date, calendar: Calendar = .current) {
-        let components = calendar.dateComponents([.year, .month, .day], from: date)
+        var gregorian = Calendar(identifier: .gregorian)
+        gregorian.timeZone = calendar.timeZone
+        let components = gregorian.dateComponents([.year, .month, .day], from: date)
         guard let y = components.year, let m = components.month, let d = components.day else {
             return nil
         }
@@ -24,11 +28,13 @@ public struct CalendarDay: Codable, Equatable, Sendable, Hashable {
     }
 
     public func date(in calendar: Calendar = .current) -> Date? {
+        var gregorian = Calendar(identifier: .gregorian)
+        gregorian.timeZone = calendar.timeZone
         var dc = DateComponents()
         dc.year = year
         dc.month = month
         dc.day = day
-        return calendar.date(from: dc).map { calendar.startOfDay(for: $0) }
+        return gregorian.date(from: dc).map { gregorian.startOfDay(for: $0) }
     }
 
     public init(from decoder: Decoder) throws {
