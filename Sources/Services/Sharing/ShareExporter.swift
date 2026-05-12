@@ -3,7 +3,7 @@ import SwiftData
 
 @MainActor
 public enum ShareExporter {
-    public static func snapshot(from container: ModelContainer) -> ShiftBundle {
+    public static func snapshot(from container: ModelContainer, calendar: Calendar = .current) -> ShiftBundle {
         let context = ModelContext(container)
         let presets: [ShiftPreset] = (try? context.fetch(FetchDescriptor<ShiftPreset>())) ?? []
         let patterns: [RotationPattern] = (try? context.fetch(FetchDescriptor<RotationPattern>())) ?? []
@@ -21,22 +21,24 @@ public enum ShareExporter {
                 note: p.note
             )
         }
-        let rotationDTOs = patterns.map { r in
-            ShiftBundle.RotationDTO(
+        let rotationDTOs: [ShiftBundle.RotationDTO] = patterns.compactMap { r in
+            guard let anchor = CalendarDay(date: r.anchorDate, calendar: calendar) else { return nil }
+            return ShiftBundle.RotationDTO(
                 id: r.id,
                 name: r.name,
-                anchorDate: r.anchorDate,
+                anchorDate: anchor,
                 cycleLength: r.cycleLength,
                 slots: r.slots,
-                startDate: r.startDate,
-                endDate: r.endDate,
+                startDate: r.startDate.flatMap { CalendarDay(date: $0, calendar: calendar) },
+                endDate: r.endDate.flatMap { CalendarDay(date: $0, calendar: calendar) },
                 priority: r.priority,
                 isActive: r.isActive
             )
         }
-        let assignmentDTOs = assignments.map { a in
-            ShiftBundle.AssignmentDTO(
-                date: a.date,
+        let assignmentDTOs: [ShiftBundle.AssignmentDTO] = assignments.compactMap { a in
+            guard let day = CalendarDay(date: a.date, calendar: calendar) else { return nil }
+            return ShiftBundle.AssignmentDTO(
+                date: day,
                 presetID: a.preset?.id,
                 overrideAlarmHour: a.overrideAlarmHour,
                 overrideAlarmMinute: a.overrideAlarmMinute,
@@ -44,9 +46,10 @@ public enum ShareExporter {
                 note: a.note
             )
         }
-        let overrideDTOs = overrides.map { o in
-            ShiftBundle.OverrideDTO(
-                date: o.date,
+        let overrideDTOs: [ShiftBundle.OverrideDTO] = overrides.compactMap { o in
+            guard let day = CalendarDay(date: o.date, calendar: calendar) else { return nil }
+            return ShiftBundle.OverrideDTO(
+                date: day,
                 kind: o.kind,
                 label: o.label,
                 skipAlarm: o.skipAlarm,

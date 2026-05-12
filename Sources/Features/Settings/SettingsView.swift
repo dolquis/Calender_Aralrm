@@ -24,10 +24,24 @@ public struct SettingsView: View {
                 PermissionStatusView()
             }
             Section("settings.scheduling_section") {
-                Stepper(value: Binding(get: { s.lookaheadDays }, set: { s.lookaheadDays = $0; try? modelContext.save() }), in: 7...90) {
+                Stepper(value: Binding(
+                    get: { s.lookaheadDays },
+                    set: { newValue in
+                        s.lookaheadDays = newValue
+                        try? modelContext.save()
+                        Task { await dependencies.alarmScheduler.refreshScheduledAlarms() }
+                    }
+                ), in: 7...90) {
                     Text(String(localized: "settings.lookahead_days") + ": \(s.lookaheadDays)")
                 }
-                Stepper(value: Binding(get: { s.liveActivityLeadHours }, set: { s.liveActivityLeadHours = $0; try? modelContext.save() }), in: 1...24) {
+                Stepper(value: Binding(
+                    get: { s.liveActivityLeadHours },
+                    set: { newValue in
+                        s.liveActivityLeadHours = newValue
+                        try? modelContext.save()
+                        Task { await dependencies.liveActivityController.evaluate() }
+                    }
+                ), in: 1...24) {
                     Text(String(localized: "settings.live_activity_lead_hours") + ": \(s.liveActivityLeadHours)")
                 }
             }
