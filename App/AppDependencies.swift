@@ -25,9 +25,19 @@ public final class AppDependencies {
     }
 
     public func bootstrap() async {
+        ensureSettingsSingleton()
         await alarmAuthorization.refresh()
         await alarmScheduler.refreshScheduledAlarms()
         await liveActivityController.evaluate()
+    }
+
+    /// Ensure exactly one `AppSettings` row exists. Safe to call multiple times.
+    public func ensureSettingsSingleton() {
+        let context = ModelContext(modelContainer)
+        let existing: [AppSettings] = (try? context.fetch(FetchDescriptor<AppSettings>())) ?? []
+        guard existing.isEmpty else { return }
+        context.insert(AppSettings())
+        try? context.save()
     }
 }
 

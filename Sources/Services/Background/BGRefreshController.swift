@@ -22,17 +22,17 @@ public enum BGRefreshController {
 
     private static func handle(task: BGAppRefreshTask) {
         scheduleNext()
-        let work = Task {
+        let work = Task { () -> Bool in
             let deps = await MainActor.run { AppDependencies() }
             await deps.bootstrap()
-            return true
+            return !Task.isCancelled
         }
         task.expirationHandler = {
             work.cancel()
         }
         Task {
-            _ = await work.value
-            task.setTaskCompleted(success: true)
+            let success = await work.value
+            task.setTaskCompleted(success: success)
         }
     }
 }

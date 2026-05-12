@@ -5,20 +5,26 @@ public struct SettingsView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(AppDependencies.self) private var dependencies
     @Query private var settingsList: [AppSettings]
-    @State private var requesting = false
 
     public init() {}
 
-    private var settings: AppSettings {
-        if let first = settingsList.first { return first }
-        let new = AppSettings()
-        modelContext.insert(new)
-        try? modelContext.save()
-        return new
+    public var body: some View {
+        Group {
+            if let settings = settingsList.first {
+                form(for: settings)
+            } else {
+                ProgressView()
+                    .task { dependencies.ensureSettingsSingleton() }
+            }
+        }
+        .navigationTitle("tab.settings")
+        .task {
+            await dependencies.alarmAuthorization.refresh()
+        }
     }
 
-    public var body: some View {
-        let s = settings
+    @ViewBuilder
+    private func form(for s: AppSettings) -> some View {
         Form {
             Section("settings.permission_section") {
                 PermissionStatusView()
@@ -79,10 +85,6 @@ public struct SettingsView: View {
             Section("settings.about") {
                 LabeledContent("settings.version", value: appVersionString())
             }
-        }
-        .navigationTitle("tab.settings")
-        .task {
-            await dependencies.alarmAuthorization.refresh()
         }
     }
 
