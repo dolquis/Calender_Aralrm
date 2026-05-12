@@ -1,4 +1,4 @@
-# Calender_Aralrm — Shift Alarm
+# Calendar_Alarm — Shift Alarm
 
 A calendar-driven alarm app for shift workers (day/night shifts, 3-shift / 4-on-2-off rotations).
 The app uses **AlarmKit** (iOS 26+) so alarms fire with the same reliability as the system Clock —
@@ -70,6 +70,8 @@ Developer account that has the AlarmKit entitlement). Press `⌘R` to build and 
 8. Long-press the home screen and add the **Next alarm** widget.
 
 ## Unit tests
+
+Generate the project first (`bash scripts/regen.sh`), then run:
 
 ```sh
 xcodebuild test \
