@@ -45,10 +45,9 @@ public actor EventKitHolidayProvider {
     private func holidayCalendars() -> [EKCalendar] {
         let keywords = ["holiday", "Holiday", "祝日", "公休", "祝祭日"]
         return store.calendars(for: .event).filter { cal in
-            // Subscription feeds (e.g., "日本の祝日") are the primary target.
-            if cal.type == .subscription { return true }
-            // CalDAV/iCloud holiday calendars matched by title.
-            return keywords.contains { cal.title.localizedStandardContains($0) }
+            // Match by keyword for all calendar types (subscription, CalDAV, etc.).
+            // Checking only subscription type would import sports/school feeds too.
+            keywords.contains { cal.title.localizedStandardContains($0) }
         }
     }
 }
