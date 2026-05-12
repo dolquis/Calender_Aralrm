@@ -68,13 +68,34 @@ public enum ShiftBundleCodec {
     public static func encode(_ bundle: ShiftBundle) throws -> Data {
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
-        encoder.dateEncodingStrategy = .iso8601
+        encoder.dateEncodingStrategy = .formatted(makeDayFormatter())
         return try encoder.encode(bundle)
     }
 
     public static func decode(_ data: Data) throws -> ShiftBundle {
         let decoder = JSONDecoder()
-        decoder.dateDecodingStrategy = .iso8601
+        let dayFormatter = makeDayFormatter()
+        decoder.dateDecodingStrategy = .custom { decoder in
+            let container = try decoder.singleValueContainer()
+            let str = try container.decode(String.self)
+            if let date = dayFormatter.date(from: str) { return date }
+            // Backward-compatibility: accept full ISO-8601 timestamps written by older builds.
+            let iso = ISO8601DateFormatter()
+            if let date = iso.date(from: str) { return date }
+            throw DecodingError.dataCorrupted(
+                DecodingError.Context(codingPath: decoder.codingPath, debugDescription: "Invalid date: \(str)")
+            )
+        }
         return try decoder.decode(ShiftBundle.self, from: data)
+    }
+
+    /// "yyyy-MM-dd" formatter in the device's local timezone so date-only strings
+    /// round-trip as the same calendar day regardless of where they are decoded.
+    private static func makeDayFormatter() -> DateFormatter {
+        let f = DateFormatter()
+        f.dateFormat = "yyyy-MM-dd"
+        f.locale = Locale(identifier: "en_US_POSIX")
+        f.timeZone = .current
+        return f
     }
 }

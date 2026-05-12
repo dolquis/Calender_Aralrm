@@ -50,9 +50,6 @@ public final class AlarmScheduler {
                 if existingAlarm.fireDate != entry.fireDate
                     || existingAlarm.label != entry.label
                     || existingAlarm.soundID != entry.soundID {
-                    if let kitID = existingAlarm.alarmKitID {
-                        try? await service.cancel(id: kitID)
-                    }
                     let newID = UUID()
                     do {
                         try await service.schedule(
@@ -61,13 +58,17 @@ public final class AlarmScheduler {
                             label: entry.label,
                             soundID: entry.soundID
                         )
+                        // Cancel old alarm only after the replacement is confirmed scheduled,
+                        // so a transient failure never leaves the user with no active alarm.
+                        if let kitID = existingAlarm.alarmKitID {
+                            try? await service.cancel(id: kitID)
+                        }
                         existingAlarm.fireDate = entry.fireDate
                         existingAlarm.label = entry.label
                         existingAlarm.soundID = entry.soundID
                         existingAlarm.alarmKitID = newID
                     } catch {
-                        // Schedule failed: leave existing record unchanged so that the
-                        // next refresh detects the mismatch and retries.
+                        // Schedule failed: old alarm is still active; next refresh will retry.
                     }
                 }
             } else {
