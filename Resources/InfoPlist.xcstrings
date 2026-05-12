@@ -1,0 +1,20 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "CFBundleDisplayName" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Shift Alarm" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "シフトアラーム" } }
+      }
+    },
+    "NSAlarmKitUsageDescription" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Used to schedule wake-up alarms that match your shift calendar." } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "シフトに合わせて目覚ましアラームを鳴らすために使用します。" } }
+      }
+    }
+  },
+  "version" : "1.0"
+}
