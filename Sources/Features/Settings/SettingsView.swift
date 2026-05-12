@@ -24,7 +24,7 @@ public struct SettingsView: View {
                 PermissionStatusView()
             }
             Section("settings.scheduling_section") {
-                Stepper(value: Binding(get: { s.lookaheadDays }, set: { s.lookaheadDays = $0; try? modelContext.save() }), in: 7...90) {
+                Stepper(value: Binding(get: { s.lookaheadDays }, set: { s.lookaheadDays = $0; try? modelContext.save(); scheduleRefresh() }), in: 7...90) {
                     Text(String(localized: "settings.lookahead_days") + ": \(s.lookaheadDays)")
                 }
                 Stepper(value: Binding(get: { s.liveActivityLeadHours }, set: { s.liveActivityLeadHours = $0; try? modelContext.save() }), in: 1...24) {
@@ -32,7 +32,7 @@ public struct SettingsView: View {
                 }
             }
             Section("settings.sound_section") {
-                Picker("settings.default_sound", selection: Binding(get: { s.defaultSoundID }, set: { s.defaultSoundID = $0; try? modelContext.save() })) {
+                Picker("settings.default_sound", selection: Binding(get: { s.defaultSoundID }, set: { s.defaultSoundID = $0; try? modelContext.save(); scheduleRefresh() })) {
                     ForEach(AlarmSound.allBuiltIn) { sound in
                         Text(LocalizedStringKey(sound.displayNameKey)).tag(sound.id)
                     }
@@ -57,6 +57,10 @@ public struct SettingsView: View {
         .task {
             await dependencies.alarmAuthorization.refresh()
         }
+    }
+
+    private func scheduleRefresh() {
+        Task { await dependencies.alarmScheduler.refreshScheduledAlarms() }
     }
 
     private func appVersionString() -> String {

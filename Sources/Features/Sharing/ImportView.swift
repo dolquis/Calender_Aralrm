@@ -58,6 +58,16 @@ public struct ImportView: View {
         ) { result in
             handlePicker(result)
         }
+        .onAppear { consumePendingDeepLink() }
+    }
+
+    private func consumePendingDeepLink() {
+        guard let bundle = DeepLinkInbox.shared.pending else { return }
+        DeepLinkInbox.shared.pending = nil
+        errorMessage = nil
+        applied = false
+        loadedBundle = bundle
+        preview = ShareImporter.preview(bundle: bundle, container: dependencies.modelContainer)
     }
 
     private func row(_ key: LocalizedStringKey, value: Int) -> some View {
