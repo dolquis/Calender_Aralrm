@@ -100,15 +100,24 @@ public struct HolidayManagerView: View {
     }
 
     private func addEntry() {
+        let calendar = Calendar.current
+        let day = calendar.startOfDay(for: addingDate)
         let replacement = addingReplacementID.flatMap { id in presets.first { $0.id == id } }
-        let entry = HolidayOverride(
-            date: Calendar.current.startOfDay(for: addingDate),
-            kind: addingKind,
-            label: addingLabel,
-            skipAlarm: addingSkip,
-            replacementPreset: replacement
-        )
-        modelContext.insert(entry)
+        if let existing = overrides.first(where: { calendar.isDate($0.date, inSameDayAs: day) }) {
+            existing.kind = addingKind
+            existing.label = addingLabel
+            existing.skipAlarm = addingSkip
+            existing.replacementPreset = replacement
+        } else {
+            let entry = HolidayOverride(
+                date: day,
+                kind: addingKind,
+                label: addingLabel,
+                skipAlarm: addingSkip,
+                replacementPreset: replacement
+            )
+            modelContext.insert(entry)
+        }
         try? modelContext.save()
         addingLabel = ""
         addingReplacementID = nil

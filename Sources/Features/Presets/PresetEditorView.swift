@@ -115,6 +115,7 @@ public struct PresetEditorView: View {
         try? modelContext.save()
         Task {
             await dependencies.alarmScheduler.refreshScheduledAlarms()
+            await dependencies.liveActivityController.evaluate()
         }
         dismiss()
     }

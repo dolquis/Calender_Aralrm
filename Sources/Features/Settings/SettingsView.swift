@@ -46,7 +46,14 @@ public struct SettingsView: View {
                 }
             }
             Section("settings.sound_section") {
-                Picker("settings.default_sound", selection: Binding(get: { s.defaultSoundID }, set: { s.defaultSoundID = $0; try? modelContext.save() })) {
+                Picker("settings.default_sound", selection: Binding(
+                    get: { s.defaultSoundID },
+                    set: { newValue in
+                        s.defaultSoundID = newValue
+                        try? modelContext.save()
+                        Task { await dependencies.alarmScheduler.refreshScheduledAlarms() }
+                    }
+                )) {
                     ForEach(AlarmSound.allBuiltIn) { sound in
                         Text(LocalizedStringKey(sound.displayNameKey)).tag(sound.id)
                     }
