@@ -47,6 +47,8 @@
     <true/>
     <key>NSAlarmKitUsageDescription</key>
     <string>シフトに合わせて目覚ましを鳴らすために使用します。</string>
+    <key>NSCalendarsFullAccessUsageDescription</key>
+    <string>シフトカレンダーの祝日をアラームに反映するために使用します。</string>
     <key>NSSupportsLiveActivities</key>
     <true/>
     <key>NSSupportsLiveActivitiesFrequentUpdates</key>

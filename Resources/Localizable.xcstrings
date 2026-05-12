@@ -134,6 +134,27 @@
         "ja" : { "stringUnit" : { "state" : "translated", "value" : "一括取り込み" } }
       }
     },
+    "holiday.bulk_import_system_calendar" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Import from System Calendar" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "システムカレンダーから読み込む" } }
+      }
+    },
+    "holiday.calendar_access_denied_message" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Please allow calendar access in Settings > Privacy > Calendars." } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "設定 > プライバシー > カレンダー でアクセスを許可してください。" } }
+      }
+    },
+    "holiday.calendar_access_denied_title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Calendar Access Denied" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "カレンダーへのアクセスが拒否されています" } }
+      }
+    },
     "holiday.date" : {
       "localizations" : {
         "en" : { "stringUnit" : { "state" : "translated", "value" : "Date" } },
@@ -552,6 +573,13 @@
       "localizations" : {
         "en" : { "stringUnit" : { "state" : "translated", "value" : "Lookahead (days)" } },
         "ja" : { "stringUnit" : { "state" : "translated", "value" : "先読み日数" } }
+      }
+    },
+    "settings.open" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Open Settings" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "設定を開く" } }
       }
     },
     "settings.permission_authorized" : {

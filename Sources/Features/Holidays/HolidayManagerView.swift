@@ -1,5 +1,6 @@
 import SwiftUI
 import SwiftData
+import UIKit
 
 public struct HolidayManagerView: View {
     @Environment(\.modelContext) private var modelContext
@@ -8,6 +9,8 @@ public struct HolidayManagerView: View {
     @Query private var presets: [ShiftPreset]
     @State private var addingDate: Date = .now
     @State private var addingLabel: String = ""
+    @State private var isImportingFromCalendar = false
+    @State private var calendarAccessDenied = false
     @State private var addingSkip: Bool = true
     @State private var addingReplacementID: UUID?
     @State private var addingKind: HolidayOverride.Kind = .paidLeave
@@ -20,6 +23,16 @@ public struct HolidayManagerView: View {
                 Button("holiday.bulk_import_jp") {
                     importJapaneseHolidays()
                 }
+                Button {
+                    importFromSystemCalendar()
+                } label: {
+                    if isImportingFromCalendar {
+                        ProgressView().frame(maxWidth: .infinity, alignment: .leading)
+                    } else {
+                        Text("holiday.bulk_import_system_calendar")
+                    }
+                }
+                .disabled(isImportingFromCalendar)
             }
 
             Section("holiday.add_section") {
@@ -78,6 +91,50 @@ public struct HolidayManagerView: View {
             }
         }
         .navigationTitle("settings.holidays")
+        .alert(
+            "holiday.calendar_access_denied_title",
+            isPresented: $calendarAccessDenied
+        ) {
+            Button("common.cancel", role: .cancel) {}
+            Button("settings.open") {
+                if let url = URL(string: UIApplication.openSettingsURLString) {
+                    UIApplication.shared.open(url)
+                }
+            }
+        } message: {
+            Text("holiday.calendar_access_denied_message")
+        }
+    }
+
+    private func importFromSystemCalendar() {
+        isImportingFromCalendar = true
+        Task {
+            defer { isImportingFromCalendar = false }
+
+            guard await EventKitHolidayProvider.shared.requestAccess() else {
+                calendarAccessDenied = true
+                return
+            }
+
+            let calendar = Calendar.current
+            let now = Date.now
+            let start = calendar.date(byAdding: .year, value: -1, to: now) ?? now
+            let end   = calendar.date(byAdding: .year, value:  1, to: now) ?? now
+
+            let entries = await EventKitHolidayProvider.shared.fetchHolidayEntries(from: start, to: end)
+
+            let existingDates = Set(overrides.map { calendar.startOfDay(for: $0.date) })
+            for entry in entries where !existingDates.contains(entry.date) {
+                modelContext.insert(HolidayOverride(
+                    date: entry.date,
+                    kind: .publicHoliday,
+                    label: entry.name,
+                    skipAlarm: true
+                ))
+            }
+            try? modelContext.save()
+            await dependencies.alarmScheduler.refreshScheduledAlarms()
+        }
     }
 
     private func importJapaneseHolidays() {
