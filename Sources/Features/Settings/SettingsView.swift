@@ -27,7 +27,7 @@ public struct SettingsView: View {
                 Stepper(value: Binding(get: { s.lookaheadDays }, set: { s.lookaheadDays = $0; try? modelContext.save(); scheduleRefresh() }), in: 7...90) {
                     Text(String(localized: "settings.lookahead_days") + ": \(s.lookaheadDays)")
                 }
-                Stepper(value: Binding(get: { s.liveActivityLeadHours }, set: { s.liveActivityLeadHours = $0; try? modelContext.save() }), in: 1...24) {
+                Stepper(value: Binding(get: { s.liveActivityLeadHours }, set: { s.liveActivityLeadHours = $0; try? modelContext.save(); liveActivityEval() }), in: 1...24) {
                     Text(String(localized: "settings.live_activity_lead_hours") + ": \(s.liveActivityLeadHours)")
                 }
             }
@@ -61,6 +61,10 @@ public struct SettingsView: View {
 
     private func scheduleRefresh() {
         Task { await dependencies.alarmScheduler.refreshScheduledAlarms() }
+    }
+
+    private func liveActivityEval() {
+        Task { await dependencies.liveActivityController.evaluate() }
     }
 
     private func appVersionString() -> String {

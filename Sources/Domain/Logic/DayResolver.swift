@@ -148,13 +148,19 @@ public enum DayResolver {
         }
 
         if let holiday = input.holidays[day] {
-            let replacement = holiday.replacementPresetID.flatMap { input.presets[$0] }
-            return .holiday(
-                label: holiday.label,
-                replacementPresetID: holiday.replacementPresetID,
-                alarmTime: replacement?.alarmTime,
-                skip: holiday.skipAlarm
-            )
+            if holiday.skipAlarm {
+                return .holiday(label: holiday.label, replacementPresetID: nil, alarmTime: nil, skip: true)
+            }
+            if let replacement = holiday.replacementPresetID.flatMap({ input.presets[$0] }) {
+                return .holiday(
+                    label: holiday.label,
+                    replacementPresetID: holiday.replacementPresetID,
+                    alarmTime: replacement.alarmTime,
+                    skip: false
+                )
+            }
+            // skipAlarm == false with no replacement preset: fall through to rotation resolution
+            // so the normal scheduled alarm still fires on this holiday.
         }
 
         let candidates = input.rotations
