@@ -1,0 +1,146 @@
+import SwiftUI
+import SwiftData
+
+public struct CalendarMonthView: View {
+    @Environment(AppDependencies.self) private var dependencies
+    @Environment(\.modelContext) private var modelContext
+    @Query private var presets: [ShiftPreset]
+    @Query private var assignments: [DayAssignment]
+    @Query private var holidays: [HolidayOverride]
+    @Query private var rotations: [RotationPattern]
+    @State private var viewModel = CalendarMonthViewModel()
+    @State private var editingDate: Date?
+
+    public init() {}
+
+    private var resolverInput: DayResolverInput {
+        let calendar = viewModel.calendar
+        let presetMap: [UUID: ShiftPresetSnapshot] = presets.reduce(into: [:]) { acc, p in
+            acc[p.id] = ShiftPresetSnapshot(
+                id: p.id,
+                name: p.name,
+                colorHex: p.colorHex,
+                alarmTime: p.defaultAlarmTime,
+                soundID: p.soundID
+            )
+        }
+        let assignmentMap: [Date: DayAssignmentSnapshot] = assignments.reduce(into: [:]) { acc, a in
+            acc[calendar.startOfDay(for: a.date)] = DayAssignmentSnapshot(
+                presetID: a.preset?.id,
+                overrideTime: a.overrideAlarmTime,
+                skipAlarm: a.skipAlarm,
+                note: a.note
+            )
+        }
+        let holidayMap: [Date: HolidayOverrideSnapshot] = holidays.reduce(into: [:]) { acc, h in
+            acc[calendar.startOfDay(for: h.date)] = HolidayOverrideSnapshot(
+                label: h.label,
+                skipAlarm: h.skipAlarm,
+                replacementPresetID: h.replacementPreset?.id
+            )
+        }
+        let rotationSnapshots = rotations.map { r in
+            RotationPatternSnapshot(
+                id: r.id,
+                name: r.name,
+                anchorDate: r.anchorDate,
+                cycleLength: r.cycleLength,
+                slots: r.slots,
+                startDate: r.startDate,
+                endDate: r.endDate,
+                priority: r.priority,
+                isActive: r.isActive
+            )
+        }
+        return DayResolverInput(
+            manualAssignments: assignmentMap,
+            holidays: holidayMap,
+            rotations: rotationSnapshots,
+            presets: presetMap,
+            calendar: calendar
+        )
+    }
+
+    public var body: some View {
+        let columns = Array(repeating: GridItem(.flexible(), spacing: 4), count: 7)
+
+        VStack(spacing: 12) {
+            header
+            weekdayHeader
+            LazyVGrid(columns: columns, spacing: 4) {
+                ForEach(viewModel.gridDates(), id: \.self) { date in
+                    cell(for: date)
+                        .onTapGesture {
+                            editingDate = viewModel.calendar.startOfDay(for: date)
+                        }
+                }
+            }
+            Spacer()
+        }
+        .padding()
+        .navigationTitle("tab.calendar")
+        .sheet(item: Binding(
+            get: { editingDate.map(IdentifiableDate.init) },
+            set: { editingDate = $0?.date }
+        )) { wrapper in
+            DayDetailEditorView(date: wrapper.date)
+        }
+    }
+
+    @ViewBuilder
+    private var header: some View {
+        HStack {
+            Button {
+                viewModel.step(by: -1)
+            } label: {
+                Image(systemName: "chevron.left")
+            }
+            Spacer()
+            Text(viewModel.monthTitle())
+                .font(.title2.weight(.semibold))
+            Spacer()
+            Button {
+                viewModel.step(by: 1)
+            } label: {
+                Image(systemName: "chevron.right")
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var weekdayHeader: some View {
+        let symbols = viewModel.calendar.shortStandaloneWeekdaySymbols
+        let firstWeekday = viewModel.calendar.firstWeekday
+        let ordered = (0..<7).map { symbols[(firstWeekday - 1 + $0) % 7] }
+        HStack {
+            ForEach(ordered, id: \.self) { s in
+                Text(s)
+                    .frame(maxWidth: .infinity)
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.secondary)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func cell(for date: Date) -> some View {
+        let normalized = viewModel.calendar.startOfDay(for: date)
+        let resolved = DayResolver.resolve(date: normalized, input: resolverInput)
+        let presetID = resolved.presetID
+        let preset = presetID.flatMap { resolverInput.presets[$0] }
+        let holiday = resolverInput.holidays[normalized]
+        DayCellView(
+            date: normalized,
+            inCurrentMonth: viewModel.isInCurrentMonth(normalized),
+            presetName: preset?.name,
+            presetColorHex: preset?.colorHex,
+            alarmTime: resolved.fireTime,
+            holidayLabel: holiday?.label
+        )
+    }
+}
+
+private struct IdentifiableDate: Identifiable {
+    var date: Date
+    var id: TimeInterval { date.timeIntervalSince1970 }
+}

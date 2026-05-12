@@ -1,0 +1,30 @@
+# Xcode
+build/
+DerivedData/
+*.xcuserstate
+*.xcuserdatad/
+xcuserdata/
+*.swp
+.DS_Store
+
+# Swift Package Manager
+.build/
+Packages/
+Package.resolved
+
+# CocoaPods (not used, kept for safety)
+Pods/
+
+# fastlane
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/screenshots/**/*.png
+fastlane/test_output
+
+# XcodeGen — keep project.yml; .xcodeproj is regeneratable but committed
+# (do NOT ignore *.xcodeproj here)
+
+# Misc
+*.log
+.env
+.env.*
