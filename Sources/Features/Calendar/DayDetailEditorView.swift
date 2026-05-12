@@ -96,13 +96,22 @@ public struct DayDetailEditorView: View {
             return (dc.hour ?? 0, dc.minute ?? 0)
         }() : nil
 
+        let isEffectivelyEmpty = preset == nil
+            && timeComponents == nil
+            && !skipAlarm
+            && note.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+
         if let assignment = existingAssignment {
-            assignment.preset = preset
-            assignment.skipAlarm = skipAlarm
-            assignment.note = note
-            assignment.overrideAlarmHour = timeComponents?.0
-            assignment.overrideAlarmMinute = timeComponents?.1
-        } else {
+            if isEffectivelyEmpty {
+                modelContext.delete(assignment)
+            } else {
+                assignment.preset = preset
+                assignment.skipAlarm = skipAlarm
+                assignment.note = note
+                assignment.overrideAlarmHour = timeComponents?.0
+                assignment.overrideAlarmMinute = timeComponents?.1
+            }
+        } else if !isEffectivelyEmpty {
             let assignment = DayAssignment(
                 date: day,
                 preset: preset,

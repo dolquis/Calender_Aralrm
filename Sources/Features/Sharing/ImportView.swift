@@ -109,7 +109,10 @@ public struct ImportView: View {
         do {
             try ShareImporter.apply(bundle: bundle, container: dependencies.modelContainer)
             applied = true
-            Task { await dependencies.alarmScheduler.refreshScheduledAlarms() }
+            Task {
+                await dependencies.alarmScheduler.refreshScheduledAlarms()
+                await dependencies.liveActivityController.evaluate()
+            }
         } catch {
             errorMessage = error.localizedDescription
         }

@@ -79,4 +79,12 @@ final class ShiftBundleCodecTests: XCTestCase {
     func testInvalidPayloadThrows() {
         XCTAssertThrowsError(try ShiftBundleCodec.decode(Data("{not json}".utf8)))
     }
+
+    func testCalendarDayDecoderRejectsImpossibleDates() {
+        let decoder = JSONDecoder()
+        XCTAssertThrowsError(try decoder.decode(CalendarDay.self, from: Data("\"2026-13-40\"".utf8)))
+        XCTAssertThrowsError(try decoder.decode(CalendarDay.self, from: Data("\"2026-02-30\"".utf8)))
+        XCTAssertThrowsError(try decoder.decode(CalendarDay.self, from: Data("\"2026-00-10\"".utf8)))
+        XCTAssertNoThrow(try decoder.decode(CalendarDay.self, from: Data("\"2026-02-28\"".utf8)))
+    }
 }

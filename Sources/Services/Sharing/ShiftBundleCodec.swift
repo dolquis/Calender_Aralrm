@@ -44,6 +44,24 @@ public struct CalendarDay: Codable, Equatable, Sendable, Hashable {
                 debugDescription: "Expected YYYY-MM-DD calendar day, got \(raw)"
             )
         }
+        var dc = DateComponents()
+        dc.year = y
+        dc.month = m
+        dc.day = d
+        let gregorian = Calendar(identifier: .gregorian)
+        guard let date = gregorian.date(from: dc) else {
+            throw DecodingError.dataCorruptedError(
+                in: container,
+                debugDescription: "\(raw) is not a real calendar day"
+            )
+        }
+        let roundTrip = gregorian.dateComponents([.year, .month, .day], from: date)
+        guard roundTrip.year == y, roundTrip.month == m, roundTrip.day == d else {
+            throw DecodingError.dataCorruptedError(
+                in: container,
+                debugDescription: "\(raw) is not a real calendar day"
+            )
+        }
         self.year = y
         self.month = m
         self.day = d
