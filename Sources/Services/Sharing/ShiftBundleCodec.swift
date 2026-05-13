@@ -153,7 +153,27 @@ public enum ShiftBundleCodec {
 
     public static func decode(_ data: Data) throws -> ShiftBundle {
         let decoder = JSONDecoder()
-        decoder.dateDecodingStrategy = .iso8601
+        decoder.dateDecodingStrategy = .custom { decoder in
+            let container = try decoder.singleValueContainer()
+            let raw = try container.decode(String.self)
+
+            if let date = ISO8601DateFormatter().date(from: raw) {
+                return date
+            }
+
+            let formatter = DateFormatter()
+            formatter.dateFormat = "yyyy-MM-dd"
+            formatter.locale = Locale(identifier: "en_US_POSIX")
+            formatter.timeZone = .current
+            if let date = formatter.date(from: raw) {
+                return date
+            }
+
+            throw DecodingError.dataCorruptedError(
+                in: container,
+                debugDescription: "Invalid date: \(raw)"
+            )
+        }
         return try decoder.decode(ShiftBundle.self, from: data)
     }
 }
