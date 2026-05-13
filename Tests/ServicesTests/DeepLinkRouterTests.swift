@@ -1,6 +1,7 @@
 import XCTest
 @testable import ShiftAlarm
 
+@MainActor
 final class DeepLinkRouterTests: XCTestCase {
 
     private func encodeBundle(_ bundle: ShiftBundle) throws -> String {
