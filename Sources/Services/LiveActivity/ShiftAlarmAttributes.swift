@@ -2,10 +2,13 @@ import Foundation
 #if canImport(ActivityKit)
 import ActivityKit
 #endif
+#if canImport(AlarmKit)
+import AlarmKit
+#endif
 
 #if canImport(ActivityKit)
-public struct ShiftAlarmAttributes: ActivityAttributes {
-    public struct ContentState: Codable, Hashable {
+public struct ShiftAlarmAttributes: ActivityAttributes, Hashable, Sendable {
+    public struct ContentState: Codable, Hashable, Sendable {
         public var fireDate: Date
         public var presetName: String
         public var colorHex: String
@@ -32,4 +35,8 @@ public struct ShiftAlarmAttributes: Codable, Hashable, Sendable {
     }
     public let alarmID: UUID
 }
+#endif
+
+#if canImport(AlarmKit)
+extension ShiftAlarmAttributes: AlarmMetadata {}
 #endif

@@ -43,20 +43,15 @@ public final class LiveActivityController {
             presetName: presetName,
             colorHex: colorHex
         )
+        let content = ActivityContent(state: state, staleDate: next.fireDate)
 
         if currentAlarmID == next.id, let id = currentActivityID,
-           let activity = Activity<ShiftAlarmAttributes>.activities.first(where: { $0.id == id }) {
-            await activity.update(using: state)
+           await Self.updateActivity(id: id, content: content) {
             return
         }
         await endAll()
         do {
-            let activity = try Activity<ShiftAlarmAttributes>.request(
-                attributes: ShiftAlarmAttributes(alarmID: next.id),
-                contentState: state,
-                pushType: nil
-            )
-            currentActivityID = activity.id
+            currentActivityID = try Self.requestActivity(alarmID: next.id, content: content)
             currentAlarmID = next.id
         } catch {
             // Live Activity request can fail when disabled by user; ignore.
@@ -66,11 +61,40 @@ public final class LiveActivityController {
 
     public func endAll() async {
         #if canImport(ActivityKit)
-        for activity in Activity<ShiftAlarmAttributes>.activities {
-            await activity.end(dismissalPolicy: .immediate)
-        }
+        await Self.endActivities()
         currentActivityID = nil
         currentAlarmID = nil
         #endif
     }
+
+    #if canImport(ActivityKit)
+    private nonisolated static func updateActivity(
+        id: String,
+        content: ActivityContent<ShiftAlarmAttributes.ContentState>
+    ) async -> Bool {
+        guard let activity = Activity<ShiftAlarmAttributes>.activities.first(where: { $0.id == id }) else {
+            return false
+        }
+        await activity.update(content)
+        return true
+    }
+
+    private nonisolated static func requestActivity(
+        alarmID: UUID,
+        content: ActivityContent<ShiftAlarmAttributes.ContentState>
+    ) throws -> String {
+        let activity = try Activity<ShiftAlarmAttributes>.request(
+            attributes: ShiftAlarmAttributes(alarmID: alarmID),
+            content: content,
+            pushType: nil
+        )
+        return activity.id
+    }
+
+    private nonisolated static func endActivities() async {
+        for activity in Activity<ShiftAlarmAttributes>.activities {
+            await activity.end(nil, dismissalPolicy: .immediate)
+        }
+    }
+    #endif
 }

@@ -2,7 +2,7 @@ import Foundation
 import SwiftData
 import WidgetKit
 
-public struct NextAlarmEntry: TimelineEntry {
+public struct NextAlarmEntry: TimelineEntry, Sendable {
     public let date: Date
     public let fireDate: Date?
     public let presetName: String?
@@ -31,23 +31,17 @@ public struct NextAlarmTimelineProvider: TimelineProvider {
     }
 
     public func getSnapshot(in context: Context, completion: @escaping (NextAlarmEntry) -> Void) {
-        Task {
-            let entry = await fetchEntry()
-            completion(entry)
-        }
+        completion(Self.fetchEntry())
     }
 
     public func getTimeline(in context: Context, completion: @escaping (Timeline<NextAlarmEntry>) -> Void) {
-        Task {
-            let entry = await fetchEntry()
-            let refreshAfter: Date = entry.fireDate.map { $0.addingTimeInterval(60) } ?? Date(timeIntervalSinceNow: 60 * 60)
-            let timeline = Timeline(entries: [entry], policy: .after(refreshAfter))
-            completion(timeline)
-        }
+        let entry = Self.fetchEntry()
+        let refreshAfter: Date = entry.fireDate.map { $0.addingTimeInterval(60) } ?? Date(timeIntervalSinceNow: 60 * 60)
+        let timeline = Timeline(entries: [entry], policy: .after(refreshAfter))
+        completion(timeline)
     }
 
-    @MainActor
-    private func fetchEntry() async -> NextAlarmEntry {
+    private static func fetchEntry() -> NextAlarmEntry {
         let container = SharedPersistence.makeContainer()
         let context = ModelContext(container)
         let alarms: [ShiftAlarm] = (try? context.fetch(FetchDescriptor<ShiftAlarm>())) ?? []

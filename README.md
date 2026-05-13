@@ -27,7 +27,7 @@ See `README.ja.md` for a Japanese version.
 ```
 Calender_Aralrm/
 ├── project.yml                 # XcodeGen source of truth
-├── scripts/                    # bootstrap.sh + regen.sh
+├── scripts/                    # bootstrap.sh, regen.sh, verify.sh
 ├── App/                        # Main app target (@main, Info.plist, entitlements)
 ├── Sources/
 │   ├── Domain/                 # SwiftData @Model + pure logic (Resolver, Expander)
@@ -50,12 +50,22 @@ bash scripts/bootstrap.sh
 # 2. Generate ShiftAlarm.xcodeproj from project.yml
 bash scripts/regen.sh
 
-# 3. Open and run
+# 3. Verify build and tests on an available iOS 26 simulator
+bash scripts/verify.sh
+
+# 4. Open and run
 open ShiftAlarm.xcodeproj
 ```
 
 In Xcode, select the **ShiftAlarm** scheme and an iOS 26 simulator (or device with an Apple
 Developer account that has the AlarmKit entitlement). Press `⌘R` to build and run.
+
+`scripts/verify.sh` regenerates the Xcode project, picks an available iOS 26 iPhone simulator, and
+runs both build and tests. To use a specific destination:
+
+```sh
+DESTINATION='platform=iOS Simulator,name=iPhone 17 Pro,OS=26.5' bash scripts/verify.sh
+```
 
 ## Testing manually (golden path)
 
@@ -72,10 +82,7 @@ Developer account that has the AlarmKit entitlement). Press `⌘R` to build and 
 ## Unit tests
 
 ```sh
-xcodebuild test \
-  -project ShiftAlarm.xcodeproj \
-  -scheme ShiftAlarm \
-  -destination 'platform=iOS Simulator,name=iPhone 16 Pro,OS=26.0'
+bash scripts/verify.sh test
 ```
 
 The Tests target covers rotation expansion, day resolver priority logic, and the share-bundle
