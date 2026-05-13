@@ -46,32 +46,22 @@ resolve_destination() {
     return
   fi
 
-  xcrun simctl list devices available | awk '
-    /^-- iOS 26\./ {
-      if (runtime_candidate != "") {
-        candidate = runtime_candidate
-      }
-      runtime_candidate = ""
-      in_ios26 = 1
-      next
-    }
-    /^-- / {
-      if (runtime_candidate != "") {
-        candidate = runtime_candidate
-      }
-      runtime_candidate = ""
-      in_ios26 = 0
-      next
-    }
-    in_ios26 && /iPhone/ && runtime_candidate == "" {
-      if (match($0, /[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}/)) {
-        runtime_candidate = "platform=iOS Simulator,id=" substr($0, RSTART, RLENGTH)
+  local destinations
+  destinations="$(xcodebuild -showdestinations \
+    -project "$PROJECT" \
+    -scheme "$SCHEME" \
+    -derivedDataPath "$DERIVED_DATA_PATH" 2>&1 || true)"
+
+  printf '%s\n' "$destinations" | awk '
+    /platform:iOS Simulator/ && /name:iPhone/ && /OS:26\./ {
+      line = $0
+      if (match(line, /id:[^,}]+/)) {
+        id = substr(line, RSTART + 3, RLENGTH - 3)
+        gsub(/^ +| +$/, "", id)
+        candidate = "platform=iOS Simulator,id=" id
       }
     }
     END {
-      if (runtime_candidate != "") {
-        candidate = runtime_candidate
-      }
       if (candidate != "") {
         print candidate
       }
@@ -81,7 +71,11 @@ resolve_destination() {
 
 DESTINATION_VALUE="$(resolve_destination)"
 if [[ -z "$DESTINATION_VALUE" ]]; then
-  echo "No available iOS 26 simulator found. Install one or set DESTINATION explicitly." >&2
+  echo "No eligible iOS 26 iPhone simulator found. Install the iOS platform runtime or set DESTINATION explicitly." >&2
+  xcodebuild -showdestinations \
+    -project "$PROJECT" \
+    -scheme "$SCHEME" \
+    -derivedDataPath "$DERIVED_DATA_PATH" >&2 || true
   exit 1
 fi
 

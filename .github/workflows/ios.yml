@@ -40,5 +40,8 @@ jobs:
       - name: Install XcodeGen
         run: bash scripts/bootstrap.sh
 
+      - name: Install iOS simulator runtime
+        run: sudo xcodebuild -downloadPlatform iOS
+
       - name: Build and test
         run: bash scripts/verify.sh
