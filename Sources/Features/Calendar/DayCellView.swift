@@ -8,6 +8,8 @@ public struct DayCellView: View {
     public let alarmTime: DateComponents?
     public let holidayLabel: String?
 
+    @ScaledMetric(relativeTo: .callout) private var dotSize: CGFloat = 8
+
     public init(
         date: Date,
         inCurrentMonth: Bool,
@@ -36,31 +38,54 @@ public struct DayCellView: View {
         return String(format: "%02d:%02d", h, m)
     }
 
+    private var accessibilityDescription: String {
+        let datePart = date.formatted(Date.FormatStyle().weekday(.wide).month().day())
+        var parts = [datePart]
+        if let presetName { parts.append(presetName) }
+        if let t = timeString {
+            parts.append(String(localized: "a11y.cell.alarm_at \(t)", defaultValue: "Alarm at \(t)"))
+        }
+        if let holidayLabel { parts.append(holidayLabel) }
+        return parts.joined(separator: ", ")
+    }
+
     public var body: some View {
         VStack(spacing: 2) {
             Text(dayString)
                 .font(.callout.monospacedDigit())
                 .foregroundStyle(inCurrentMonth ? .primary : .secondary)
+                .minimumScaleFactor(0.7)
+                .lineLimit(1)
+                .accessibilityHidden(true)
             if let presetColorHex {
                 Circle()
                     .fill(Color(hex: presetColorHex))
-                    .frame(width: 8, height: 8)
+                    .frame(width: dotSize, height: dotSize)
+                    .accessibilityHidden(true)
             } else {
                 Circle()
                     .fill(Color.clear)
-                    .frame(width: 8, height: 8)
+                    .frame(width: dotSize, height: dotSize)
+                    .accessibilityHidden(true)
             }
             if let timeString {
                 Text(timeString)
                     .font(.caption2.monospacedDigit())
                     .foregroundStyle(.secondary)
+                    .minimumScaleFactor(0.6)
+                    .lineLimit(1)
+                    .accessibilityHidden(true)
             } else if holidayLabel != nil {
                 Text("calendar.holiday_short")
                     .font(.caption2)
                     .foregroundStyle(.secondary)
+                    .minimumScaleFactor(0.6)
+                    .lineLimit(1)
+                    .accessibilityHidden(true)
             } else {
                 Text(" ")
                     .font(.caption2)
+                    .accessibilityHidden(true)
             }
         }
         .frame(maxWidth: .infinity, minHeight: 56)
@@ -70,5 +95,7 @@ public struct DayCellView: View {
                 .fill(inCurrentMonth ? Color(.secondarySystemBackground) : Color(.systemBackground))
         )
         .opacity(inCurrentMonth ? 1.0 : 0.45)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(accessibilityDescription)
     }
 }

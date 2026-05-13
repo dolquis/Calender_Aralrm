@@ -112,15 +112,18 @@ public struct CalendarMonthView: View {
             } label: {
                 Image(systemName: "chevron.left")
             }
+            .accessibilityLabel(Text("a11y.calendar.previous_month"))
             Spacer()
             Text(viewModel.monthTitle())
                 .font(.title2.weight(.semibold))
+                .accessibilityAddTraits(.isHeader)
             Spacer()
             Button {
                 viewModel.step(by: 1)
             } label: {
                 Image(systemName: "chevron.right")
             }
+            .accessibilityLabel(Text("a11y.calendar.next_month"))
         }
     }
 

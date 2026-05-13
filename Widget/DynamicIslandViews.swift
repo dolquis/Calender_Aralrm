@@ -52,6 +52,7 @@ private struct LockScreenView: View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 8) {
                 Circle().fill(Color(hex: state.colorHex)).frame(width: 14, height: 14)
+                    .accessibilityHidden(true)
                 Text(state.presetName)
                     .font(.headline)
             }
@@ -65,6 +66,10 @@ private struct LockScreenView: View {
             }
         }
         .padding()
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(
+            "\(state.presetName), \(state.fireDate.formatted(date: .omitted, time: .shortened))"
+        )
     }
 }
 #endif

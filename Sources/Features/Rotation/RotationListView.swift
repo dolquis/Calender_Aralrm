@@ -55,6 +55,7 @@ public struct RotationListView: View {
                         .padding(.vertical, 2)
                         .background(Color.secondary.opacity(0.2))
                         .clipShape(Capsule())
+                        .accessibilityHidden(true)
                 }
                 Spacer()
             }
@@ -62,6 +63,17 @@ public struct RotationListView: View {
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
         }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(rowAccessibilityLabel(for: pattern))
+    }
+
+    private func rowAccessibilityLabel(for pattern: RotationPattern) -> String {
+        var label = pattern.name
+        label += ", " + String(localized: "rotation.cycle_label") + ": \(pattern.cycleLength)"
+        if !pattern.isActive {
+            label += ", " + String(localized: "rotation.inactive")
+        }
+        return label
     }
 
     private func delete(at offsets: IndexSet) {

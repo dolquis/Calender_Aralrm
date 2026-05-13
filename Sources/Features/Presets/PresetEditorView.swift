@@ -28,13 +28,17 @@ public struct PresetEditorView: View {
                 Section("preset.color") {
                     LazyVGrid(columns: Array(repeating: GridItem(.adaptive(minimum: 36)), count: 8)) {
                         ForEach(Color.presetPalette, id: \.self) { hex in
+                            let isSelected = hex == colorHex
+                            let nameKey = Color.presetPaletteNames[hex] ?? "color.unknown"
                             Circle()
                                 .fill(Color(hex: hex))
                                 .frame(width: 32, height: 32)
                                 .overlay(
-                                    Circle().stroke(Color.primary, lineWidth: hex == colorHex ? 2 : 0)
+                                    Circle().stroke(Color.primary, lineWidth: isSelected ? 2 : 0)
                                 )
                                 .onTapGesture { colorHex = hex }
+                                .accessibilityLabel(Text(LocalizedStringKey(nameKey)))
+                                .accessibilityAddTraits(isSelected ? [.isSelected, .isButton] : .isButton)
                         }
                     }
                     .padding(.vertical, 4)
