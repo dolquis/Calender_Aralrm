@@ -169,10 +169,23 @@ public enum DayResolver {
             .sorted { $0.priority > $1.priority }
 
         for rotation in candidates {
-            if let presetID = RotationExpander.presetID(for: day, pattern: rotation, calendar: input.calendar),
-               let preset = input.presets[presetID] {
-                return .rotation(presetID: presetID, alarmTime: preset.alarmTime)
+            // Skip degenerate patterns (empty cycle, mismatched slot count) so they don't
+            // block lower-priority rotations from being considered.
+            guard rotation.cycleLength > 0,
+                  rotation.slots.count == rotation.cycleLength else { continue }
+            // A valid rotation slot decides behavior for the day:
+            // - presetID resolves to a loaded preset => schedule it.
+            // - presetID is stale (preset deleted) => fall through to lower priority.
+            // - nil slot => explicit rest day, do not fall through.
+            if let presetID = RotationExpander.presetID(for: day, pattern: rotation, calendar: input.calendar) {
+                if let preset = input.presets[presetID] {
+                    return .rotation(presetID: presetID, alarmTime: preset.alarmTime)
+                }
+                // If the referenced preset no longer exists, keep looking at lower-priority
+                // rotations instead of treating it as an explicit rest day.
+                continue
             }
+            return .none
         }
 
         return .none
