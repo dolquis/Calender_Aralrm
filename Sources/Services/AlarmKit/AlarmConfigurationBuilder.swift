@@ -1,6 +1,7 @@
 import Foundation
 #if canImport(AlarmKit)
 import AlarmKit
+import ActivityKit
 #endif
 
 /// Builds an AlarmKit `AlarmConfiguration` from app-level inputs. Kept as a single funnel so the

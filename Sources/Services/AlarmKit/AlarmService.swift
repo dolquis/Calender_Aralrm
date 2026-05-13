@@ -53,7 +53,7 @@ public actor AlarmService {
             label: label,
             soundID: soundID
         )
-        try await AlarmManager.shared.schedule(id: id, configuration: configuration)
+        _ = try await AlarmManager.shared.schedule(id: id, configuration: configuration)
         return id
         #else
         return id
@@ -62,21 +62,21 @@ public actor AlarmService {
 
     public func cancel(id: UUID) async throws {
         #if canImport(AlarmKit)
-        try await AlarmManager.shared.cancel(id: id)
+        try AlarmManager.shared.cancel(id: id)
         #endif
     }
 
     public func cancelAll() async throws {
         #if canImport(AlarmKit)
-        for alarm in (try? await AlarmManager.shared.alarms) ?? [] {
-            try? await AlarmManager.shared.cancel(id: alarm.id)
+        for alarm in (try? AlarmManager.shared.alarms) ?? [] {
+            try? AlarmManager.shared.cancel(id: alarm.id)
         }
         #endif
     }
 
     public func listScheduled() async -> [UUID] {
         #if canImport(AlarmKit)
-        return ((try? await AlarmManager.shared.alarms) ?? []).map(\.id)
+        return ((try? AlarmManager.shared.alarms) ?? []).map(\.id)
         #else
         return []
         #endif

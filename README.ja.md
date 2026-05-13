@@ -32,12 +32,22 @@ bash scripts/bootstrap.sh
 # 2. project.yml から ShiftAlarm.xcodeproj を再生成
 bash scripts/regen.sh
 
-# 3. Xcode で開く
+# 3. 利用可能な iOS 26 シミュレータでビルドとテストを検証
+bash scripts/verify.sh
+
+# 4. Xcode で開く
 open ShiftAlarm.xcodeproj
 ```
 
 Xcodeで `ShiftAlarm` スキームを選び、iOS 26 シミュレータ（または AlarmKit エンタイトルメントを
 持つ Apple Developer アカウントの実機）を選択して `⌘R` でビルド・実行します。
+
+`scripts/verify.sh` は Xcode project を再生成し、利用可能な iOS 26 の iPhone シミュレータを
+自動選択してビルドとテストを実行します。特定の destination を使う場合は次のように指定できます。
+
+```sh
+DESTINATION='platform=iOS Simulator,name=iPhone 17 Pro,OS=26.5' bash scripts/verify.sh
+```
 
 ## 手動テスト（golden path）
 
@@ -54,10 +64,7 @@ Xcodeで `ShiftAlarm` スキームを選び、iOS 26 シミュレータ（また
 ## ユニットテスト
 
 ```sh
-xcodebuild test \
-  -project ShiftAlarm.xcodeproj \
-  -scheme ShiftAlarm \
-  -destination 'platform=iOS Simulator,name=iPhone 16 Pro,OS=26.0'
+bash scripts/verify.sh test
 ```
 
 ローテーション展開、優先順位解決、共有バンドルの相互変換をカバーしています。

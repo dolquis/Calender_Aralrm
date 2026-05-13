@@ -40,6 +40,47 @@ targets:
       - path: Resources
     info:
       path: App/Info.plist
+      properties:
+        CFBundleDisplayName: シフトアラーム
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        CFBundleLocalizations:
+          - en
+          - ja
+        LSRequiresIPhoneOS: true
+        UILaunchScreen:
+          UIColorName: AccentColor
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+        "UISupportedInterfaceOrientations~ipad":
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationPortraitUpsideDown
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
+        UIApplicationSupportsIndirectInputEvents: true
+        NSAlarmKitUsageDescription: シフトに合わせて目覚ましを鳴らすために使用します。
+        NSCalendarsFullAccessUsageDescription: シフトカレンダーの祝日をアラームに反映するために使用します。
+        NSSupportsLiveActivities: true
+        NSSupportsLiveActivitiesFrequentUpdates: true
+        UIBackgroundModes:
+          - fetch
+          - processing
+        BGTaskSchedulerPermittedIdentifiers:
+          - com.example.shiftalarm.refreshAlarms
+        CFBundleURLTypes:
+          - CFBundleURLName: com.example.shiftalarm.url
+            CFBundleURLSchemes:
+              - shiftalarm
+        UTExportedTypeDeclarations:
+          - UTTypeIdentifier: com.example.shiftalarm.bundle
+            UTTypeDescription: Shift Alarm Bundle
+            UTTypeConformsTo:
+              - public.json
+            UTTypeTagSpecification:
+              public.filename-extension:
+                - shiftalarm
+              public.mime-type:
+                - application/json
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.example.shiftalarm
@@ -67,6 +108,12 @@ targets:
         optional: true
     info:
       path: Widget/Info.plist
+      properties:
+        CFBundlePackageType: $(PRODUCT_BUNDLE_PACKAGE_TYPE)
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.example.shiftalarm.widget

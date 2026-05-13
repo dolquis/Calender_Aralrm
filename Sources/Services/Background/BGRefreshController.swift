@@ -22,6 +22,7 @@ public enum BGRefreshController {
 
     private static func handle(task: BGAppRefreshTask) {
         scheduleNext()
+        let completion = TaskCompletion(task: task)
         let work = Task {
             let deps = await MainActor.run { AppDependencies() }
             await deps.bootstrap()
@@ -32,7 +33,19 @@ public enum BGRefreshController {
         }
         Task {
             _ = await work.value
-            task.setTaskCompleted(success: true)
+            completion.setCompleted(success: true)
+        }
+    }
+
+    private final class TaskCompletion: @unchecked Sendable {
+        private let task: BGAppRefreshTask
+
+        init(task: BGAppRefreshTask) {
+            self.task = task
+        }
+
+        func setCompleted(success: Bool) {
+            task.setTaskCompleted(success: success)
         }
     }
 }

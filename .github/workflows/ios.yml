@@ -1,0 +1,44 @@
+name: iOS CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - master
+
+jobs:
+  build-test:
+    runs-on: macos-26
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Select Xcode
+        run: |
+          set -euo pipefail
+          for app in \
+            /Applications/Xcode_26.5.app \
+            /Applications/Xcode_26.4.app \
+            /Applications/Xcode_26.0.app \
+            /Applications/Xcode.app
+          do
+            if [ -d "$app" ]; then
+              sudo xcode-select -s "$app/Contents/Developer"
+              break
+            fi
+          done
+          version="$(xcodebuild -version | awk 'NR == 1 { print $2 }')"
+          echo "Xcode $version"
+          major="${version%%.*}"
+          if [ "$major" -lt 26 ]; then
+            echo "Xcode 26.0 or newer is required." >&2
+            exit 1
+          fi
+
+      - name: Install XcodeGen
+        run: bash scripts/bootstrap.sh
+
+      - name: Build and test
+        run: bash scripts/verify.sh

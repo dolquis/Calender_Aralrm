@@ -13,7 +13,7 @@ public struct DayRange: Sequence, Sendable {
 
     public init(start: Date, dayCount: Int, calendar: Calendar = .current) {
         let s = calendar.startOfDay(for: start)
-        let e = calendar.date(byAdding: .day, value: max(0, dayCount), to: s) ?? s
+        let e = calendar.date(byAdding: .day, value: Swift.max(0, dayCount), to: s) ?? s
         self.init(start: s, end: e, calendar: calendar)
     }
 
