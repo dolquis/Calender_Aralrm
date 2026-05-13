@@ -2066,6 +2066,23 @@
         }
       }
     },
+    "a11y.cell.alarm_at": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alarm at"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "アラーム"
+          }
+        }
+      }
+    },
     "a11y.calendar.previous_month": {
       "extractionState": "manual",
       "localizations": {

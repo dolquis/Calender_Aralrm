@@ -39,11 +39,11 @@ public struct DayCellView: View {
     }
 
     private var accessibilityDescription: String {
-        let datePart = date.formatted(Date.FormatStyle().weekday(.wide).month().day())
+        let datePart = date.formatted(Date.FormatStyle(date: .long, time: .omitted))
         var parts = [datePart]
         if let presetName { parts.append(presetName) }
         if let t = timeString {
-            parts.append(String(localized: "a11y.cell.alarm_at \(t)", defaultValue: "Alarm at \(t)"))
+            parts.append(String(localized: "a11y.cell.alarm_at") + " " + t)
         }
         if let holidayLabel { parts.append(holidayLabel) }
         return parts.joined(separator: ", ")
