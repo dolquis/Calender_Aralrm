@@ -66,6 +66,9 @@ public struct CalendarMonthView: View {
 
         VStack(spacing: 12) {
             header
+            if presets.isEmpty && rotations.isEmpty {
+                emptySetupBanner
+            }
             weekdayHeader
             LazyVGrid(columns: columns, spacing: 4) {
                 ForEach(viewModel.gridDates(), id: \.self) { date in
@@ -85,6 +88,20 @@ public struct CalendarMonthView: View {
         )) { wrapper in
             DayDetailEditorView(date: wrapper.date)
         }
+    }
+
+    @ViewBuilder
+    private var emptySetupBanner: some View {
+        HStack(spacing: 12) {
+            Image(systemName: "info.circle.fill")
+                .foregroundStyle(.tint)
+            Text("calendar.empty_setup_hint")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+            Spacer()
+        }
+        .padding(12)
+        .background(.tint.opacity(0.08), in: RoundedRectangle(cornerRadius: 10))
     }
 
     @ViewBuilder

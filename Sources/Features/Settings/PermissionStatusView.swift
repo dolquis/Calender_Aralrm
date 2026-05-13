@@ -2,6 +2,7 @@ import SwiftUI
 
 public struct PermissionStatusView: View {
     @Environment(AppDependencies.self) private var dependencies
+    @Environment(\.openURL) private var openURL
     @State private var isRequesting = false
 
     public init() {}
@@ -15,7 +16,14 @@ public struct PermissionStatusView: View {
                 Text(label(for: state))
                 Spacer()
             }
-            if state != .authorized {
+            if state == .denied {
+                Button("settings.open_system_settings") {
+                    if let url = URL(string: "app-settings:") {
+                        openURL(url)
+                    }
+                }
+                .buttonStyle(.borderedProminent)
+            } else if state == .notDetermined {
                 Button {
                     isRequesting = true
                     Task {

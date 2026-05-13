@@ -1,707 +1,2071 @@
 {
-  "sourceLanguage" : "en",
-  "strings" : {
-    "alarm.default_label" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Shift alarm" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "シフトアラーム" } }
-      }
-    },
-    "alarm.open" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Open" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "開く" } }
-      }
-    },
-    "alarm.stop" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Stop" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "停止" } }
-      }
-    },
-    "calendar.holiday_short" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Hol." } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "祝" } }
-      }
-    },
-    "common.cancel" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Cancel" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "キャンセル" } }
-      }
-    },
-    "common.save" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Save" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "保存" } }
-      }
-    },
-    "day.alarm_time" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Alarm time" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "アラーム時刻" } }
-      }
-    },
-    "day.no_preset" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "No preset" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "プリセットなし" } }
-      }
-    },
-    "day.note" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Note" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "メモ" } }
-      }
-    },
-    "day.note_placeholder" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Optional note" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "メモを入力" } }
-      }
-    },
-    "day.override_time" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Override default time" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "既定時刻を上書き" } }
-      }
-    },
-    "day.preset" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Preset" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "プリセット" } }
-      }
-    },
-    "day.skip_alarm" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Skip alarm" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "鳴らさない" } }
-      }
-    },
-    "day.time" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Time" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "時刻" } }
-      }
-    },
-    "export.create" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Create export file" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "エクスポートファイルを作成" } }
-      }
-    },
-    "export.description" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Export your presets, rotations, assignments and overrides as a single .shiftalarm file." } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "プリセット・ローテーション・割当・祝日設定を1つの.shiftalarmファイルにまとめます。" } }
-      }
-    },
-    "export.share" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Share" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "共有" } }
-      }
-    },
-    "export.summary_section" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "About" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "概要" } }
-      }
-    },
-    "holiday.add" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Add" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "追加" } }
-      }
-    },
-    "holiday.add_section" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Add a day" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "日付を追加" } }
-      }
-    },
-    "holiday.bulk_import_jp" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Import Japanese public holidays" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "日本の祝日をまとめて読み込む" } }
-      }
-    },
-    "holiday.bulk_import_section" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Bulk import" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "一括取り込み" } }
-      }
-    },
-    "holiday.bulk_import_system_calendar" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Import from System Calendar" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "システムカレンダーから読み込む" } }
-      }
-    },
-    "holiday.calendar_access_denied_message" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Please allow calendar access in Settings > Privacy > Calendars." } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "設定 > プライバシー > カレンダー でアクセスを許可してください。" } }
-      }
-    },
-    "holiday.calendar_access_denied_title" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Calendar Access Denied" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "カレンダーへのアクセスが拒否されています" } }
-      }
-    },
-    "holiday.date" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Date" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "日付" } }
-      }
-    },
-    "holiday.empty" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "No holidays or PTO yet." } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "祝日/有休はまだ登録されていません。" } }
-      }
-    },
-    "holiday.kind" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Kind" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "種別" } }
-      }
-    },
-    "holiday.kind_custom" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Custom" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "カスタム" } }
-      }
-    },
-    "holiday.kind_paid" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Paid leave" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "有給休暇" } }
-      }
-    },
-    "holiday.kind_public" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Public holiday" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "祝日" } }
-      }
-    },
-    "holiday.label" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Label" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "ラベル" } }
-      }
-    },
-    "holiday.list_section" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Registered" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "登録済み" } }
-      }
-    },
-    "holiday.replacement" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Replacement preset" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "代替プリセット" } }
-      }
-    },
-    "holiday.row_replacement" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Replacement" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "代替" } }
-      }
-    },
-    "holiday.row_skip" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Alarm is skipped." } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "アラームは鳴りません。" } }
-      }
-    },
-    "holiday.skip_alarm" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Skip alarm" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "アラームを鳴らさない" } }
-      }
-    },
-    "import.applied" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Import applied." } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "インポートを適用しました。" } }
-      }
-    },
-    "import.apply" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Apply" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "適用" } }
-      }
-    },
-    "import.assignments_added" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Assignments to add" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "追加される割当" } }
-      }
-    },
-    "import.assignments_updated" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Assignments to update" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "更新される割当" } }
-      }
-    },
-    "import.overrides_added" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Overrides to add" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "追加される祝日/有休" } }
-      }
-    },
-    "import.overrides_updated" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Overrides to update" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "更新される祝日/有休" } }
-      }
-    },
-    "import.patterns_added" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Rotations to add" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "追加されるローテーション" } }
-      }
-    },
-    "import.patterns_updated" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Rotations to update" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "更新されるローテーション" } }
-      }
-    },
-    "import.pick_file" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Pick a .shiftalarm file" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : ".shiftalarmファイルを選択" } }
-      }
-    },
-    "import.pick_section" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Source" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "読み込み元" } }
-      }
-    },
-    "import.presets_added" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Presets to add" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "追加されるプリセット" } }
-      }
-    },
-    "import.presets_updated" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Presets to update" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "更新されるプリセット" } }
-      }
-    },
-    "import.preview_section" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Preview" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "プレビュー" } }
-      }
-    },
-    "preset.alarm_time" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Alarm time" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "アラーム時刻" } }
-      }
-    },
-    "preset.color" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Color" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "色" } }
-      }
-    },
-    "preset.default_alarm" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Default alarm" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "既定アラーム" } }
-      }
-    },
-    "preset.edit" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Edit preset" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "プリセット編集" } }
-      }
-    },
-    "preset.empty_subtitle" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Create a preset for each shift type (e.g. day shift, night shift)." } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "勤務種別ごとにプリセットを作成しましょう。" } }
-      }
-    },
-    "preset.empty_title" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "No presets" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "プリセットがありません" } }
-      }
-    },
-    "preset.enable_default_time" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Enable default alarm time" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "既定アラーム時刻を有効化" } }
-      }
-    },
-    "preset.name_placeholder" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "e.g. Night shift" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "例: 夜勤" } }
-      }
-    },
-    "preset.name_section" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Name" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "名前" } }
-      }
-    },
-    "preset.new" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "New preset" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "新規プリセット" } }
-      }
-    },
-    "preset.no_default_time" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "No default time" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "既定時刻なし" } }
-      }
-    },
-    "preset.note" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Note" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "メモ" } }
-      }
-    },
-    "preset.note_placeholder" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Optional note" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "任意のメモ" } }
-      }
-    },
-    "preset.sound" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Sound" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "サウンド" } }
-      }
-    },
-    "rotation.active" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Active" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "有効" } }
-      }
-    },
-    "rotation.anchor" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Anchor date" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "アンカー日" } }
-      }
-    },
-    "rotation.cycle_label" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Cycle length" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "周期長" } }
-      }
-    },
-    "rotation.cycle_section" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Cycle" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "周期" } }
-      }
-    },
-    "rotation.day_n" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Day" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "Day" } }
-      }
-    },
-    "rotation.edit" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Edit rotation" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "ローテーション編集" } }
-      }
-    },
-    "rotation.empty_subtitle" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Define cyclic patterns like 4-on/2-off or 3-shift rotations." } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "4勤2休や3直2交代などの周期パターンを定義します。" } }
-      }
-    },
-    "rotation.empty_title" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "No rotations" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "ローテーションがありません" } }
-      }
-    },
-    "rotation.end" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "End date" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "終了日" } }
-      }
-    },
-    "rotation.flags_section" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Options" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "オプション" } }
-      }
-    },
-    "rotation.has_end" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Limit end date" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "終了日を指定" } }
-      }
-    },
-    "rotation.has_start" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Limit start date" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "開始日を指定" } }
-      }
-    },
-    "rotation.inactive" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "OFF" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "停止中" } }
-      }
-    },
-    "rotation.name_placeholder" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "e.g. 4-on / 2-off" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "例: 4勤2休" } }
-      }
-    },
-    "rotation.name_section" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Name" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "名前" } }
-      }
-    },
-    "rotation.new" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "New rotation" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "新規ローテーション" } }
-      }
-    },
-    "rotation.preview_section" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Preview (14 days)" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "プレビュー(14日)" } }
-      }
-    },
-    "rotation.priority" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Priority" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "優先度" } }
-      }
-    },
-    "rotation.range_section" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Date range" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "適用範囲" } }
-      }
-    },
-    "rotation.rest_day" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Rest day" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "休み" } }
-      }
-    },
-    "rotation.slots_section" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Slots" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "スロット" } }
-      }
-    },
-    "rotation.start" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Start date" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "開始日" } }
-      }
-    },
-    "seed.day_shift" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Day shift" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "昼勤" } }
-      }
-    },
-    "seed.night_shift" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Night shift" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "夜勤" } }
-      }
-    },
-    "settings.about" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "About" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "情報" } }
-      }
-    },
-    "settings.default_sound" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Default sound" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "既定サウンド" } }
-      }
-    },
-    "settings.export" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Export shift schedule" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "シフト表をエクスポート" } }
-      }
-    },
-    "settings.holidays" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Holidays / PTO" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "祝日 / 有休" } }
-      }
-    },
-    "settings.import" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Import shift schedule" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "シフト表をインポート" } }
-      }
-    },
-    "settings.live_activity_lead_hours" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Live Activity lead (hours)" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "Live Activity 開始 (時間前)" } }
-      }
-    },
-    "settings.lookahead_days" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Lookahead (days)" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "先読み日数" } }
-      }
-    },
-    "settings.open" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Open Settings" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "設定を開く" } }
-      }
-    },
-    "settings.permission_authorized" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "AlarmKit authorized" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "AlarmKit 許可済み" } }
-      }
-    },
-    "settings.permission_denied" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "AlarmKit denied. Enable in Settings." } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "AlarmKit が拒否されています。設定で有効化してください。" } }
-      }
-    },
-    "settings.permission_not_determined" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "AlarmKit permission not requested yet" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "AlarmKit の許可が未要求です" } }
-      }
-    },
-    "settings.permission_section" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Permission" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "許可" } }
-      }
-    },
-    "settings.request_permission" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Request permission" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "許可をリクエスト" } }
-      }
-    },
-    "settings.scheduling_section" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Scheduling" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "スケジューリング" } }
-      }
-    },
-    "settings.sound_section" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Sound" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "サウンド" } }
-      }
-    },
-    "settings.version" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Version" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "バージョン" } }
-      }
-    },
-    "sound.bell" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Bell" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "ベル" } }
-      }
-    },
-    "sound.chime" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Chime" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "チャイム" } }
-      }
-    },
-    "sound.radar" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Radar" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "レーダー" } }
-      }
-    },
-    "sound.system_default" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "System default" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "システム既定" } }
-      }
-    },
-    "tab.calendar" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Calendar" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "カレンダー" } }
-      }
-    },
-    "tab.presets" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Presets" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "プリセット" } }
-      }
-    },
-    "tab.rotation" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Rotation" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "ローテーション" } }
-      }
-    },
-    "tab.settings" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Settings" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "設定" } }
-      }
-    },
-    "widget.description" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Shows your next shift alarm." } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "次のシフトアラームを表示します。" } }
-      }
-    },
-    "widget.display_name" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Next alarm" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "次のアラーム" } }
-      }
-    },
-    "widget.no_alarm_subtitle" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "No alarms scheduled." } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "予定なし" } }
-      }
-    },
-    "widget.no_alarm_title" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "No alarm" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "アラームなし" } }
+  "sourceLanguage": "en",
+  "strings": {
+    "alarm.default_label": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Shift alarm"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "シフトアラーム"
+          }
+        }
+      }
+    },
+    "alarm.open": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "開く"
+          }
+        }
+      }
+    },
+    "alarm.stop": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stop"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "停止"
+          }
+        }
+      }
+    },
+    "calendar.holiday_short": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hol."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "祝"
+          }
+        }
+      }
+    },
+    "common.cancel": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cancel"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "キャンセル"
+          }
+        }
+      }
+    },
+    "common.save": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Save"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "保存"
+          }
+        }
+      }
+    },
+    "day.alarm_time": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alarm time"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "アラーム時刻"
+          }
+        }
+      }
+    },
+    "day.no_preset": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No preset"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "プリセットなし"
+          }
+        }
+      }
+    },
+    "day.note": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Note"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "メモ"
+          }
+        }
+      }
+    },
+    "day.note_placeholder": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Optional note"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "メモを入力"
+          }
+        }
+      }
+    },
+    "day.override_time": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Override default time"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "既定時刻を上書き"
+          }
+        }
+      }
+    },
+    "day.preset": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Preset"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "プリセット"
+          }
+        }
+      }
+    },
+    "day.skip_alarm": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skip alarm"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "鳴らさない"
+          }
+        }
+      }
+    },
+    "day.time": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Time"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "時刻"
+          }
+        }
+      }
+    },
+    "export.create": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Create export file"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "エクスポートファイルを作成"
+          }
+        }
+      }
+    },
+    "export.description": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Export your presets, rotations, assignments and overrides as a single .shiftalarm file."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "プリセット・ローテーション・割当・祝日設定を1つの.shiftalarmファイルにまとめます。"
+          }
+        }
+      }
+    },
+    "export.share": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Share"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "共有"
+          }
+        }
+      }
+    },
+    "export.summary_section": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "About"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "概要"
+          }
+        }
+      }
+    },
+    "holiday.add": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "追加"
+          }
+        }
+      }
+    },
+    "holiday.add_section": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add a day"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "日付を追加"
+          }
+        }
+      }
+    },
+    "holiday.bulk_import_jp": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Import Japanese public holidays"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "日本の祝日をまとめて読み込む"
+          }
+        }
+      }
+    },
+    "holiday.bulk_import_section": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bulk import"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "一括取り込み"
+          }
+        }
+      }
+    },
+    "holiday.bulk_import_system_calendar": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Import from System Calendar"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "システムカレンダーから読み込む"
+          }
+        }
+      }
+    },
+    "holiday.calendar_access_denied_message": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Please allow calendar access in Settings > Privacy > Calendars."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "設定 > プライバシー > カレンダー でアクセスを許可してください。"
+          }
+        }
+      }
+    },
+    "holiday.calendar_access_denied_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Calendar Access Denied"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "カレンダーへのアクセスが拒否されています"
+          }
+        }
+      }
+    },
+    "holiday.date": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Date"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "日付"
+          }
+        }
+      }
+    },
+    "holiday.empty": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No holidays or PTO yet."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "祝日/有休はまだ登録されていません。"
+          }
+        }
+      }
+    },
+    "holiday.kind": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kind"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "種別"
+          }
+        }
+      }
+    },
+    "holiday.kind_custom": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Custom"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "カスタム"
+          }
+        }
+      }
+    },
+    "holiday.kind_paid": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Paid leave"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "有給休暇"
+          }
+        }
+      }
+    },
+    "holiday.kind_public": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Public holiday"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "祝日"
+          }
+        }
+      }
+    },
+    "holiday.label": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Label"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ラベル"
+          }
+        }
+      }
+    },
+    "holiday.list_section": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Registered"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "登録済み"
+          }
+        }
+      }
+    },
+    "holiday.replacement": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Replacement preset"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "代替プリセット"
+          }
+        }
+      }
+    },
+    "holiday.row_replacement": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Replacement"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "代替"
+          }
+        }
+      }
+    },
+    "holiday.row_skip": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alarm is skipped."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "アラームは鳴りません。"
+          }
+        }
+      }
+    },
+    "holiday.skip_alarm": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skip alarm"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "アラームを鳴らさない"
+          }
+        }
+      }
+    },
+    "import.applied": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Import applied."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "インポートを適用しました。"
+          }
+        }
+      }
+    },
+    "import.apply": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apply"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "適用"
+          }
+        }
+      }
+    },
+    "import.assignments_added": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Assignments to add"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "追加される割当"
+          }
+        }
+      }
+    },
+    "import.assignments_updated": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Assignments to update"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "更新される割当"
+          }
+        }
+      }
+    },
+    "import.overrides_added": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Overrides to add"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "追加される祝日/有休"
+          }
+        }
+      }
+    },
+    "import.overrides_updated": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Overrides to update"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "更新される祝日/有休"
+          }
+        }
+      }
+    },
+    "import.patterns_added": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rotations to add"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "追加されるローテーション"
+          }
+        }
+      }
+    },
+    "import.patterns_updated": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rotations to update"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "更新されるローテーション"
+          }
+        }
+      }
+    },
+    "import.pick_file": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pick a .shiftalarm file"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": ".shiftalarmファイルを選択"
+          }
+        }
+      }
+    },
+    "import.pick_section": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Source"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "読み込み元"
+          }
+        }
+      }
+    },
+    "import.presets_added": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Presets to add"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "追加されるプリセット"
+          }
+        }
+      }
+    },
+    "import.presets_updated": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Presets to update"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "更新されるプリセット"
+          }
+        }
+      }
+    },
+    "import.preview_section": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Preview"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "プレビュー"
+          }
+        }
+      }
+    },
+    "preset.alarm_time": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alarm time"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "アラーム時刻"
+          }
+        }
+      }
+    },
+    "preset.color": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Color"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "色"
+          }
+        }
+      }
+    },
+    "preset.default_alarm": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Default alarm"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "既定アラーム"
+          }
+        }
+      }
+    },
+    "preset.edit": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Edit preset"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "プリセット編集"
+          }
+        }
+      }
+    },
+    "preset.empty_subtitle": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Create a preset for each shift type (e.g. day shift, night shift)."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "勤務種別ごとにプリセットを作成しましょう。"
+          }
+        }
+      }
+    },
+    "preset.empty_title": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No presets"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "プリセットがありません"
+          }
+        }
+      }
+    },
+    "preset.enable_default_time": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enable default alarm time"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "既定アラーム時刻を有効化"
+          }
+        }
+      }
+    },
+    "preset.name_placeholder": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "e.g. Night shift"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "例: 夜勤"
+          }
+        }
+      }
+    },
+    "preset.name_section": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Name"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "名前"
+          }
+        }
+      }
+    },
+    "preset.new": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "New preset"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "新規プリセット"
+          }
+        }
+      }
+    },
+    "preset.no_default_time": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No default time"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "既定時刻なし"
+          }
+        }
+      }
+    },
+    "preset.note": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Note"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "メモ"
+          }
+        }
+      }
+    },
+    "preset.note_placeholder": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Optional note"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "任意のメモ"
+          }
+        }
+      }
+    },
+    "preset.sound": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sound"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "サウンド"
+          }
+        }
+      }
+    },
+    "rotation.active": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Active"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "有効"
+          }
+        }
+      }
+    },
+    "rotation.anchor": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Anchor date"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "アンカー日"
+          }
+        }
+      }
+    },
+    "rotation.cycle_label": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cycle length"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "周期長"
+          }
+        }
+      }
+    },
+    "rotation.cycle_section": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cycle"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "周期"
+          }
+        }
+      }
+    },
+    "rotation.day_n": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Day"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Day"
+          }
+        }
+      }
+    },
+    "rotation.edit": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Edit rotation"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ローテーション編集"
+          }
+        }
+      }
+    },
+    "rotation.empty_subtitle": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Define cyclic patterns like 4-on/2-off or 3-shift rotations."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "4勤2休や3直2交代などの周期パターンを定義します。"
+          }
+        }
+      }
+    },
+    "rotation.empty_title": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No rotations"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ローテーションがありません"
+          }
+        }
+      }
+    },
+    "rotation.end": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "End date"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "終了日"
+          }
+        }
+      }
+    },
+    "rotation.flags_section": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Options"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "オプション"
+          }
+        }
+      }
+    },
+    "rotation.has_end": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Limit end date"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "終了日を指定"
+          }
+        }
+      }
+    },
+    "rotation.has_start": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Limit start date"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "開始日を指定"
+          }
+        }
+      }
+    },
+    "rotation.inactive": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "OFF"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "停止中"
+          }
+        }
+      }
+    },
+    "rotation.name_placeholder": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "e.g. 4-on / 2-off"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "例: 4勤2休"
+          }
+        }
+      }
+    },
+    "rotation.name_section": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Name"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "名前"
+          }
+        }
+      }
+    },
+    "rotation.new": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "New rotation"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "新規ローテーション"
+          }
+        }
+      }
+    },
+    "rotation.preview_section": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Preview (14 days)"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "プレビュー(14日)"
+          }
+        }
+      }
+    },
+    "rotation.priority": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Priority"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "優先度"
+          }
+        }
+      }
+    },
+    "rotation.range_section": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Date range"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "適用範囲"
+          }
+        }
+      }
+    },
+    "rotation.rest_day": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rest day"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "休み"
+          }
+        }
+      }
+    },
+    "rotation.slots_section": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Slots"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "スロット"
+          }
+        }
+      }
+    },
+    "rotation.start": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Start date"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "開始日"
+          }
+        }
+      }
+    },
+    "seed.day_shift": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Day shift"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "昼勤"
+          }
+        }
+      }
+    },
+    "seed.night_shift": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Night shift"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "夜勤"
+          }
+        }
+      }
+    },
+    "settings.about": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "About"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "情報"
+          }
+        }
+      }
+    },
+    "settings.default_sound": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Default sound"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "既定サウンド"
+          }
+        }
+      }
+    },
+    "settings.export": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Export shift schedule"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "シフト表をエクスポート"
+          }
+        }
+      }
+    },
+    "settings.holidays": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Holidays / PTO"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "祝日 / 有休"
+          }
+        }
+      }
+    },
+    "settings.import": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Import shift schedule"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "シフト表をインポート"
+          }
+        }
+      }
+    },
+    "settings.live_activity_lead_hours": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Live Activity lead (hours)"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Live Activity 開始 (時間前)"
+          }
+        }
+      }
+    },
+    "settings.lookahead_days": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lookahead (days)"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "先読み日数"
+          }
+        }
+      }
+    },
+    "settings.open": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open Settings"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "設定を開く"
+          }
+        }
+      }
+    },
+    "settings.permission_authorized": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "AlarmKit authorized"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "AlarmKit 許可済み"
+          }
+        }
+      }
+    },
+    "settings.permission_denied": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "AlarmKit denied. Enable in Settings."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "AlarmKit が拒否されています。設定で有効化してください。"
+          }
+        }
+      }
+    },
+    "settings.permission_not_determined": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "AlarmKit permission not requested yet"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "AlarmKit の許可が未要求です"
+          }
+        }
+      }
+    },
+    "settings.permission_section": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Permission"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "許可"
+          }
+        }
+      }
+    },
+    "settings.request_permission": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Request permission"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "許可をリクエスト"
+          }
+        }
+      }
+    },
+    "settings.scheduling_section": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Scheduling"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "スケジューリング"
+          }
+        }
+      }
+    },
+    "settings.sound_section": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sound"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "サウンド"
+          }
+        }
+      }
+    },
+    "settings.version": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Version"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "バージョン"
+          }
+        }
+      }
+    },
+    "sound.bell": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bell"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ベル"
+          }
+        }
+      }
+    },
+    "sound.chime": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chime"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "チャイム"
+          }
+        }
+      }
+    },
+    "sound.radar": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Radar"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "レーダー"
+          }
+        }
+      }
+    },
+    "sound.system_default": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "System default"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "システム既定"
+          }
+        }
+      }
+    },
+    "tab.calendar": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Calendar"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "カレンダー"
+          }
+        }
+      }
+    },
+    "tab.presets": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Presets"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "プリセット"
+          }
+        }
+      }
+    },
+    "tab.rotation": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rotation"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ローテーション"
+          }
+        }
+      }
+    },
+    "tab.settings": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Settings"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "設定"
+          }
+        }
+      }
+    },
+    "widget.description": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Shows your next shift alarm."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "次のシフトアラームを表示します。"
+          }
+        }
+      }
+    },
+    "widget.display_name": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Next alarm"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "次のアラーム"
+          }
+        }
+      }
+    },
+    "widget.no_alarm_subtitle": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No alarms scheduled."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "予定なし"
+          }
+        }
+      }
+    },
+    "widget.no_alarm_title": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No alarm"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "アラームなし"
+          }
+        }
+      }
+    },
+    "onboarding.welcome_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Shift Alarm"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "シフトアラーム"
+          }
+        }
+      }
+    },
+    "onboarding.welcome_subtitle": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wake up on time for every shift.\nSet once, alarm automatically."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "シフトに合わせて目覚ましを自動設定。\n一度設定すれば毎日自動で鳴ります。"
+          }
+        }
+      }
+    },
+    "onboarding.next": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Next"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "次へ"
+          }
+        }
+      }
+    },
+    "onboarding.permission_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Allow Alarms"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "アラームを許可"
+          }
+        }
+      }
+    },
+    "onboarding.permission_subtitle": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ShiftAlarm uses AlarmKit to ring through Silent and Focus modes. Please allow alarm access."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "サイレントやフォーカス中でも鳴らすために AlarmKit の許可が必要です。"
+          }
+        }
+      }
+    },
+    "onboarding.request_permission": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Allow Alarms"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "アラームを許可する"
+          }
+        }
+      }
+    },
+    "onboarding.skip": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skip for now"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "あとで設定する"
+          }
+        }
+      }
+    },
+    "onboarding.ready_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ready to Go!"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "準備完了！"
+          }
+        }
+      }
+    },
+    "onboarding.ready_subtitle": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sample presets have been added. Tap a day on the calendar to assign a shift."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "サンプルのプリセットを追加しました。カレンダーの日付をタップしてシフトを割り当てましょう。"
+          }
+        }
+      }
+    },
+    "onboarding.get_started": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Get Started"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "はじめる"
+          }
+        }
+      }
+    },
+    "calendar.empty_setup_hint": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Create presets and a rotation to see your schedule here."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "プリセットとローテーションを作成するとここに予定が表示されます。"
+          }
+        }
+      }
+    },
+    "settings.open_system_settings": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open Settings"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "設定を開く"
+          }
+        }
       }
     }
   },
-  "version" : "1.0"
+  "version": "1.0"
 }
