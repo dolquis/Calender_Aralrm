@@ -62,7 +62,7 @@ bash scripts/verify.sh
 DESTINATION='platform=iOS Simulator,name=iPhone 17 Pro,OS=26.5' bash scripts/verify.sh
 ```
 
-CI は `.github/workflows/ios-ci.yml` が `macos-26` / Xcode 26+ で
+CI は `.github/workflows/ios.yml` が `macos-26` / Xcode 26+ で
 `scripts/verify.sh` を実行する。**CI 緑 = ローカル `verify.sh` 緑** が前提。
 
 ---
