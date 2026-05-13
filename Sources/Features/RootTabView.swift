@@ -1,8 +1,14 @@
 import SwiftUI
+import SwiftData
 
 public struct RootTabView: View {
     @Environment(AppDependencies.self) private var dependencies
     @State private var selection: Tab = .calendar
+    @Query private var settingsList: [AppSettings]
+
+    private var showOnboarding: Bool {
+        settingsList.first?.hasOnboarded == false
+    }
 
     public init() {}
 
@@ -49,6 +55,9 @@ public struct RootTabView: View {
             NavigationStack {
                 ImportView(initialBundle: item.bundle)
             }
+        }
+        .fullScreenCover(isPresented: .constant(showOnboarding)) {
+            OnboardingView()
         }
     }
 }
