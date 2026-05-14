@@ -17,7 +17,6 @@ public enum SleepWindowResolver {
                   let hour = fireTime.hour,
                   let minute = fireTime.minute,
                   let wakeTime = day.combining(hour: hour, minute: minute, in: calendar),
-                  wakeTime > .now,
                   let presetID = resolved.presetID,
                   let preset = input.presets[presetID]
             else { continue }

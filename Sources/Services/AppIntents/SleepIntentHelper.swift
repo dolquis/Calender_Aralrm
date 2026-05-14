@@ -12,6 +12,7 @@ enum SleepIntentHelper {
         let settings = (try? context.fetch(FetchDescriptor<AppSettings>()).first) ?? AppSettings()
         let days = Array(DayRange(start: .now, dayCount: min(lookahead, settings.lookaheadDays), calendar: calendar))
         let windows = SleepWindowResolver.resolve(dates: days, input: input)
+            .filter { $0.wakeTime > .now }
         return windows.map { w in
             SleepWindowEntity(
                 id: w.date.ISO8601Format(),
@@ -23,6 +24,8 @@ enum SleepIntentHelper {
     }
 
     static func fetchNextWindow() async -> SleepWindowEntity? {
-        await fetchUpcomingWindows(lookahead: 7).first
+        // Use the full configured lookahead so sparse schedules (long rest stretches)
+        // still return a result rather than reporting noUpcomingWindow.
+        await fetchUpcomingWindows().first
     }
 }

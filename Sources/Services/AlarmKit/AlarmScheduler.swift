@@ -40,7 +40,10 @@ public final class AlarmScheduler {
         }
 
         // --- Bedtime reminders ---
+        // Filter to future wake times only; SleepWindowResolver itself no longer does this
+        // so that it can also serve historical writes for HealthKit.
         let sleepWindows = SleepWindowResolver.resolve(dates: days, input: input)
+            .filter { $0.wakeTime > .now }
         var expectedBedtime: [(date: Date, fireDate: Date, label: String, soundID: String)] = []
         for window in sleepWindows {
             guard let reminderDate = window.reminderFireDate, reminderDate > .now else { continue }

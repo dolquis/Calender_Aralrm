@@ -9,6 +9,8 @@ public struct SleepScheduleView: View {
     @State private var showShortcutsGuide = false
     @State private var healthKitGranted = false
 
+    private var upcomingWindows: [SleepWindow] { windows.filter { $0.wakeTime > .now } }
+
     public init() {}
 
     public var body: some View {
@@ -85,14 +87,14 @@ public struct SleepScheduleView: View {
 
     private var windowsSection: some View {
         Section("sleep.section_upcoming") {
-            if windows.isEmpty {
+            if upcomingWindows.isEmpty {
                 ContentUnavailableView(
                     "sleep.no_windows_title",
                     systemImage: "moon.zzz",
                     description: Text("sleep.no_windows_description")
                 )
             } else {
-                ForEach(windows, id: \.date) { window in
+                ForEach(upcomingWindows, id: \.date) { window in
                     SleepWindowRow(window: window)
                 }
             }
@@ -104,7 +106,11 @@ public struct SleepScheduleView: View {
         let calendar = Calendar.current
         let input = await AlarmScheduler.buildResolverInput(context: context, calendar: calendar)
         let settings = (try? context.fetch(FetchDescriptor<AppSettings>()).first) ?? AppSettings()
-        let days = Array(DayRange(start: .now, dayCount: settings.lookaheadDays, calendar: calendar))
+        // Include 14 past days so writePastSamples has real historical windows to persist,
+        // plus the full future lookahead for display. upcomingWindows filters for UI.
+        let historyStart = calendar.date(byAdding: .day, value: -14, to: .now) ?? .now
+        let totalDays = 14 + settings.lookaheadDays
+        let days = Array(DayRange(start: historyStart, dayCount: totalDays, calendar: calendar))
         windows = SleepWindowResolver.resolve(dates: days, input: input)
     }
 }
