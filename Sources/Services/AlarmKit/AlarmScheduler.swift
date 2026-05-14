@@ -48,10 +48,10 @@ public final class AlarmScheduler {
         for window in sleepWindows {
             guard let reminderDate = window.reminderFireDate, reminderDate > .now else { continue }
             let label = "\(String(localized: "sleep.reminder_label")) \(window.presetName)"
-            // Key by the reminder's own calendar day, not the wake day. For a 10pm reminder before
-            // a 6am wake, the reminder fires the previous calendar day, so the keys must match.
+            // Key by the exact fire date so that two reminders falling on the same
+            // calendar day (e.g., afternoon-wake + next-day early-wake) never collide.
             expectedBedtime.append((
-                date: calendar.startOfDay(for: reminderDate),
+                date: reminderDate,
                 fireDate: reminderDate,
                 label: label,
                 soundID: settings.defaultSoundID
@@ -60,20 +60,23 @@ public final class AlarmScheduler {
 
         let existing: [ShiftAlarm] = (try? context.fetch(FetchDescriptor<ShiftAlarm>())) ?? []
         var existingWakeByDay: [Date: ShiftAlarm] = [:]
-        var existingBedtimeByDay: [Date: ShiftAlarm] = [:]
+        // Key bedtime reminders by their exact fireDate to avoid collisions when two
+        // different presets produce reminders that fall on the same calendar day
+        // (e.g., an afternoon wake and an early-morning wake whose reminders both fire on day N).
+        var existingBedtimeByFireDate: [Date: ShiftAlarm] = [:]
         for alarm in existing {
-            let dayKey = calendar.startOfDay(for: alarm.fireDate)
             if alarm.isBedtimeReminder {
-                existingBedtimeByDay[dayKey] = alarm
+                existingBedtimeByFireDate[alarm.fireDate] = alarm
             } else {
+                let dayKey = calendar.startOfDay(for: alarm.fireDate)
                 existingWakeByDay[dayKey] = alarm
             }
         }
 
         var expectedWakeDays = Set<Date>()
         for entry in expectedWake { expectedWakeDays.insert(entry.date) }
-        var expectedBedtimeDays = Set<Date>()
-        for entry in expectedBedtime { expectedBedtimeDays.insert(entry.date) }
+        var expectedBedtimeFireDates = Set<Date>()
+        for entry in expectedBedtime { expectedBedtimeFireDates.insert(entry.date) }
 
         await diffSync(
             expected: expectedWake,
@@ -84,8 +87,8 @@ public final class AlarmScheduler {
         )
         await diffSync(
             expected: expectedBedtime,
-            existingByDay: existingBedtimeByDay,
-            expectedDays: expectedBedtimeDays,
+            existingByDay: existingBedtimeByFireDate,
+            expectedDays: expectedBedtimeFireDates,
             isBedtimeReminder: true,
             context: context
         )
