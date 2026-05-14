@@ -34,6 +34,9 @@ public struct SleepScheduleView: View {
         .task {
             await loadWindows()
             healthKitGranted = await dependencies.sleepSampleWriter.requestAuthorization()
+            if healthKitGranted {
+                await dependencies.sleepSampleWriter.writePastSamples(from: windows)
+            }
         }
     }
 
@@ -61,6 +64,9 @@ public struct SleepScheduleView: View {
                     Button {
                         Task {
                             healthKitGranted = await dependencies.sleepSampleWriter.requestAuthorization()
+                            if healthKitGranted {
+                                await dependencies.sleepSampleWriter.writePastSamples(from: windows)
+                            }
                         }
                     } label: {
                         Label("sleep.healthkit_authorize", systemImage: "heart")

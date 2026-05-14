@@ -2,7 +2,7 @@ import AppIntents
 import Foundation
 
 /// App Entity exposed to Shortcuts so automations can act on computed sleep windows.
-public struct SleepWindowEntity: AppEntity {
+public struct SleepWindowEntity: AppEntity, Sendable {
     public static var typeDisplayRepresentation: TypeDisplayRepresentation {
         TypeDisplayRepresentation(name: "睡眠ウィンドウ")
     }

@@ -95,6 +95,7 @@ targets:
         SWIFT_EMIT_LOC_STRINGS: YES
     dependencies:
       - target: ShiftAlarmWidget
+      - sdk: AppIntents.framework
       - sdk: EventKit.framework
       - sdk: HealthKit.framework
 

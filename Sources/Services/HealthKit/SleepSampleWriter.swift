@@ -22,16 +22,18 @@ public final class SleepSampleWriter {
         #endif
     }
 
-    /// Requests HealthKit write authorization. Returns true if granted.
+    /// Requests HealthKit write authorization. Returns true only if the user granted sharing.
+    /// Note: HealthKit's requestAuthorization() succeeds even when the user denies access,
+    /// so we must query authorizationStatus afterward to confirm the actual grant.
     public func requestAuthorization() async -> Bool {
         #if canImport(HealthKit)
         guard HKHealthStore.isHealthDataAvailable() else { return false }
         do {
             try await store.requestAuthorization(toShare: [sleepType], read: [])
-            return true
         } catch {
             return false
         }
+        return store.authorizationStatus(for: sleepType) == .sharingAuthorized
         #else
         return false
         #endif

@@ -44,7 +44,7 @@ public final class AlarmScheduler {
         var expectedBedtime: [(date: Date, fireDate: Date, label: String, soundID: String)] = []
         for window in sleepWindows {
             guard let reminderDate = window.reminderFireDate, reminderDate > .now else { continue }
-            let label = String(localized: "sleep.reminder_label \(window.presetName)")
+            let label = "\(String(localized: "sleep.reminder_label")) \(window.presetName)"
             // Key by the reminder's own calendar day, not the wake day. For a 10pm reminder before
             // a 6am wake, the reminder fires the previous calendar day, so the keys must match.
             expectedBedtime.append((

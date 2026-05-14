@@ -2301,6 +2301,22 @@
         }
       }
     },
+    "sleep.reminder_label": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bedtime reminder"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "就寝リマインダー"
+          }
+        }
+      }
+    },
     "sleep.section_healthkit": {
       "localizations": {
         "en": {
