@@ -22,7 +22,7 @@ public final class LiveActivityController {
         let lead = TimeInterval(settings.liveActivityLeadHours) * 3600
         let alarms: [ShiftAlarm] = (try? context.fetch(FetchDescriptor<ShiftAlarm>())) ?? []
         let upcoming = alarms
-            .filter { $0.isEnabled && $0.fireDate > Date() }
+            .filter { $0.isEnabled && !$0.isBedtimeReminder && $0.fireDate > Date() }
             .sorted { $0.fireDate < $1.fireDate }
             .first
 

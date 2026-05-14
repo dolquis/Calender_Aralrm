@@ -58,8 +58,10 @@ targets:
           - UIInterfaceOrientationLandscapeLeft
           - UIInterfaceOrientationLandscapeRight
         UIApplicationSupportsIndirectInputEvents: true
-        NSAlarmKitUsageDescription: シフトに合わせて目覚ましを鳴らすために使用します。
+        NSAlarmKitUsageDescription: シフトに合わせて目覚ましと就寝リマインダーを鳴らすために使用します。
         NSCalendarsFullAccessUsageDescription: シフトカレンダーの祝日をアラームに反映するために使用します。
+        NSHealthShareUsageDescription: シフトに基づく睡眠データをヘルスケアアプリで確認するために使用します。
+        NSHealthUpdateUsageDescription: シフトに基づく就寝・起床時刻をヘルスケアの睡眠記録として保存するために使用します。
         NSSupportsLiveActivities: true
         NSSupportsLiveActivitiesFrequentUpdates: true
         UIBackgroundModes:
@@ -93,7 +95,9 @@ targets:
         SWIFT_EMIT_LOC_STRINGS: YES
     dependencies:
       - target: ShiftAlarmWidget
+      - sdk: AppIntents.framework
       - sdk: EventKit.framework
+      - sdk: HealthKit.framework
 
   ShiftAlarmWidget:
     type: app-extension

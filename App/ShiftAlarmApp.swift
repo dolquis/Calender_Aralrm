@@ -1,6 +1,7 @@
 import SwiftUI
 import SwiftData
 import BackgroundTasks
+import AppIntents
 
 @main
 struct ShiftAlarmApp: App {
@@ -9,6 +10,7 @@ struct ShiftAlarmApp: App {
 
     init() {
         BGRefreshController.registerLaunchHandler()
+        ShiftAlarmShortcutsProvider.updateAppShortcutParameters()
     }
 
     var body: some Scene {

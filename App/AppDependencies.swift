@@ -10,6 +10,7 @@ public final class AppDependencies {
     public let alarmAuthorization: AlarmAuthorization
     public let alarmScheduler: AlarmScheduler
     public let liveActivityController: LiveActivityController
+    public let sleepSampleWriter: SleepSampleWriter
     public var pendingImport: PendingImportBundle?
 
     public init(modelContainer: ModelContainer? = nil) {
@@ -22,6 +23,7 @@ public final class AppDependencies {
             service: service
         )
         self.liveActivityController = LiveActivityController(modelContainer: container)
+        self.sleepSampleWriter = SleepSampleWriter()
     }
 
     public func bootstrap() async {

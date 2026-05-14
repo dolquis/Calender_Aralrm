@@ -8,5 +8,7 @@
     </array>
     <key>com.apple.developer.alarmkit</key>
     <true/>
+    <key>com.apple.developer.healthkit</key>
+    <true/>
 </dict>
 </plist>

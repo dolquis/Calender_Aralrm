@@ -21,11 +21,13 @@ public final class AlarmScheduler {
         let settings = (try? context.fetch(FetchDescriptor<AppSettings>()).first) ?? AppSettings()
         let lookahead = max(1, settings.lookaheadDays)
         let range = DayRange(start: .now, dayCount: lookahead, calendar: calendar)
+        let days = Array(range)
 
         let input = await Self.buildResolverInput(context: context, calendar: calendar)
-        var expected: [(date: Date, fireDate: Date, label: String, soundID: String, presetID: UUID?)] = []
 
-        for day in range {
+        // --- Wake alarms ---
+        var expectedWake: [(date: Date, fireDate: Date, label: String, soundID: String)] = []
+        for day in days {
             let resolved = DayResolver.resolve(date: day, input: input)
             guard !resolved.skipsAlarm, let fireTime = resolved.fireTime,
                   let hour = fireTime.hour, let minute = fireTime.minute,
@@ -34,17 +36,77 @@ public final class AlarmScheduler {
             let presetID = resolved.presetID
             let label = presetID.flatMap { input.presets[$0]?.name } ?? String(localized: "alarm.default_label")
             let soundID = presetID.flatMap { input.presets[$0]?.soundID } ?? settings.defaultSoundID
-            expected.append((date: day, fireDate: fireDate, label: label, soundID: soundID, presetID: presetID))
+            expectedWake.append((date: day, fireDate: fireDate, label: label, soundID: soundID))
+        }
+
+        // --- Bedtime reminders ---
+        // Filter to future wake times only; SleepWindowResolver itself no longer does this
+        // so that it can also serve historical writes for HealthKit.
+        let sleepWindows = SleepWindowResolver.resolve(dates: days, input: input)
+            .filter { $0.wakeTime > .now }
+        var expectedBedtime: [(date: Date, fireDate: Date, label: String, soundID: String)] = []
+        for window in sleepWindows {
+            guard let reminderDate = window.reminderFireDate, reminderDate > .now else { continue }
+            let label = "\(String(localized: "sleep.reminder_label")) \(window.presetName)"
+            // Key by the exact fire date so that two reminders falling on the same
+            // calendar day (e.g., afternoon-wake + next-day early-wake) never collide.
+            expectedBedtime.append((
+                date: reminderDate,
+                fireDate: reminderDate,
+                label: label,
+                soundID: settings.defaultSoundID
+            ))
         }
 
         let existing: [ShiftAlarm] = (try? context.fetch(FetchDescriptor<ShiftAlarm>())) ?? []
-        var existingByDay: [Date: ShiftAlarm] = [:]
+        var existingWakeByDay: [Date: ShiftAlarm] = [:]
+        // Key bedtime reminders by their exact fireDate to avoid collisions when two
+        // different presets produce reminders that fall on the same calendar day
+        // (e.g., an afternoon wake and an early-morning wake whose reminders both fire on day N).
+        var existingBedtimeByFireDate: [Date: ShiftAlarm] = [:]
         for alarm in existing {
-            existingByDay[calendar.startOfDay(for: alarm.fireDate)] = alarm
+            if alarm.isBedtimeReminder {
+                existingBedtimeByFireDate[alarm.fireDate] = alarm
+            } else {
+                let dayKey = calendar.startOfDay(for: alarm.fireDate)
+                existingWakeByDay[dayKey] = alarm
+            }
         }
-        var expectedDays = Set<Date>()
-        for entry in expected { expectedDays.insert(entry.date) }
 
+        var expectedWakeDays = Set<Date>()
+        for entry in expectedWake { expectedWakeDays.insert(entry.date) }
+        var expectedBedtimeFireDates = Set<Date>()
+        for entry in expectedBedtime { expectedBedtimeFireDates.insert(entry.date) }
+
+        await diffSync(
+            expected: expectedWake,
+            existingByDay: existingWakeByDay,
+            expectedDays: expectedWakeDays,
+            isBedtimeReminder: false,
+            context: context
+        )
+        await diffSync(
+            expected: expectedBedtime,
+            existingByDay: existingBedtimeByFireDate,
+            expectedDays: expectedBedtimeFireDates,
+            isBedtimeReminder: true,
+            context: context
+        )
+
+        try? context.save()
+
+        #if canImport(WidgetKit)
+        WidgetCenter.shared.reloadAllTimelines()
+        #endif
+    }
+
+    private func diffSync(
+        expected: [(date: Date, fireDate: Date, label: String, soundID: String)],
+        existingByDay: [Date: ShiftAlarm],
+        expectedDays: Set<Date>,
+        isBedtimeReminder: Bool,
+        context: ModelContext
+    ) async {
         for entry in expected {
             if let existingAlarm = existingByDay[entry.date] {
                 if existingAlarm.fireDate != entry.fireDate
@@ -85,7 +147,8 @@ public final class AlarmScheduler {
                         label: entry.label,
                         soundID: entry.soundID,
                         isEnabled: true,
-                        alarmKitID: newID
+                        alarmKitID: newID,
+                        isBedtimeReminder: isBedtimeReminder
                     )
                     context.insert(alarm)
                 } catch {
@@ -105,12 +168,6 @@ public final class AlarmScheduler {
             }
             context.delete(alarm)
         }
-
-        try? context.save()
-
-        #if canImport(WidgetKit)
-        WidgetCenter.shared.reloadAllTimelines()
-        #endif
     }
 
     static func buildResolverInput(context: ModelContext, calendar: Calendar) async -> DayResolverInput {
@@ -125,7 +182,9 @@ public final class AlarmScheduler {
                 name: p.name,
                 colorHex: p.colorHex,
                 alarmTime: p.defaultAlarmTime,
-                soundID: p.soundID
+                soundID: p.soundID,
+                targetSleepDuration: p.targetSleepDuration,
+                bedtimeLeadMinutes: p.bedtimeLeadMinutes
             )
         }
 
