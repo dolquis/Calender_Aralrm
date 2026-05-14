@@ -66,6 +66,7 @@ public enum DayResolverInputBuilder {
         )
     }
 
+    @MainActor
     public static func make(context: ModelContext, calendar: Calendar) -> DayResolverInput {
         let presets: [ShiftPreset] = (try? context.fetch(FetchDescriptor<ShiftPreset>())) ?? []
         let assignments: [DayAssignment] = (try? context.fetch(FetchDescriptor<DayAssignment>())) ?? []
