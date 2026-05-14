@@ -52,13 +52,23 @@ resolve_destination() {
     -scheme "$SCHEME" \
     -derivedDataPath "$DERIVED_DATA_PATH" 2>&1 || true)"
 
+  # Prefer the highest-numbered iOS iPhone simulator available.
+  # On CI runners the iOS 26 runtime may be installed separately;
+  # fall back to any iPhone simulator so the build/test still runs.
+  # Uses only POSIX awk (2-argument match) for macOS/BSD awk compatibility.
   printf '%s\n' "$destinations" | awk '
-    /platform:iOS Simulator/ && /name:iPhone/ && /OS:26\./ {
+    /platform:iOS Simulator/ && /name:iPhone/ {
       line = $0
-      if (match(line, /id:[^,}]+/)) {
+      if (match(line, /OS:[0-9]+/)) {
+        major = substr(line, RSTART + 3, RLENGTH - 3) + 0
+      } else {
+        major = 0
+      }
+      if (major >= best_major && match(line, /id:[^,}]+/)) {
         id = substr(line, RSTART + 3, RLENGTH - 3)
         gsub(/^ +| +$/, "", id)
         candidate = "platform=iOS Simulator,id=" id
+        best_major = major
       }
     }
     END {
@@ -71,7 +81,7 @@ resolve_destination() {
 
 DESTINATION_VALUE="$(resolve_destination)"
 if [[ -z "$DESTINATION_VALUE" ]]; then
-  echo "No eligible iOS 26 iPhone simulator found. Install the iOS platform runtime or set DESTINATION explicitly." >&2
+  echo "No eligible iPhone simulator found. Install the iOS platform runtime or set DESTINATION explicitly." >&2
   xcodebuild -showdestinations \
     -project "$PROJECT" \
     -scheme "$SCHEME" \
