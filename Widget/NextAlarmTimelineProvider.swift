@@ -44,7 +44,7 @@ public struct NextAlarmTimelineProvider: TimelineProvider {
         let (alarms, presets) = Self.fetchData()
 
         let upcoming = alarms
-            .filter { $0.isEnabled && $0.fireDate > now }
+            .filter { $0.isEnabled && !$0.isBedtimeReminder && $0.fireDate > now }
             .sorted { $0.fireDate < $1.fireDate }
 
         guard !upcoming.isEmpty else {
@@ -97,7 +97,7 @@ public struct NextAlarmTimelineProvider: TimelineProvider {
         let now = Date.now
         let (alarms, presets) = fetchData()
         let next = alarms
-            .filter { $0.isEnabled && $0.fireDate > now }
+            .filter { $0.isEnabled && !$0.isBedtimeReminder && $0.fireDate > now }
             .sorted { $0.fireDate < $1.fireDate }
             .first
         let preset: ShiftPreset? = next.flatMap { alarm in
