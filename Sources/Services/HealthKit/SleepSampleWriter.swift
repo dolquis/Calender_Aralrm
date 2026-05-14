@@ -68,7 +68,7 @@ public final class SleepSampleWriter {
 
     /// Pure filter: a window counts as "past" once its wake time has already elapsed.
     /// Exposed for unit tests so the selection rule can be verified without HealthKit.
-    static func pastWindows(from windows: [SleepWindow], now: Date) -> [SleepWindow] {
+    nonisolated static func pastWindows(from windows: [SleepWindow], now: Date) -> [SleepWindow] {
         windows.filter { $0.wakeTime <= now }
     }
 
