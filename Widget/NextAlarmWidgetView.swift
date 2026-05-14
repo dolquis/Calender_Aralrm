@@ -26,6 +26,7 @@ public struct NextAlarmWidgetView: View {
             HStack(spacing: 6) {
                 if let hex = entry.colorHex {
                     Circle().fill(Color(hex: hex)).frame(width: 10, height: 10)
+                        .accessibilityHidden(true)
                 }
                 Text(entry.presetName ?? "widget.no_alarm_title")
                     .font(.subheadline.weight(.semibold))
@@ -45,6 +46,17 @@ public struct NextAlarmWidgetView: View {
             }
         }
         .padding(12)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(standardAccessibilityLabel)
+    }
+
+    private var standardAccessibilityLabel: String {
+        guard let fire = entry.fireDate else {
+            return String(localized: "widget.no_alarm_title")
+        }
+        let name = entry.presetName ?? String(localized: "widget.no_alarm_title")
+        let timeStr = fire.formatted(date: .omitted, time: .shortened)
+        return "\(name), \(timeStr)"
     }
 
     @ViewBuilder

@@ -54,6 +54,7 @@ public struct PresetListView: View {
             RoundedRectangle(cornerRadius: 4)
                 .fill(Color(hex: preset.colorHex))
                 .frame(width: 10, height: 32)
+                .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 4) {
                 Text(preset.name)
                     .font(.headline)
