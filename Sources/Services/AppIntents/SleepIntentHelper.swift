@@ -28,4 +28,11 @@ enum SleepIntentHelper {
         // still return a result rather than reporting noUpcomingWindow.
         await fetchUpcomingWindows().first
     }
+
+    /// Returns the first window whose bedtime is still in the future.
+    /// Use this for the GetNextBedtimeIntent so a window whose wake time is upcoming
+    /// but whose bedtime has already passed is never returned as "next bedtime."
+    static func fetchNextBedtimeWindow() async -> SleepWindowEntity? {
+        await fetchUpcomingWindows().first { $0.bedtime > .now }
+    }
 }

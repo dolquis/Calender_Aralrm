@@ -43,7 +43,7 @@ public struct GetNextBedtimeIntent: AppIntent {
     public init() {}
 
     public func perform() async throws -> some ReturnsValue<Date> {
-        guard let window = await SleepIntentHelper.fetchNextWindow() else {
+        guard let window = await SleepIntentHelper.fetchNextBedtimeWindow() else {
             throw IntentError.noUpcomingWindow
         }
         return .result(value: window.bedtime)
