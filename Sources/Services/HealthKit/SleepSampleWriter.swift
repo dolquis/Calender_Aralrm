@@ -59,13 +59,17 @@ public final class SleepSampleWriter {
     /// sample (strict start-date match) so revisiting the view never creates duplicates.
     public func writePastSamples(from windows: [SleepWindow]) async {
         #if canImport(HealthKit)
-        let now = Date.now
-        let past = windows.filter { $0.wakeTime <= now }
-        for window in past {
+        for window in Self.pastWindows(from: windows, now: .now) {
             guard !(await sampleExists(at: window.bedtime)) else { continue }
             try? await writeSleepSample(bedtime: window.bedtime, wakeTime: window.wakeTime)
         }
         #endif
+    }
+
+    /// Pure filter: a window counts as "past" once its wake time has already elapsed.
+    /// Exposed for unit tests so the selection rule can be verified without HealthKit.
+    static func pastWindows(from windows: [SleepWindow], now: Date) -> [SleepWindow] {
+        windows.filter { $0.wakeTime <= now }
     }
 
     #if canImport(HealthKit)

@@ -29,6 +29,11 @@ fileGroups:
   - README.ja.md
   - scripts
 
+packages:
+  SnapshotTesting:
+    url: https://github.com/pointfreeco/swift-snapshot-testing
+    from: "1.17.0"
+
 targets:
   ShiftAlarm:
     type: application
@@ -138,6 +143,8 @@ targets:
         GENERATE_INFOPLIST_FILE: YES
     dependencies:
       - target: ShiftAlarm
+      - package: SnapshotTesting
+        product: SnapshotTesting
 
 schemes:
   ShiftAlarm:
