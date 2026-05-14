@@ -18,8 +18,15 @@ Widget Extension によりホーム画面ウィジェットと Dynamic Island �
 - **共有 / インポート** — プリセット・パターン・割当・祝日設定を `.shiftalarm` (JSON) で
   エクスポート/インポート。URLスキーム `shiftalarm://import?payload=...` にも対応。
 - **ウィジェット** — ホーム画面とロック画面で次のアラームを表示。
+  マルチエントリ・タイムラインで次々と来るアラームへ自然に切り替わる。
 - **Live Activity** — Dynamic Island に次のアラームまでのカウントダウンを表示
-  （発火 N 時間前から自動的に開始）。
+  （発火 N 時間前から自動的に開始、`AppSettings.liveActivityLeadHours` で調整可能）。
+- **就寝スケジュール / Bedtime リマインダ** — 起床時刻と `targetSleepDuration` から
+  bedtime を逆算し、`bedtimeLeadMinutes` 分前にプレアラームを発火。
+- **HealthKit / ショートカット連携** — 睡眠サンプルを HealthKit に書込み、
+  `GetSleepWindowIntent` で Siri / ショートカットから次の睡眠ウィンドウを参照可能。
+- **オンボーディング** — 初回起動で AlarmKit 認可とサンプルプリセット導入まで
+  3 タップ程度で完了する導線を提供。
 
 ## ビルド
 
@@ -82,8 +89,9 @@ bash scripts/verify.sh test
 ## 将来拡張（実装余地として設計）
 
 - iCloud 同期（`ModelConfiguration(cloudKitDatabase:)` で後付け可能）
-- 起床時刻から逆算した就寝リマインダ
 - Apple Watch コンパニオン（`Sources/Domain` を共有する）
+
+詳細なフェーズ計画は `ROADMAP.md` を参照。
 
 ## ライセンス
 

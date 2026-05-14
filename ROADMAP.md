@@ -4,18 +4,25 @@
 **開発仕様兼ロードマップ**です。タスクは優先度（P0 → P3）順、各項目に
 **目的 / 対象ファイル / 完了条件 (DoD)** を明記しています。
 
-最終更新: 2026-05-13
+最終更新: 2026-05-14
 対象ブランチ運用: タスクごとに `feature/<topic>` を切り、main へ PR。
 
 ---
 
-## 0. 現状サマリ（2026-05-13 時点）
+## 0. 現状サマリ（2026-05-14 時点）
 
 - iOS 26+ / Swift 6 / SwiftUI + SwiftData / AlarmKit ベースのシフト勤務向けアラームアプリ。
 - 主要レイヤー（Domain / Services / Features / Widget / Live Activity / Sharing / Deep link / ja-en ローカライズ）は実装済み。
-- テスト 13 件（Domain 中心）緑、CI は `macos-26` / Xcode 26 で `scripts/verify.sh` を実行。
+- **P1 群（オンボーディング / a11y / 空状態 UX / Widget タイムライン）と P2-2（Bedtime reminder, Sleep schedule, HealthKit, App Intents）まで完了**。
+- テスト 35 件 (7 ファイル) 緑、CI は `macos-26` / Xcode 26 で `scripts/verify.sh` を実行。
 - オープン Issue / オープン PR は 0。
-- マージ済み主要 PR: #1 初期スキャフォールド（救出は #5）/ #2 EventKit 祝日 / #3 DayEditor 状態漏れ修正 / #5 PR #1 残差救出 / #6 Swift 6・CI 安定化。
+- マージ済み主要 PR:
+  - #1 初期スキャフォールド（救出は #5）/ #2 EventKit 祝日 / #3 DayEditor 状態漏れ修正
+  - #5 PR #1 残差救出 / #6 Swift 6・CI 安定化
+  - **#7 P1-1 オンボーディング + P1-3 空状態 UX + P3-1 テスト追加**
+  - **#8 / #9 P1-2 アクセシビリティ監査**
+  - **#10 P1-4 Widget マルチエントリ・タイムライン + Sleep schedule 初版（P2-2）**
+  - **#11 Sleep / HealthKit / App Intents の P1/P2 レビュー反映**
 
 未確定 / 既知の不安要素:
 
@@ -40,7 +47,9 @@
 
 ## 2. P0 — リリース前検証（コードを増やす前にやる）
 
-### P0-1. AlarmKit / ActivityKit シグネチャ再確認（**最優先**）
+> ステータス: **すべて未着手**。実機 / iOS 26 SDK 確定待ちの保留事項。
+
+### P0-1. AlarmKit / ActivityKit シグネチャ再確認（**最優先・未着手**）
 
 - **目的**: iOS 26 SDK 最終版の AlarmKit / ActivityKit API と現コードの差分を解消する。
 - **対象ファイル**:
@@ -64,14 +73,14 @@
   - AlarmKit 認可ダイアログが実機で表示される。
   - Live Activity が Dynamic Island に表示される。
 
-### P0-2. AlarmKit エンタイトルメント取得 & プロビジョニング
+### P0-2. AlarmKit エンタイトルメント取得 & プロビジョニング（未着手）
 
 - **対象**: `App/ShiftAlarm.entitlements`, `project.yml` の bundleIdPrefix, App Group.
 - **DoD**:
   - 実 Apple ID / Developer Team で署名済みビルドが実機にインストールできる。
   - App Group `group.com.example.shiftalarm` が Widget と共有されている。
 
-### P0-3. ゴールデンパス手動検証
+### P0-3. ゴールデンパス手動検証（未着手）
 
 - **シナリオ**: README §"Testing manually" の 1〜8 を実機で完走。
 - **追加で確認**:
@@ -85,7 +94,9 @@
 
 ## 3. P1 — UX 完成度
 
-### P1-1. オンボーディング
+> ステータス: **すべて完了**（PR #7 / #8 / #9 / #10）。以下は履歴として残す。
+
+### P1-1. オンボーディング ✅ 完了 (PR #7)
 
 - **目的**: 初回起動で AlarmKit 認可 → サンプルプリセット作成 → ローテ作成までの導線。
 - **対象**:
@@ -96,7 +107,7 @@
   - 新規インストールから 3 タップ以内に最初のアラームを鳴らせる。
   - 2 回目以降は表示されない。
 
-### P1-2. アクセシビリティ監査
+### P1-2. アクセシビリティ監査 ✅ 完了 (PR #8 / #9)
 
 - **目的**: VoiceOver / Dynamic Type / コントラスト対応。
 - **対象**: 全 `Sources/Features/**/*.swift`、特に
@@ -108,7 +119,7 @@
   - Dynamic Type の XXL でレイアウトが崩れない。
   - プリセット色は WCAG AA 相当のコントラストガードを実装（`Color+Hex` に拡張）。
 
-### P1-3. 空状態 / 認可拒否 UX を全画面で揃える
+### P1-3. 空状態 / 認可拒否 UX を全画面で揃える ✅ 完了 (PR #7)
 
 - **現状**: 祝日（EventKit）は拒否時に Settings 誘導済み（PR #2）。
 - **未対応**: AlarmKit 認可拒否時 / カレンダー初期空状態 / ローテゼロ件 / プリセットゼロ件。
@@ -121,7 +132,14 @@
   - 拒否状態でも crash せず、「設定を開く」CTA がある。
   - 空状態は意味のあるイラスト or 説明 + 最初のアクションへの導線がある。
 
-### P1-4. Live Activity / Widget タイムライン微調整
+### P1-4. Live Activity / Widget タイムライン微調整 ✅ 完了 (PR #10)
+
+実装ノート:
+- `Widget/NextAlarmTimelineProvider.swift` は最大 8 件の今後のアラームを多段
+  エントリ化し、T-2h チェックポイントと発火後 60 秒で次アラームに切り替える。
+- `Sources/Services/LiveActivity/LiveActivityController.swift` は
+  `AppSettings.liveActivityLeadHours`（既定 8h）で表示開始タイミングを設定可能。
+- Bedtime リマインダは Widget の next-wake 選定から除外（PR #11 で修正）。
 
 - **対象**:
   - `Sources/Services/LiveActivity/LiveActivityController.swift`（表示開始 T-N の設定 UI）
@@ -135,7 +153,7 @@
 
 ## 4. P2 — README ロードマップ実装
 
-### P2-1. iCloud 同期（CloudKit）
+### P2-1. iCloud 同期（CloudKit）（未着手）
 
 - **目的**: `ModelConfiguration(cloudKitDatabase:)` で SwiftData を CloudKit と同期。
 - **対象**:
@@ -151,21 +169,24 @@
   - 2 端末で 1 つの iCloud アカウントにサインインし、プリセット / ローテ / 割当が双方向同期される。
   - Widget が壊れない。
 
-### P2-2. Bedtime reminder（T-N 時間前のプレアラーム）
+### P2-2. Bedtime reminder（T-N 分前のプレアラーム）✅ 完了 (PR #10 / #11)
 
-- **目的**: アラーム本体の N 時間前に「もうすぐ就寝してください」通知を出す。
-- **対象**:
-  - `Sources/Services/AlarmKit/AlarmScheduler.swift`（expected set にプレアラームを追加）
-  - `Sources/Domain/Models/AppSettings.swift`（既定 N、ON/OFF）
-  - `Sources/Domain/Models/ShiftPreset.swift`（プリセット単位の上書き）
-- **設計メモ**:
-  - 既存の diff-sync ロジックを **(date, kind) を鍵にして** 拡張するのが最小差分。
-    `kind = .main | .bedtime` を AlarmKit の identifier に含める。
-- **DoD**:
-  - 設定で T-N を変更すると、未来の予定が再同期される。
-  - 単体テストで「同一日にメイン + Bedtime の 2 件が登録される」ことを確認。
+**当初想定スコープを超え、Sleep schedule / HealthKit / App Intents まで実装済み**。
 
-### P2-3. Apple Watch コンパニオン
+- 目的（達成）: 起床時刻から逆算して bedtime と T-N 分前のリマインダを生成。
+- 主要実装:
+  - `Sources/Domain/Models/ShiftPreset.swift` — `targetSleepDuration`（既定 8h）、
+    `bedtimeLeadMinutes`（既定 30 分）。
+  - `Sources/Domain/Logic/SleepWindowResolver.swift` — bedtime / リマインダ時刻計算。
+  - `Sources/Services/AlarmKit/AlarmScheduler.swift` — `(date, kind)` を鍵に
+    `.main | .bedtime` を diff-sync 登録。
+  - `Sources/Features/SleepSchedule/SleepScheduleView.swift` — 今後の睡眠ウィンドウ
+    一覧 + HealthKit 認可 + Shortcuts ガイド。
+  - `Sources/Services/HealthKit/SleepSampleWriter.swift` — HealthKit 睡眠サンプル書込み。
+  - `Sources/Services/AppIntents/` — `GetSleepWindowIntent` ほか Shortcuts 公開。
+- テスト: `Tests/DomainTests/SleepWindowResolverTests.swift`。
+
+### P2-3. Apple Watch コンパニオン（未着手）
 
 - **目的**: 時計アプリ風の独立ウォッチアプリで「今日 / 明日のアラーム」を表示。
 - **前提作業**:
@@ -182,27 +203,27 @@
 
 ## 5. P3 — 品質・運用
 
-### P3-1. テスト拡充
+### P3-1. テスト拡充 ✅ 完了 (PR #7 / #10 / #11)
 
-- 追加対象:
+- 追加済み:
   - `Tests/ServicesTests/ShareImporterTests.swift` — 差分プレビューと apply。
-  - `Tests/ServicesTests/BGRefreshTests.swift` — スケジュール条件と冪等性。
   - `Tests/ServicesTests/DeepLinkRouterTests.swift` — URL → import flow。
-- **DoD**: テスト件数 25+、CI 緑。
+  - `Tests/DomainTests/SleepWindowResolverTests.swift` — bedtime 計算 / 端境ケース。
+- 現状: 7 ファイル / 35 テスト緑。`Tests/ServicesTests/BGRefreshTests.swift` は未着手。
 
-### P3-2. UI / スナップショットテスト
+### P3-2. UI / スナップショットテスト（未着手）
 
 - 対象: `Tests/UITests/`（新規ターゲット）
 - 主要画面の light/dark / Dynamic Type 3 サイズ × ja/en のスナップショット。
 - **DoD**: スナップショット差分が CI で検出される。
 
-### P3-3. TestFlight 自動配布
+### P3-3. TestFlight 自動配布（未着手）
 
 - 対象: `.github/workflows/release.yml`（新規）
 - タグ `v*` プッシュで Archive → App Store Connect API → TestFlight。
 - **DoD**: タグ 1 個で TestFlight に届く。
 
-### P3-4. クラッシュ / ログ収集
+### P3-4. クラッシュ / ログ収集（未着手）
 
 - 軽量に: `os.Logger` のサブシステム整理 + MetricKit 取り込み。
 - 外部 SDK は避ける（プライバシー / AlarmKit のバックグラウンド要件のため）。
@@ -220,7 +241,11 @@
 | `Sources/Services/Holidays/EventKitHolidayProvider.swift` | actor、終日イベント取得 | `NSCalendarsFullAccessUsageDescription` 必須 |
 | `App/AppDependencies.swift` | DI ハブ / pendingImport / settings singleton | PR #5 で `ensureSettingsSingleton()` 復元 |
 | `Sources/Shared/URLScheme/DeepLinkRouter.swift` | `shiftalarm://import?payload=…` | `AppDependencies.pendingImport` 経由で ImportView を表示 |
-| `Widget/NextAlarmTimelineProvider.swift` | Widget タイムライン | App Group SwiftData を **読み取りのみ** |
+| `Widget/NextAlarmTimelineProvider.swift` | Widget タイムライン（マルチエントリ） | App Group SwiftData を **読み取りのみ**。bedtime リマインダは next-wake 選定から除外 |
+| `Sources/Domain/Logic/SleepWindowResolver.swift` | 起床時刻から bedtime / リマインダ時刻を逆算 | `(date, kind)` 鍵分離を維持。テストは `SleepWindowResolverTests.swift` |
+| `Sources/Services/HealthKit/SleepSampleWriter.swift` | HealthKit 睡眠サンプル書込み | エンタイトルメントは `App/ShiftAlarm.entitlements`。実機/シミュレータ認可必須 |
+| `Sources/Services/AppIntents/` | `GetSleepWindowIntent` ほか Shortcuts 公開エントリ | Intent パラメータ追加時は `SleepWindowEntity` の互換も確認 |
+| `Sources/Features/Onboarding/OnboardingView.swift` | 初回起動オンボーディング (AlarmKit 認可 + サンプル投入) | `AppSettings` のフラグで 2 回目以降抑止 |
 | `project.yml` | XcodeGen 唯一の真実 | 変更後は `bash scripts/regen.sh` |
 | `scripts/verify.sh` | regen → simulator 選択 → build/test | CI と同じ。デバッグは `DESTINATION=…` で固定可 |
 
@@ -241,5 +266,8 @@
 
 ## 8. 「次の 1 手」
 
-**P0-1（AlarmKit / ActivityKit シグネチャ再確認）から着手する。**
-ここが動かないと P0-3 以降の手動検証も止まり、P2 ロードマップ実装中の手戻りが連鎖するため。
+**引き続き P0-1（AlarmKit / ActivityKit シグネチャ再確認）から着手する。**
+P1 群と P2-2（Sleep）まで完了したが、AlarmKit / ActivityKit のコードは
+iOS 26 SDK 確定前の推測込みのまま `#if canImport(AlarmKit)` で囲まれており、
+ここを動かさない限り P0-3 以降の実機検証と P2-1（iCloud）/ P2-3（Watch）の
+実装に進めない。

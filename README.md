@@ -19,8 +19,16 @@ See `README.ja.md` for a Japanese version.
   Includes a bundled Japanese public-holiday table.
 - Share / import — export presets, patterns, assignments, and overrides as a `.shiftalarm` JSON file,
   or import via `fileImporter`. URL scheme `shiftalarm://import?payload=<base64-json>` is also supported.
-- Widget — home screen and Lock Screen widget showing the next alarm.
+- Widget — home screen and Lock Screen widget showing the next alarm, with a
+  multi-entry timeline that transitions naturally as upcoming alarms approach.
 - Live Activity — Dynamic Island countdown that appears within configurable hours before the alarm.
+- Sleep schedule & Bedtime reminder — derive bedtime from the wake time
+  (`targetSleepDuration`) and schedule a T-N minute reminder
+  (`bedtimeLeadMinutes`) alongside the main alarm.
+- HealthKit & Shortcuts — write sleep samples to HealthKit and expose the next
+  sleep window via App Intents (`GetSleepWindowIntent`) for Siri / Shortcuts.
+- Onboarding — first-launch flow that requests AlarmKit authorization and
+  seeds sample presets so a user can fire the first alarm within a few taps.
 
 ## Project layout
 
@@ -108,8 +116,9 @@ Edit `project.yml` (top-level `options.bundleIdPrefix` and the entitlements file
 ## Roadmap (designed for, not yet implemented)
 
 - iCloud sync via `ModelConfiguration(cloudKitDatabase:)`
-- Bedtime reminder T-N hours before each alarm
 - Apple Watch companion using the shared `Sources/Domain` target
+
+See `ROADMAP.md` for the full phased plan.
 
 ## License
 

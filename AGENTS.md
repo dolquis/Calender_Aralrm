@@ -21,7 +21,8 @@
 
 ## 2. 開発状況のステートマシン
 
-現在地は **P0-1（AlarmKit / ActivityKit シグネチャ再確認）開始前**。
+現在地は **P1 群 (P1-1〜P1-4) と P2-2 (Sleep / Bedtime / HealthKit / App Intents)
+完了、次は P0-1（AlarmKit / ActivityKit シグネチャ再確認）**。
 詳細フェーズは `ROADMAP.md` §1 を見ること。
 
 完了済みの主要 PR:
@@ -31,6 +32,10 @@
 - #3 `DayDetailEditorView` の状態漏れ修正
 - #5 PR #1 残差の安全救出（`CalendarDay`、singleton、deep link 等）
 - #6 Swift 6 / Xcode 26 ビルド修正、`scripts/verify.sh`、GitHub Actions CI
+- #7 P1-1 オンボーディング + P1-3 空状態 / 認可拒否 UX + P3-1 テスト拡充
+- #8 / #9 P1-2 アクセシビリティ監査（VoiceOver / Dynamic Type / コントラスト）
+- #10 P1-4 Widget マルチエントリ・タイムライン + P2-2 Sleep schedule 初版
+- #11 Sleep / HealthKit / App Intents の P1/P2 レビュー反映と CI 修正
 
 オープン PR / Issue は 0。
 
@@ -71,6 +76,9 @@ CI は `.github/workflows/ios.yml` が `macos-26` / Xcode 26+ で
 
 ### 触ってよい
 - `Sources/**`, `App/**`, `Widget/**`, `Tests/**`, `Resources/**`
+  （オンボーディングは `Sources/Features/Onboarding/`、Sleep schedule は
+  `Sources/Features/SleepSchedule/`、HealthKit / App Intents は
+  `Sources/Services/HealthKit/` および `Sources/Services/AppIntents/`）
 - `project.yml`（変更後は `bash scripts/regen.sh`）
 - `.github/workflows/*.yml`
 - `scripts/*.sh`
@@ -107,5 +115,5 @@ CI は `.github/workflows/ios.yml` が `macos-26` / Xcode 26+ で
 
 1. `ROADMAP.md` の該当タスクの「対象ファイル」「DoD」
 2. `ROADMAP.md` §6「ファイル別の触るときの注意」
-3. 過去 PR の説明文（特に #1 / #2 / #5 / #6）
+3. 過去 PR の説明文（特に #1 / #2 / #5 / #6 / #7 / #10 / #11）
 4. `README.md` の Architecture notes セクション
