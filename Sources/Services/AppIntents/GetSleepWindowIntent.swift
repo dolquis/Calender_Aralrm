@@ -10,7 +10,6 @@ public struct GetSleepWindowIntent: AppIntent {
 
     public init() {}
 
-    @MainActor
     public func perform() async throws -> some ReturnsValue<SleepWindowEntity> {
         guard let window = await SleepIntentHelper.fetchNextWindow() else {
             throw IntentError.noUpcomingWindow
@@ -27,7 +26,6 @@ public struct GetNextWakeTimeIntent: AppIntent {
 
     public init() {}
 
-    @MainActor
     public func perform() async throws -> some ReturnsValue<Date> {
         guard let window = await SleepIntentHelper.fetchNextWindow() else {
             throw IntentError.noUpcomingWindow
@@ -44,7 +42,6 @@ public struct GetNextBedtimeIntent: AppIntent {
 
     public init() {}
 
-    @MainActor
     public func perform() async throws -> some ReturnsValue<Date> {
         guard let window = await SleepIntentHelper.fetchNextWindow() else {
             throw IntentError.noUpcomingWindow
