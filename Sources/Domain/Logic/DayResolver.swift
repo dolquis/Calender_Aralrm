@@ -88,13 +88,25 @@ public struct ShiftPresetSnapshot: Sendable, Equatable {
     public let colorHex: String
     public let alarmTime: DateComponents?
     public let soundID: String
+    public let targetSleepDuration: Double
+    public let bedtimeLeadMinutes: Int
 
-    public init(id: UUID, name: String, colorHex: String, alarmTime: DateComponents?, soundID: String) {
+    public init(
+        id: UUID,
+        name: String,
+        colorHex: String,
+        alarmTime: DateComponents?,
+        soundID: String,
+        targetSleepDuration: Double = 8 * 3600,
+        bedtimeLeadMinutes: Int = 30
+    ) {
         self.id = id
         self.name = name
         self.colorHex = colorHex
         self.alarmTime = alarmTime
         self.soundID = soundID
+        self.targetSleepDuration = targetSleepDuration
+        self.bedtimeLeadMinutes = bedtimeLeadMinutes
     }
 }
 

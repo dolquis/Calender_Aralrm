@@ -43,9 +43,13 @@
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>NSAlarmKitUsageDescription</key>
-	<string>シフトに合わせて目覚ましを鳴らすために使用します。</string>
+	<string>シフトに合わせて目覚ましと就寝リマインダーを鳴らすために使用します。</string>
 	<key>NSCalendarsFullAccessUsageDescription</key>
 	<string>シフトカレンダーの祝日をアラームに反映するために使用します。</string>
+	<key>NSHealthShareUsageDescription</key>
+	<string>シフトに基づく睡眠データをヘルスケアアプリで確認するために使用します。</string>
+	<key>NSHealthUpdateUsageDescription</key>
+	<string>シフトに基づく就寝・起床時刻をヘルスケアの睡眠記録として保存するために使用します。</string>
 	<key>NSSupportsLiveActivities</key>
 	<true/>
 	<key>NSSupportsLiveActivitiesFrequentUpdates</key>

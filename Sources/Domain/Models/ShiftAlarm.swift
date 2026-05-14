@@ -11,6 +11,8 @@ public final class ShiftAlarm {
     public var isEnabled: Bool
     /// AlarmKit registration identifier. nil when not yet scheduled.
     public var alarmKitID: UUID?
+    /// True for bedtime reminder alarms; false (default) for wake alarms.
+    public var isBedtimeReminder: Bool
     @Relationship public var assignment: DayAssignment?
 
     public init(
@@ -20,6 +22,7 @@ public final class ShiftAlarm {
         soundID: String = AlarmSound.systemDefault.id,
         isEnabled: Bool = true,
         alarmKitID: UUID? = nil,
+        isBedtimeReminder: Bool = false,
         assignment: DayAssignment? = nil
     ) {
         self.id = id
@@ -28,6 +31,7 @@ public final class ShiftAlarm {
         self.soundID = soundID
         self.isEnabled = isEnabled
         self.alarmKitID = alarmKitID
+        self.isBedtimeReminder = isBedtimeReminder
         self.assignment = assignment
     }
 }

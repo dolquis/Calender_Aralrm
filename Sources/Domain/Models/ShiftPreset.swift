@@ -11,6 +11,10 @@ public final class ShiftPreset {
     public var soundID: String
     public var note: String
     public var createdAt: Date
+    /// Target sleep duration in seconds (default 8 hours). Used to back-calculate bedtime from wake time.
+    public var targetSleepDuration: Double
+    /// Minutes before computed bedtime to fire the AlarmKit bedtime reminder. 0 = disabled.
+    public var bedtimeLeadMinutes: Int
 
     @Relationship(deleteRule: .nullify, inverse: \DayAssignment.preset)
     public var assignments: [DayAssignment] = []
@@ -23,7 +27,9 @@ public final class ShiftPreset {
         defaultAlarmMinute: Int? = nil,
         soundID: String = AlarmSound.systemDefault.id,
         note: String = "",
-        createdAt: Date = .now
+        createdAt: Date = .now,
+        targetSleepDuration: Double = 8 * 3600,
+        bedtimeLeadMinutes: Int = 30
     ) {
         self.id = id
         self.name = name
@@ -33,6 +39,8 @@ public final class ShiftPreset {
         self.soundID = soundID
         self.note = note
         self.createdAt = createdAt
+        self.targetSleepDuration = targetSleepDuration
+        self.bedtimeLeadMinutes = bedtimeLeadMinutes
     }
 
     public var defaultAlarmTime: DateComponents? {

@@ -14,6 +14,9 @@ public struct PresetEditorView: View {
     @State private var alarmTime: Date = Calendar.current.date(bySettingHour: 6, minute: 30, second: 0, of: .now) ?? .now
     @State private var soundID: String = AlarmSound.systemDefault.id
     @State private var note: String = ""
+    @State private var targetSleepHours: Double = 8
+    @State private var bedtimeLeadMinutes: Int = 30
+    @State private var bedtimeReminderEnabled: Bool = true
 
     public init(preset: ShiftPreset?) {
         self.preset = preset
@@ -64,6 +67,31 @@ public struct PresetEditorView: View {
                     TextField("preset.note_placeholder", text: $note, axis: .vertical)
                         .lineLimit(2...4)
                 }
+                Section {
+                    Stepper(value: $targetSleepHours, in: 4...12, step: 0.5) {
+                        HStack {
+                            Text("preset.sleep_duration")
+                            Spacer()
+                            Text("preset.sleep_hours \(targetSleepHours, specifier: "%.1f")")
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                    Toggle("preset.bedtime_reminder", isOn: $bedtimeReminderEnabled)
+                    if bedtimeReminderEnabled {
+                        Stepper(value: $bedtimeLeadMinutes, in: 5...120, step: 5) {
+                            HStack {
+                                Text("preset.bedtime_lead")
+                                Spacer()
+                                Text("preset.minutes \(bedtimeLeadMinutes)")
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+                    }
+                } header: {
+                    Text("preset.section_sleep")
+                } footer: {
+                    Text("preset.sleep_footer")
+                }
             }
             .navigationTitle(preset == nil ? Text("preset.new") : Text("preset.edit"))
             .toolbar {
@@ -94,10 +122,15 @@ public struct PresetEditorView: View {
         } else {
             alarmEnabled = false
         }
+        targetSleepHours = preset.targetSleepDuration / 3600
+        bedtimeLeadMinutes = preset.bedtimeLeadMinutes
+        bedtimeReminderEnabled = preset.bedtimeLeadMinutes > 0
     }
 
     private func save() {
         let timeComponents = Calendar.current.dateComponents([.hour, .minute], from: alarmTime)
+        let sleepDuration = targetSleepHours * 3600
+        let leadMinutes = bedtimeReminderEnabled ? bedtimeLeadMinutes : 0
         if let existing = preset {
             existing.name = name
             existing.colorHex = colorHex
@@ -105,6 +138,8 @@ public struct PresetEditorView: View {
             existing.note = note
             existing.defaultAlarmHour = alarmEnabled ? timeComponents.hour : nil
             existing.defaultAlarmMinute = alarmEnabled ? timeComponents.minute : nil
+            existing.targetSleepDuration = sleepDuration
+            existing.bedtimeLeadMinutes = leadMinutes
         } else {
             let new = ShiftPreset(
                 name: name,
@@ -112,7 +147,9 @@ public struct PresetEditorView: View {
                 defaultAlarmHour: alarmEnabled ? timeComponents.hour : nil,
                 defaultAlarmMinute: alarmEnabled ? timeComponents.minute : nil,
                 soundID: soundID,
-                note: note
+                note: note,
+                targetSleepDuration: sleepDuration,
+                bedtimeLeadMinutes: leadMinutes
             )
             modelContext.insert(new)
         }

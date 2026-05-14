@@ -13,7 +13,7 @@ public struct RootTabView: View {
     public init() {}
 
     public enum Tab: Hashable {
-        case calendar, presets, rotation, settings
+        case calendar, presets, rotation, sleep, settings
     }
 
     public var body: some View {
@@ -42,6 +42,14 @@ public struct RootTabView: View {
                 Label("tab.rotation", systemImage: "arrow.triangle.2.circlepath")
             }
             .tag(Tab.rotation)
+
+            NavigationStack {
+                SleepScheduleView()
+            }
+            .tabItem {
+                Label("tab.sleep", systemImage: "moon.zzz.fill")
+            }
+            .tag(Tab.sleep)
 
             NavigationStack {
                 SettingsView()
