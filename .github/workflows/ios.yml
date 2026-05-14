@@ -41,7 +41,21 @@ jobs:
         run: bash scripts/bootstrap.sh
 
       - name: Install iOS simulator runtime
-        run: sudo xcodebuild -downloadPlatform iOS
+        run: |
+          set -euo pipefail
+          attempt=1
+          max_attempts=3
+          delay=15
+          until sudo xcodebuild -downloadPlatform iOS; do
+            if [ "$attempt" -ge "$max_attempts" ]; then
+              echo "iOS simulator runtime download failed after $attempt attempts." >&2
+              exit 1
+            fi
+            echo "Download attempt $attempt failed; retrying in ${delay}s..." >&2
+            sleep "$delay"
+            attempt=$((attempt + 1))
+            delay=$((delay * 2))
+          done
 
       - name: Build and test
         run: bash scripts/verify.sh
