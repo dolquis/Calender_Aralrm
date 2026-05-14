@@ -55,15 +55,38 @@ public final class SleepSampleWriter {
         #endif
     }
 
-    /// Bulk-writes sleep samples for upcoming windows that haven't been recorded yet.
-    /// Skips windows whose bedtime is in the future to avoid writing speculative data.
+    /// Bulk-writes sleep samples for past windows. Skips any window that already has a matching
+    /// sample (strict start-date match) so revisiting the view never creates duplicates.
     public func writePastSamples(from windows: [SleepWindow]) async {
         #if canImport(HealthKit)
         let now = Date.now
         let past = windows.filter { $0.wakeTime <= now }
         for window in past {
+            guard !(await sampleExists(at: window.bedtime)) else { continue }
             try? await writeSleepSample(bedtime: window.bedtime, wakeTime: window.wakeTime)
         }
         #endif
     }
+
+    #if canImport(HealthKit)
+    /// Returns true when HealthKit already contains a sleep-analysis sample starting at `bedtime`.
+    private func sampleExists(at bedtime: Date) async -> Bool {
+        let predicate = HKQuery.predicateForSamples(
+            withStart: bedtime,
+            end: bedtime.addingTimeInterval(1),
+            options: .strictStartDate
+        )
+        return await withCheckedContinuation { continuation in
+            let query = HKSampleQuery(
+                sampleType: sleepType,
+                predicate: predicate,
+                limit: 1,
+                sortDescriptors: nil
+            ) { _, samples, _ in
+                continuation.resume(returning: !(samples ?? []).isEmpty)
+            }
+            self.store.execute(query)
+        }
+    }
+    #endif
 }

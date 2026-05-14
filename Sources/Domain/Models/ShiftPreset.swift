@@ -12,9 +12,9 @@ public final class ShiftPreset {
     public var note: String
     public var createdAt: Date
     /// Target sleep duration in seconds (default 8 hours). Used to back-calculate bedtime from wake time.
-    public var targetSleepDuration: Double
+    public var targetSleepDuration: Double = 8 * 3600
     /// Minutes before computed bedtime to fire the AlarmKit bedtime reminder. 0 = disabled.
-    public var bedtimeLeadMinutes: Int
+    public var bedtimeLeadMinutes: Int = 30
 
     @Relationship(deleteRule: .nullify, inverse: \DayAssignment.preset)
     public var assignments: [DayAssignment] = []

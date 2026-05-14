@@ -12,7 +12,7 @@ public final class ShiftAlarm {
     /// AlarmKit registration identifier. nil when not yet scheduled.
     public var alarmKitID: UUID?
     /// True for bedtime reminder alarms; false (default) for wake alarms.
-    public var isBedtimeReminder: Bool
+    public var isBedtimeReminder: Bool = false
     @Relationship public var assignment: DayAssignment?
 
     public init(
