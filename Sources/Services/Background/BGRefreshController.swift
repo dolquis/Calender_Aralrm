@@ -3,6 +3,9 @@ import BackgroundTasks
 
 public enum BGRefreshController {
     public static let identifier = "com.example.shiftalarm.refreshAlarms"
+    /// Earliest delay before the system re-runs the refresh task, in seconds.
+    /// Exposed so tests can assert the request matches the documented schedule.
+    public static let earliestRefreshInterval: TimeInterval = 60 * 60 * 8
 
     public static func registerLaunchHandler() {
         BGTaskScheduler.shared.register(forTaskWithIdentifier: identifier, using: nil) { task in
@@ -10,14 +13,21 @@ public enum BGRefreshController {
         }
     }
 
-    public static func scheduleNext() {
-        let request = BGAppRefreshTaskRequest(identifier: identifier)
-        request.earliestBeginDate = Date(timeIntervalSinceNow: 60 * 60 * 8)
+    /// `submit` is injectable so unit tests can verify the request without touching the system
+    /// scheduler (which raises in non-app contexts).
+    public static func scheduleNext(submit: (BGTaskRequest) throws -> Void = { try BGTaskScheduler.shared.submit($0) }) {
         do {
-            try BGTaskScheduler.shared.submit(request)
+            try submit(makeRequest())
         } catch {
             // BG submission failures are not fatal — system will reschedule next foreground cycle.
         }
+    }
+
+    /// Builds the refresh request. Exposed internally so tests can assert its shape.
+    static func makeRequest() -> BGAppRefreshTaskRequest {
+        let request = BGAppRefreshTaskRequest(identifier: identifier)
+        request.earliestBeginDate = Date(timeIntervalSinceNow: earliestRefreshInterval)
+        return request
     }
 
     private static func handle(task: BGAppRefreshTask) {

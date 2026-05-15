@@ -14,50 +14,12 @@ public struct CalendarMonthView: View {
     public init() {}
 
     private var resolverInput: DayResolverInput {
-        let calendar = viewModel.calendar
-        let presetMap: [UUID: ShiftPresetSnapshot] = presets.reduce(into: [:]) { acc, p in
-            acc[p.id] = ShiftPresetSnapshot(
-                id: p.id,
-                name: p.name,
-                colorHex: p.colorHex,
-                alarmTime: p.defaultAlarmTime,
-                soundID: p.soundID
-            )
-        }
-        let assignmentMap: [Date: DayAssignmentSnapshot] = assignments.reduce(into: [:]) { acc, a in
-            acc[calendar.startOfDay(for: a.date)] = DayAssignmentSnapshot(
-                presetID: a.preset?.id,
-                overrideTime: a.overrideAlarmTime,
-                skipAlarm: a.skipAlarm,
-                note: a.note
-            )
-        }
-        let holidayMap: [Date: HolidayOverrideSnapshot] = holidays.reduce(into: [:]) { acc, h in
-            acc[calendar.startOfDay(for: h.date)] = HolidayOverrideSnapshot(
-                label: h.label,
-                skipAlarm: h.skipAlarm,
-                replacementPresetID: h.replacementPreset?.id
-            )
-        }
-        let rotationSnapshots = rotations.map { r in
-            RotationPatternSnapshot(
-                id: r.id,
-                name: r.name,
-                anchorDate: r.anchorDate,
-                cycleLength: r.cycleLength,
-                slots: r.slots,
-                startDate: r.startDate,
-                endDate: r.endDate,
-                priority: r.priority,
-                isActive: r.isActive
-            )
-        }
-        return DayResolverInput(
-            manualAssignments: assignmentMap,
-            holidays: holidayMap,
-            rotations: rotationSnapshots,
-            presets: presetMap,
-            calendar: calendar
+        DayResolverInputBuilder.make(
+            presets: presets,
+            assignments: assignments,
+            holidays: holidays,
+            rotations: rotations,
+            calendar: viewModel.calendar
         )
     }
 

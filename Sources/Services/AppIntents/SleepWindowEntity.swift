@@ -7,7 +7,7 @@ public struct SleepWindowEntity: AppEntity, Sendable {
         TypeDisplayRepresentation(name: "睡眠ウィンドウ")
     }
 
-    public static var defaultQuery = SleepWindowEntityQuery()
+    public static let defaultQuery = SleepWindowEntityQuery()
 
     public var id: String
     public var wakeTime: Date

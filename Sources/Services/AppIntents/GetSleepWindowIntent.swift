@@ -4,9 +4,9 @@ import Foundation
 /// Returns the next computed sleep window (bedtime + wake time) based on the shift calendar.
 /// Use this in a Shortcuts personal automation to feed "Toggle Sleep Focus" and alarm actions.
 public struct GetSleepWindowIntent: AppIntent {
-    public static var title: LocalizedStringResource = "次の睡眠ウィンドウを取得"
-    public static var description = IntentDescription("シフトカレンダーから次の就寝時刻と起床時刻を返します。")
-    public static var openAppWhenRun: Bool = false
+    public static let title: LocalizedStringResource = "次の睡眠ウィンドウを取得"
+    public static let description = IntentDescription("シフトカレンダーから次の就寝時刻と起床時刻を返します。")
+    public static let openAppWhenRun = false
 
     public init() {}
 
@@ -20,9 +20,9 @@ public struct GetSleepWindowIntent: AppIntent {
 
 /// Returns only the next wake (alarm) time as a Date.
 public struct GetNextWakeTimeIntent: AppIntent {
-    public static var title: LocalizedStringResource = "次の起床時刻を取得"
-    public static var description = IntentDescription("シフトカレンダーから次の起床アラーム時刻を返します。")
-    public static var openAppWhenRun: Bool = false
+    public static let title: LocalizedStringResource = "次の起床時刻を取得"
+    public static let description = IntentDescription("シフトカレンダーから次の起床アラーム時刻を返します。")
+    public static let openAppWhenRun = false
 
     public init() {}
 
@@ -36,9 +36,9 @@ public struct GetNextWakeTimeIntent: AppIntent {
 
 /// Returns only the next computed bedtime as a Date.
 public struct GetNextBedtimeIntent: AppIntent {
-    public static var title: LocalizedStringResource = "次の就寝時刻を取得"
-    public static var description = IntentDescription("シフトカレンダーから次の就寝推奨時刻を返します。")
-    public static var openAppWhenRun: Bool = false
+    public static let title: LocalizedStringResource = "次の就寝時刻を取得"
+    public static let description = IntentDescription("シフトカレンダーから次の就寝推奨時刻を返します。")
+    public static let openAppWhenRun = false
 
     public init() {}
 
