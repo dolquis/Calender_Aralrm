@@ -7,6 +7,7 @@ import SwiftData
 /// lockstep so sleep-related fields on `ShiftPreset` (target sleep duration, bedtime
 /// lead minutes) cannot silently drop out of one code path.
 public enum DayResolverInputBuilder {
+    @MainActor
     public static func make(
         presets: [ShiftPreset],
         assignments: [DayAssignment],
