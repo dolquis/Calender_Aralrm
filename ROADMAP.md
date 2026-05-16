@@ -4,17 +4,22 @@
 **開発仕様兼ロードマップ**です。タスクは優先度（P0 → P3）順、各項目に
 **目的 / 対象ファイル / 完了条件 (DoD)** を明記しています。
 
-最終更新: 2026-05-14
+最終更新: 2026-05-15
 対象ブランチ運用: タスクごとに `feature/<topic>` を切り、main へ PR。
 
 ---
 
-## 0. 現状サマリ（2026-05-14 時点）
+## 0. 現状サマリ（2026-05-15 時点）
 
 - iOS 26+ / Swift 6 / SwiftUI + SwiftData / AlarmKit ベースのシフト勤務向けアラームアプリ。
 - 主要レイヤー（Domain / Services / Features / Widget / Live Activity / Sharing / Deep link / ja-en ローカライズ）は実装済み。
 - **P1 群（オンボーディング / a11y / 空状態 UX / Widget タイムライン）と P2-2（Bedtime reminder, Sleep schedule, HealthKit, App Intents）まで完了**。
-- テスト 35 件 (7 ファイル) 緑、CI は `macos-26` / Xcode 26 で `scripts/verify.sh` を実行。
+- P0-1 は Xcode 26.5 / iOS 26.5 SDK でコードレベル検証に着手済み。
+  `AlarmPresentation.Alert.stopButton` の iOS 26.1 deprecation を回避し、
+  `AlarmManager.AlarmConfiguration.alarm(...)` に寄せた。実機確認は未完了。
+- テスト 56 件 (13 ファイル + snapshot support) 緑。通常の `scripts/verify.sh` では
+  5 件の snapshot test は `SNAPSHOT_TESTING_ENABLED=1` 未指定のため skip。
+  CI は `macos-26` / Xcode 26+ で `scripts/verify.sh` を実行。
 - オープン Issue / オープン PR は 0。
 - マージ済み主要 PR:
   - #1 初期スキャフォールド（救出は #5）/ #2 EventKit 祝日 / #3 DayEditor 状態漏れ修正
@@ -23,13 +28,17 @@
   - **#8 / #9 P1-2 アクセシビリティ監査**
   - **#10 P1-4 Widget マルチエントリ・タイムライン + Sleep schedule 初版（P2-2）**
   - **#11 Sleep / HealthKit / App Intents の P1/P2 レビュー反映**
+  - **#12 ROADMAP / README の P1/P2-2 進捗反映**
+  - **#13 DayResolverInputBuilder 抽出、DI seam、CI / テスト拡充**
 
 未確定 / 既知の不安要素:
 
-- **AlarmKit / ActivityKit のシグネチャは iOS 26 SDK 確定前の推測込み**。
-  差し替え箇所は `Sources/Services/AlarmKit/AlarmConfigurationBuilder.swift` と
-  `Sources/Services/LiveActivity/LiveActivityController.swift` に局所化済み。
-- AlarmKit エンタイトルメントは Apple Developer 申請が必要。
+- AlarmKit / ActivityKit は Xcode 26.5 SDK では build / test 緑。今後の Xcode 26.x
+  更新時は `Sources/Services/AlarmKit/AlarmConfigurationBuilder.swift` と
+  `Sources/Services/LiveActivity/LiveActivityController.swift` を再確認する。
+- AlarmKit エンタイトルメントは Apple Developer 申請が必要。ローカルには entitlement
+  key、`NSAlarmKitUsageDescription`、`Config/LocalSigning.xcconfig` による実機向け
+  signing override 導線は入っている。実 Team ID / bundle id / App Group の値は未設定。
 - 実機 / 実 iOS 26 シミュレータでのゴールデンパス通し検証は未実施。
 
 ---
@@ -47,22 +56,33 @@
 
 ## 2. P0 — リリース前検証（コードを増やす前にやる）
 
-> ステータス: **すべて未着手**。実機 / iOS 26 SDK 確定待ちの保留事項。
+> ステータス: **P0-1 はコードレベル着手済み、P0-2 は設定導線実装済み / 実 Developer Portal 値待ち、P0-3 は実機待ち**。
 
-### P0-1. AlarmKit / ActivityKit シグネチャ再確認（**最優先・未着手**）
+### P0-1. AlarmKit / ActivityKit シグネチャ再確認（着手中: SDK 26.5 コード対応済み / 実機確認待ち）
 
 - **目的**: iOS 26 SDK 最終版の AlarmKit / ActivityKit API と現コードの差分を解消する。
 - **対象ファイル**:
-  - `Sources/Services/AlarmKit/AlarmConfigurationBuilder.swift` (53 行)
+  - `Sources/Services/AlarmKit/AlarmConfigurationBuilder.swift` (63 行)
   - `Sources/Services/AlarmKit/AlarmService.swift` (90 行)
-  - `Sources/Services/AlarmKit/AlarmScheduler.swift` (171 行)
+  - `Sources/Services/AlarmKit/AlarmScheduler.swift` (213 行)
   - `Sources/Services/AlarmKit/AlarmAuthorization.swift` (31 行)
   - `Sources/Services/LiveActivity/LiveActivityController.swift` (100 行)
   - `Sources/Services/LiveActivity/ShiftAlarmAttributes.swift` (42 行)
+- **2026-05-15 実施済み**:
+  - Xcode 26.5 (17F42) / iOS 26.5 Simulator SDK で `bash scripts/verify.sh` 緑。
+  - `AlarmManager.schedule(id:configuration:)`, `cancel(id:)`,
+    `requestAuthorization()` は現行実装と一致。
+  - `AlarmPresentation.Alert.stopButton` は iOS 26.1 以降 deprecated / 未使用のため、
+    iOS 26.1+ では stopButton なし initializer、iOS 26.0 では legacy initializer を使う
+    availability 分岐に更新。
+  - `AlarmManager.AlarmConfiguration.alarm(schedule:attributes:stopIntent:secondaryIntent:sound:)`
+    が存在するため、通常アラーム用途として builder から明示的に使用。
+  - ActivityKit は `Activity.request(attributes:content:pushType:)`,
+    `activity.update(_:)`, `activity.end(_:dismissalPolicy:)` が現行実装と一致。
 - **手順**:
-  1. Xcode 26 で `bash scripts/verify.sh` を実行し、AlarmKit / ActivityKit 関連の
-     ビルドエラー・ Deprecation を列挙。
-  2. Apple Developer Documentation (AlarmKit / ActivityKit) と突き合わせ、
+  1. Xcode 26.x 更新ごとに `bash scripts/verify.sh` を実行し、AlarmKit / ActivityKit 関連の
+     ビルドエラー・Deprecation を列挙。
+  2. Apple Developer Documentation と SDK の `.swiftinterface` を突き合わせ、
      - `AlarmManager` API（schedule / cancel / authorization）
      - `AlarmConfiguration` / `AlarmPresentation` / `AlarmAttributes`
      - `Activity` 起動・更新・終了
@@ -73,14 +93,38 @@
   - AlarmKit 認可ダイアログが実機で表示される。
   - Live Activity が Dynamic Island に表示される。
 
-### P0-2. AlarmKit エンタイトルメント取得 & プロビジョニング（未着手）
+### P0-2. AlarmKit エンタイトルメント取得 & プロビジョニング（着手中: ローカル設定導線追加済み）
 
-- **対象**: `App/ShiftAlarm.entitlements`, `project.yml` の bundleIdPrefix, App Group.
+- **対象**: `Config/SigningDefaults.xcconfig`, `Config/LocalSigning.xcconfig.example`,
+  `project.yml`, `App/ShiftAlarm.entitlements`, `Widget/ShiftAlarmWidget.entitlements`,
+  App Group.
+- **ローカル確認済み**:
+  - `App/ShiftAlarm.entitlements` に App Group / AlarmKit / HealthKit key あり。
+  - `Widget/ShiftAlarmWidget.entitlements` に App Group key あり。
+  - `App/Info.plist` に `NSAlarmKitUsageDescription` あり。
+  - App / Widget の App Group、BGTask identifier、URL type、UTI、bundle id は
+    `Config/SigningDefaults.xcconfig` 経由の build setting に集約済み。
+  - `Config/LocalSigning.xcconfig.example` をコピーして実値を入れる運用に変更済み。
+    `Config/LocalSigning.xcconfig` は git ignore。
+  - runtime の App Group / BGTask identifier は Info.plist から取得するため、
+    local override と実行時値がずれない。
+  - `bash scripts/p0-readiness.sh` で実 Team ID / bundle id / App Group / entitlement
+    の readiness を検査できる。
+  - `bash scripts/p0-device-build.sh` で readiness 検査後に `generic/platform=iOS`
+    向け build へ進める。
+- **実機前に必要**:
+  - `Config/LocalSigning.xcconfig.example` を `Config/LocalSigning.xcconfig` にコピー。
+  - `DEVELOPMENT_TEAM`, `SHIFTALARM_APP_BUNDLE_ID`, `SHIFTALARM_WIDGET_BUNDLE_ID`,
+    `SHIFTALARM_TESTS_BUNDLE_ID`, `SHIFTALARM_APP_GROUP_ID`,
+    `SHIFTALARM_BG_REFRESH_TASK_ID`, `SHIFTALARM_URL_TYPE_NAME`,
+    `SHIFTALARM_BUNDLE_UTI` を実 Apple Developer Portal 上の値に差し替える。
+  - `bash scripts/regen.sh` 後、`bash scripts/p0-readiness.sh` が緑になることを確認。
+  - `bash scripts/p0-device-build.sh` で実機向け build が通ることを確認。
 - **DoD**:
   - 実 Apple ID / Developer Team で署名済みビルドが実機にインストールできる。
-  - App Group `group.com.example.shiftalarm` が Widget と共有されている。
+  - 実 App Group が App と Widget の両方で共有されている。
 
-### P0-3. ゴールデンパス手動検証（未着手）
+### P0-3. ゴールデンパス手動検証（未着手: ローカル build/test のみ緑）
 
 - **シナリオ**: README §"Testing manually" の 1〜8 を実機で完走。
 - **追加で確認**:
@@ -206,15 +250,22 @@
 ### P3-1. テスト拡充 ✅ 完了 (PR #7 / #10 / #11)
 
 - 追加済み:
+  - `Tests/DomainTests/DayResolverInputBuilderTests.swift` — SwiftData から resolver input への変換。
   - `Tests/ServicesTests/ShareImporterTests.swift` — 差分プレビューと apply。
   - `Tests/ServicesTests/DeepLinkRouterTests.swift` — URL → import flow。
+  - `Tests/ServicesTests/BGRefreshControllerTests.swift` — refresh task request / submit seam。
+  - `Tests/ServicesTests/SleepIntentHelperTests.swift` — App Intents 用 sleep window 取得。
+  - `Tests/ServicesTests/SleepSampleWriterTests.swift` — HealthKit 書込み対象 window 抽出。
   - `Tests/DomainTests/SleepWindowResolverTests.swift` — bedtime 計算 / 端境ケース。
-- 現状: 7 ファイル / 35 テスト緑。`Tests/ServicesTests/BGRefreshTests.swift` は未着手。
+- 現状: 13 ファイル / 56 テスト緑（うち 5 件 snapshot は通常 verify では skip）。
 
-### P3-2. UI / スナップショットテスト（未着手）
+### P3-2. UI / スナップショットテスト（一部着手）
 
 - 対象: `Tests/UITests/`（新規ターゲット）
 - 主要画面の light/dark / Dynamic Type 3 サイズ × ja/en のスナップショット。
+- 進捗: `Tests/SnapshotTests/DayCellViewSnapshotTests.swift` で DayCell の light / dark /
+  祝日 / out-of-month / Dynamic Type XL を追加済み。通常 verify では skip し、
+  `SNAPSHOT_TESTING_ENABLED=1` で記録 / 検証する。
 - **DoD**: スナップショット差分が CI で検出される。
 
 ### P3-3. TestFlight 自動配布（未着手）
@@ -266,8 +317,8 @@
 
 ## 8. 「次の 1 手」
 
-**引き続き P0-1（AlarmKit / ActivityKit シグネチャ再確認）から着手する。**
-P1 群と P2-2（Sleep）まで完了したが、AlarmKit / ActivityKit のコードは
-iOS 26 SDK 確定前の推測込みのまま `#if canImport(AlarmKit)` で囲まれており、
-ここを動かさない限り P0-3 以降の実機検証と P2-1（iCloud）/ P2-3（Watch）の
-実装に進めない。
+**次は `Config/LocalSigning.xcconfig` に実 Developer Team / bundle id / App Group を入れ、
+`bash scripts/p0-readiness.sh` を緑にしてから P0-3 golden path を実機で完走する。**
+P0-1 のコードレベル確認と P0-2 のローカル設定導線はできたため、残りのリリース前ゲートは
+実機での AlarmKit 認可ダイアログ、AlarmKit alert、Live Activity / Dynamic Island、
+Widget、共有 import/export の通し確認。

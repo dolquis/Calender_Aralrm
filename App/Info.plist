@@ -4,7 +4,7 @@
 <dict>
 	<key>BGTaskSchedulerPermittedIdentifiers</key>
 	<array>
-		<string>com.example.shiftalarm.refreshAlarms</string>
+		<string>$(SHIFTALARM_BG_REFRESH_TASK_ID)</string>
 	</array>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
@@ -31,7 +31,7 @@
 	<array>
 		<dict>
 			<key>CFBundleURLName</key>
-			<string>com.example.shiftalarm.url</string>
+			<string>$(SHIFTALARM_URL_TYPE_NAME)</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
 				<string>shiftalarm</string>
@@ -54,6 +54,10 @@
 	<true/>
 	<key>NSSupportsLiveActivitiesFrequentUpdates</key>
 	<true/>
+	<key>ShiftAlarmAppGroupIdentifier</key>
+	<string>$(SHIFTALARM_APP_GROUP_ID)</string>
+	<key>ShiftAlarmBGRefreshTaskIdentifier</key>
+	<string>$(SHIFTALARM_BG_REFRESH_TASK_ID)</string>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 	<key>UIBackgroundModes</key>
@@ -87,7 +91,7 @@
 			<key>UTTypeDescription</key>
 			<string>Shift Alarm Bundle</string>
 			<key>UTTypeIdentifier</key>
-			<string>com.example.shiftalarm.bundle</string>
+			<string>$(SHIFTALARM_BUNDLE_UTI)</string>
 			<key>UTTypeTagSpecification</key>
 			<dict>
 				<key>public.filename-extension</key>

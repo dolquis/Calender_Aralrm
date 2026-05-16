@@ -1,0 +1,14 @@
+// Copy this file to Config/LocalSigning.xcconfig for real-device P0 validation.
+// LocalSigning.xcconfig is ignored by git.
+
+// Apple Developer Team ID, for example: ABCDE12345
+DEVELOPMENT_TEAM = YOURTEAMID
+
+// Use identifiers that are registered in Apple Developer Portal.
+SHIFTALARM_APP_BUNDLE_ID = com.yourcompany.shiftalarm
+SHIFTALARM_WIDGET_BUNDLE_ID = com.yourcompany.shiftalarm.widget
+SHIFTALARM_TESTS_BUNDLE_ID = com.yourcompany.shiftalarm.tests
+SHIFTALARM_APP_GROUP_ID = group.com.yourcompany.shiftalarm
+SHIFTALARM_BG_REFRESH_TASK_ID = com.yourcompany.shiftalarm.refreshAlarms
+SHIFTALARM_URL_TYPE_NAME = com.yourcompany.shiftalarm.url
+SHIFTALARM_BUNDLE_UTI = com.yourcompany.shiftalarm.bundle

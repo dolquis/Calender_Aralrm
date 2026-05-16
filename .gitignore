@@ -6,6 +6,7 @@ DerivedData/
 xcuserdata/
 *.swp
 .DS_Store
+Config/LocalSigning.xcconfig
 
 # Swift Package Manager
 .build/

@@ -22,7 +22,9 @@
 ## 2. 開発状況のステートマシン
 
 現在地は **P1 群 (P1-1〜P1-4) と P2-2 (Sleep / Bedtime / HealthKit / App Intents)
-完了、次は P0-1（AlarmKit / ActivityKit シグネチャ再確認）**。
+完了、P0-1 は Xcode 26.5 でコードレベル確認済み、P0-2 の local signing 導線も追加済み。
+次は `Config/LocalSigning.xcconfig` に実 Developer Portal 値を入れて
+`scripts/p0-readiness.sh` を緑にし、P0-3 の実機 golden path 検証**。
 詳細フェーズは `ROADMAP.md` §1 を見ること。
 
 完了済みの主要 PR:
@@ -36,6 +38,8 @@
 - #8 / #9 P1-2 アクセシビリティ監査（VoiceOver / Dynamic Type / コントラスト）
 - #10 P1-4 Widget マルチエントリ・タイムライン + P2-2 Sleep schedule 初版
 - #11 Sleep / HealthKit / App Intents の P1/P2 レビュー反映と CI 修正
+- #12 ROADMAP / README の P1/P2-2 進捗反映
+- #13 `DayResolverInputBuilder` 抽出、DI seam、CI / テスト拡充
 
 オープン PR / Issue は 0。
 
@@ -69,6 +73,9 @@ DESTINATION='platform=iOS Simulator,name=iPhone 17 Pro,OS=26.5' bash scripts/ver
 
 CI は `.github/workflows/ios.yml` が `macos-26` / Xcode 26+ で
 `scripts/verify.sh` を実行する。**CI 緑 = ローカル `verify.sh` 緑** が前提。
+現状は 56 件の XCTest（うち DayCell snapshot 5 件は通常 verify で skip）を確認する。
+実機向け P0 確認は `bash scripts/p0-readiness.sh`、実機 build 入口は
+`bash scripts/p0-device-build.sh`。
 
 ---
 
@@ -80,6 +87,8 @@ CI は `.github/workflows/ios.yml` が `macos-26` / Xcode 26+ で
   `Sources/Features/SleepSchedule/`、HealthKit / App Intents は
   `Sources/Services/HealthKit/` および `Sources/Services/AppIntents/`）
 - `project.yml`（変更後は `bash scripts/regen.sh`）
+- `Config/SigningDefaults.xcconfig`, `Config/LocalSigning.xcconfig.example`
+  （実値は git ignore 済みの `Config/LocalSigning.xcconfig` に置く）
 - `.github/workflows/*.yml`
 - `scripts/*.sh`
 
@@ -107,7 +116,10 @@ CI は `.github/workflows/ios.yml` が `macos-26` / Xcode 26+ で
 4. AlarmKit / ActivityKit の API 差分対応は
    `Sources/Services/AlarmKit/AlarmConfigurationBuilder.swift` と
    `Sources/Services/LiveActivity/LiveActivityController.swift` に局所化する。
-5. PR 説明には **何を直したか / なぜ / どうテストしたか** を書く。
+5. 実機検証前は `Config/LocalSigning.xcconfig.example` を
+   `Config/LocalSigning.xcconfig` にコピーし、Team ID / bundle id / App Group を実値にする。
+   その後 `bash scripts/regen.sh` と `bash scripts/p0-readiness.sh` を実行する。
+6. PR 説明には **何を直したか / なぜ / どうテストしたか** を書く。
 
 ---
 

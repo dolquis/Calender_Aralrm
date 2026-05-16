@@ -2,7 +2,7 @@ import Foundation
 import BackgroundTasks
 
 public enum BGRefreshController {
-    public static let identifier = "com.example.shiftalarm.refreshAlarms"
+    public static var identifier: String { AppRuntimeConfiguration.bgRefreshTaskIdentifier }
     /// Earliest delay before the system re-runs the refresh task, in seconds.
     /// Exposed so tests can assert the request matches the documented schedule.
     public static let earliestRefreshInterval: TimeInterval = 60 * 60 * 8
