@@ -2,7 +2,7 @@ import Foundation
 import SwiftData
 
 public enum SharedPersistence {
-    public static let appGroupID = "group.com.example.shiftalarm"
+    public static var appGroupID: String { AppRuntimeConfiguration.appGroupID }
     public static let storeFileName = "ShiftAlarm.store"
 
     public static func storeURL() -> URL {

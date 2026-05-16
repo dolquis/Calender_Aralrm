@@ -74,7 +74,10 @@ DESTINATION='platform=iOS Simulator,name=iPhone 17 Pro,OS=26.5' bash scripts/ver
 bash scripts/verify.sh test
 ```
 
-ローテーション展開、優先順位解決、共有バンドルの相互変換をカバーしています。
+現在は 56 件の XCTest で、Domain / Services / App Intents / HealthKit 補助ロジック /
+Background refresh / Deep link / Sharing / Snapshot をカバーしています。DayCell の
+snapshot test 5 件は通常 `verify.sh` では skip され、`SNAPSHOT_TESTING_ENABLED=1`
+指定時に記録 / 検証されます。
 
 ## アーキテクチャ概要
 
@@ -83,8 +86,28 @@ bash scripts/verify.sh test
   差分のみ schedule / cancel します。
 - `DayResolver` の優先順位: **手動割当 > 祝日 > ローテーション > なし**。
 - `BGAppRefreshTask` がバックグラウンドで先読み窓（既定 30 日）を更新し続けます。
-- Widget は App Group (`group.com.example.shiftalarm`) 経由で SwiftData ストアを共有。
+- Widget は設定済み App Group（既定: `group.com.example.shiftalarm`）経由で SwiftData ストアを共有。
 - AlarmKit は `#if canImport(AlarmKit)` で囲ってあり、未対応ツールチェインでもコードがパースできます。
+  AlarmKit / ActivityKit API は Xcode 26.5 で確認済みで、`AlarmConfigurationBuilder` は
+  現行の `AlarmManager.AlarmConfiguration.alarm(...)` factory を使い、iOS 26.1 以降では
+  deprecated な `AlarmPresentation.Alert.stopButton` を避けます。
+
+## Bundle ID / App Group の実機向け変更
+
+シミュレータビルドは `Config/SigningDefaults.xcconfig` の既定値で動きます。実機で
+AlarmKit を検証する場合は、`Config/LocalSigning.xcconfig.example` を
+`Config/LocalSigning.xcconfig` にコピーし、Apple Developer Team ID、登録済み bundle id、
+App Group を実値へ置き換えてください。
+
+```sh
+bash scripts/regen.sh
+bash scripts/p0-readiness.sh
+bash scripts/p0-device-build.sh
+```
+
+`Config/LocalSigning.xcconfig` は git ignore 済みです。既定の `com.example.*` のままでは
+readiness script が意図的に失敗します。device build script は同じ readiness check を通してから
+`generic/platform=iOS` 向けにビルドします。
 
 ## 将来拡張（実装余地として設計）
 

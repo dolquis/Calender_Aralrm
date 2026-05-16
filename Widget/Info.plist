@@ -23,5 +23,7 @@
 		<key>NSExtensionPointIdentifier</key>
 		<string>com.apple.widgetkit-extension</string>
 	</dict>
+	<key>ShiftAlarmAppGroupIdentifier</key>
+	<string>$(SHIFTALARM_APP_GROUP_ID)</string>
 </dict>
 </plist>

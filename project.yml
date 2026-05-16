@@ -23,8 +23,13 @@ configs:
   Debug: debug
   Release: release
 
+configFiles:
+  Debug: Config/SigningDefaults.xcconfig
+  Release: Config/SigningDefaults.xcconfig
+
 fileGroups:
   - project.yml
+  - Config
   - README.md
   - README.ja.md
   - scripts
@@ -69,17 +74,19 @@ targets:
         NSHealthUpdateUsageDescription: シフトに基づく就寝・起床時刻をヘルスケアの睡眠記録として保存するために使用します。
         NSSupportsLiveActivities: true
         NSSupportsLiveActivitiesFrequentUpdates: true
+        ShiftAlarmAppGroupIdentifier: $(SHIFTALARM_APP_GROUP_ID)
+        ShiftAlarmBGRefreshTaskIdentifier: $(SHIFTALARM_BG_REFRESH_TASK_ID)
         UIBackgroundModes:
           - fetch
           - processing
         BGTaskSchedulerPermittedIdentifiers:
-          - com.example.shiftalarm.refreshAlarms
+          - $(SHIFTALARM_BG_REFRESH_TASK_ID)
         CFBundleURLTypes:
-          - CFBundleURLName: com.example.shiftalarm.url
+          - CFBundleURLName: $(SHIFTALARM_URL_TYPE_NAME)
             CFBundleURLSchemes:
               - shiftalarm
         UTExportedTypeDeclarations:
-          - UTTypeIdentifier: com.example.shiftalarm.bundle
+          - UTTypeIdentifier: $(SHIFTALARM_BUNDLE_UTI)
             UTTypeDescription: Shift Alarm Bundle
             UTTypeConformsTo:
               - public.json
@@ -90,7 +97,7 @@ targets:
                 - application/json
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.example.shiftalarm
+        PRODUCT_BUNDLE_IDENTIFIER: $(SHIFTALARM_APP_BUNDLE_ID)
         INFOPLIST_FILE: App/Info.plist
         CODE_SIGN_ENTITLEMENTS: App/ShiftAlarm.entitlements
         TARGETED_DEVICE_FAMILY: "1,2"
@@ -121,11 +128,12 @@ targets:
         CFBundlePackageType: $(PRODUCT_BUNDLE_PACKAGE_TYPE)
         CFBundleShortVersionString: $(MARKETING_VERSION)
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        ShiftAlarmAppGroupIdentifier: $(SHIFTALARM_APP_GROUP_ID)
         NSExtension:
           NSExtensionPointIdentifier: com.apple.widgetkit-extension
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.example.shiftalarm.widget
+        PRODUCT_BUNDLE_IDENTIFIER: $(SHIFTALARM_WIDGET_BUNDLE_ID)
         INFOPLIST_FILE: Widget/Info.plist
         CODE_SIGN_ENTITLEMENTS: Widget/ShiftAlarmWidget.entitlements
         SKIP_INSTALL: YES
@@ -139,7 +147,7 @@ targets:
       - path: Tests
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.example.shiftalarm.tests
+        PRODUCT_BUNDLE_IDENTIFIER: $(SHIFTALARM_TESTS_BUNDLE_ID)
         GENERATE_INFOPLIST_FILE: YES
     dependencies:
       - target: ShiftAlarm

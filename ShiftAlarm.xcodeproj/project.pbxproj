@@ -21,6 +21,7 @@
 		37E3A90E7EA9CE9C9DF95660 /* SleepWindowResolver.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55223407E0767E40503E1B8F /* SleepWindowResolver.swift */; };
 		383B5DB7A2F34517217C819D /* Color+Hex.swift in Sources */ = {isa = PBXBuildFile; fileRef = 52D57AD950572E2CCA4232B2 /* Color+Hex.swift */; };
 		39A8CDF23526D9EF7ABA5E33 /* SleepSampleWriter.swift in Sources */ = {isa = PBXBuildFile; fileRef = C043264095B90E0E95E70527 /* SleepSampleWriter.swift */; };
+		3BD18C6F32FDE39AEEC9207F /* AppRuntimeConfigurationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 54B9557854989FD02866E581 /* AppRuntimeConfigurationTests.swift */; };
 		3C984403E021A44165F6AD0A /* LiveActivityController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 58CAFC82AB82E58ACD5E06C9 /* LiveActivityController.swift */; };
 		3D9AD07FA135279F069A95B7 /* RotationPattern.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01A6D3137CBF6EC9B8450199 /* RotationPattern.swift */; };
 		3D9F1DA8F2D7DFE78EB23BC0 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = A5DCD8CE526744533D3AE8A6 /* Localizable.xcstrings */; };
@@ -73,6 +74,7 @@
 		BA2FA46E01934413D794D79F /* DayCellView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35D13566B54208E503CFBB27 /* DayCellView.swift */; };
 		BA6498C6496DB7B7CA011551 /* ShiftBundleCodecTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0B5D48CC86C2125679C92B3B /* ShiftBundleCodecTests.swift */; };
 		BE73A44288EE4870E3462922 /* LiveActivityController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 58CAFC82AB82E58ACD5E06C9 /* LiveActivityController.swift */; };
+		BED6220DB45DDD71C8689E22 /* AppRuntimeConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81391A3DDB291E81E864ABD5 /* AppRuntimeConfiguration.swift */; };
 		BFEBC0400406189DEA7D64F9 /* ShiftAlarmAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2BE7C3EE15015E33BD13E8B /* ShiftAlarmAttributes.swift */; };
 		C02C4EA519F2C3B9D04AE928 /* EventKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 6A15CFD2D5D45A1C0701F7D3 /* EventKit.framework */; };
 		C428B94E558D711BE463FD07 /* DateRange.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8BE434E979A31ACF1C177CA4 /* DateRange.swift */; };
@@ -94,6 +96,7 @@
 		DDC572A572EFD4828440ADB8 /* SleepSampleWriterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 059A391B8DFBD9D78DF1E522 /* SleepSampleWriterTests.swift */; };
 		DF4E12CE7FD087B0ED8A3CDC /* SleepWindowEntity.swift in Sources */ = {isa = PBXBuildFile; fileRef = D9709221F4F457301B18B5F9 /* SleepWindowEntity.swift */; };
 		E078CDE43974EDB476FA60C6 /* RotationListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2DC4F0D51E132D85E2AF2883 /* RotationListView.swift */; };
+		E0C1A8067698079AFF3A9759 /* AppRuntimeConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81391A3DDB291E81E864ABD5 /* AppRuntimeConfiguration.swift */; };
 		E29DABF7E26664C729CD83C8 /* Date+Calendar.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4CB96BC64E3325BFFEB1166 /* Date+Calendar.swift */; };
 		E4677219743EEA60364CBB9C /* ShortcutsOnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3CA16E68701A1928B6BD693B /* ShortcutsOnboardingView.swift */; };
 		E56B6C09D299876877330940 /* SleepIntentHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9AD5FF73898458735C20CCB6 /* SleepIntentHelper.swift */; };
@@ -178,6 +181,7 @@
 		4C225FB49C8AC78F1CFE806C /* PresetEditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PresetEditorView.swift; sourceTree = "<group>"; };
 		4DF8BFCE4E014ADD1045BDA2 /* ShiftAlarmApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShiftAlarmApp.swift; sourceTree = "<group>"; };
 		52D57AD950572E2CCA4232B2 /* Color+Hex.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Color+Hex.swift"; sourceTree = "<group>"; };
+		54B9557854989FD02866E581 /* AppRuntimeConfigurationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppRuntimeConfigurationTests.swift; sourceTree = "<group>"; };
 		5519552DFB9E79D2033B2AF3 /* verify.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = verify.sh; sourceTree = "<group>"; };
 		55223407E0767E40503E1B8F /* SleepWindowResolver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SleepWindowResolver.swift; sourceTree = "<group>"; };
 		57FEF2F22EDF88E58C805408 /* PresetListViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PresetListViewModel.swift; sourceTree = "<group>"; };
@@ -193,16 +197,20 @@
 		793BB747CA26E40B93C6FE2F /* BGRefreshControllerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BGRefreshControllerTests.swift; sourceTree = "<group>"; };
 		79761B901134C68B19CCC864 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		7E1ABFDF04BF0349708FA790 /* HolidayOverride.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HolidayOverride.swift; sourceTree = "<group>"; };
+		81391A3DDB291E81E864ABD5 /* AppRuntimeConfiguration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppRuntimeConfiguration.swift; sourceTree = "<group>"; };
 		85B243772253502C6C97C193 /* CalendarMonthView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarMonthView.swift; sourceTree = "<group>"; };
 		86AC780F46CD0EFCA4DF5AEF /* AlarmAuthorization.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlarmAuthorization.swift; sourceTree = "<group>"; };
 		8A6B508E593CCDB0EE71C16C /* ExportView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExportView.swift; sourceTree = "<group>"; };
 		8BE434E979A31ACF1C177CA4 /* DateRange.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DateRange.swift; sourceTree = "<group>"; };
 		8C8378ACE0174B3C7539D092 /* RootTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootTabView.swift; sourceTree = "<group>"; };
+		8C89AF5139387E11E11B17F7 /* SigningDefaults.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = SigningDefaults.xcconfig; sourceTree = "<group>"; };
 		901393113CB436834EDD704A /* NextAlarmWidgetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NextAlarmWidgetView.swift; sourceTree = "<group>"; };
 		924BE8EC6F57D215E47DB8E1 /* AlarmConfigurationBuilder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlarmConfigurationBuilder.swift; sourceTree = "<group>"; };
 		928D40B936D542854FCC6380 /* ShareExporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareExporter.swift; sourceTree = "<group>"; };
 		92E60C55AE72C8545FA85312 /* ModelContainer+Shared.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ModelContainer+Shared.swift"; sourceTree = "<group>"; };
+		94376553203919F2B3B29262 /* p0-readiness.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = "p0-readiness.sh"; sourceTree = "<group>"; };
 		952EB97D2A6C459E3BDCFC40 /* AlarmScheduler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlarmScheduler.swift; sourceTree = "<group>"; };
+		95BEA3724C0DC68219A514CE /* LocalSigning.xcconfig.example */ = {isa = PBXFileReference; path = LocalSigning.xcconfig.example; sourceTree = "<group>"; };
 		962E4F1AA089D96922581BBE /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		9AD5FF73898458735C20CCB6 /* SleepIntentHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SleepIntentHelper.swift; sourceTree = "<group>"; };
 		9ED995FDE72A7859141DE705 /* RotationPreviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RotationPreviewView.swift; sourceTree = "<group>"; };
@@ -212,6 +220,7 @@
 		A52E14EC0865585F0D573EAD /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		A5DCD8CE526744533D3AE8A6 /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
 		ABF26790C0D0FD60BB552429 /* DayCellViewSnapshotTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DayCellViewSnapshotTests.swift; sourceTree = "<group>"; };
+		AFBCDB115B2369CE5B59FB61 /* p0-device-build.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = "p0-device-build.sh"; sourceTree = "<group>"; };
 		B0DE13B9D3287B1416F5A8E7 /* RotationExpander.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RotationExpander.swift; sourceTree = "<group>"; };
 		B2BE7C3EE15015E33BD13E8B /* ShiftAlarmAttributes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShiftAlarmAttributes.swift; sourceTree = "<group>"; };
 		B2EC4F99A8F0A74E9927F65C /* ShiftAlarmWidgetBundle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShiftAlarmWidgetBundle.swift; sourceTree = "<group>"; };
@@ -327,6 +336,15 @@
 			path = Onboarding;
 			sourceTree = "<group>";
 		};
+		182016C1972141C15898C313 /* Config */ = {
+			isa = PBXGroup;
+			children = (
+				95BEA3724C0DC68219A514CE /* LocalSigning.xcconfig.example */,
+				8C89AF5139387E11E11B17F7 /* SigningDefaults.xcconfig */,
+			);
+			path = Config;
+			sourceTree = "<group>";
+		};
 		1847AE2AAE35D8865B69717C /* Resources */ = {
 			isa = PBXGroup;
 			children = (
@@ -373,6 +391,7 @@
 		2CC782E0F9A8D96BD23D432E /* Extensions */ = {
 			isa = PBXGroup;
 			children = (
+				81391A3DDB291E81E864ABD5 /* AppRuntimeConfiguration.swift */,
 				52D57AD950572E2CCA4232B2 /* Color+Hex.swift */,
 				F4CB96BC64E3325BFFEB1166 /* Date+Calendar.swift */,
 			);
@@ -445,6 +464,8 @@
 			isa = PBXGroup;
 			children = (
 				38A9A64D424E2652211F06CD /* bootstrap.sh */,
+				AFBCDB115B2369CE5B59FB61 /* p0-device-build.sh */,
+				94376553203919F2B3B29262 /* p0-readiness.sh */,
 				75776467D4B5146AC2590CA0 /* regen.sh */,
 				5519552DFB9E79D2033B2AF3 /* verify.sh */,
 			);
@@ -465,6 +486,7 @@
 			isa = PBXGroup;
 			children = (
 				44A558A859D64ED35D3CDBDC /* AlarmSchedulerTests.swift */,
+				54B9557854989FD02866E581 /* AppRuntimeConfigurationTests.swift */,
 				793BB747CA26E40B93C6FE2F /* BGRefreshControllerTests.swift */,
 				5EEDC6043940812D023C62FC /* DeepLinkRouterTests.swift */,
 				D6F3F7A3FCC6C7B97F57BC23 /* ShareImporterTests.swift */,
@@ -632,6 +654,7 @@
 			isa = PBXGroup;
 			children = (
 				1C0604173B0559F0DE7F24DD /* App */,
+				182016C1972141C15898C313 /* Config */,
 				1847AE2AAE35D8865B69717C /* Resources */,
 				6527AF4E9CFD968FB3284E73 /* scripts */,
 				79FAD5CCA0270674B5E2A74A /* Sources */,
@@ -795,6 +818,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				48D9A4D6A5B89234DCE0AA1D /* AlarmSchedulerTests.swift in Sources */,
+				3BD18C6F32FDE39AEEC9207F /* AppRuntimeConfigurationTests.swift in Sources */,
 				A9858B3C33AE0D19EFCED879 /* BGRefreshControllerTests.swift in Sources */,
 				9F203F39564DAECC9F3AD91E /* DayCellViewSnapshotTests.swift in Sources */,
 				5AA85CFFDCF9BD51C9237456 /* DayResolverInputBuilderTests.swift in Sources */,
@@ -820,6 +844,7 @@
 				F3573813C81D7BC843DF4339 /* AlarmService.swift in Sources */,
 				F5C5912A9C6A0E7CFC9EEFF7 /* AlarmSound.swift in Sources */,
 				AB3300150FD310CC14FEF5D5 /* AppDependencies.swift in Sources */,
+				BED6220DB45DDD71C8689E22 /* AppRuntimeConfiguration.swift in Sources */,
 				0174AAF68B2E3E2A19D663D0 /* AppSettings.swift in Sources */,
 				B2A364AA2698A28545376C46 /* BGRefreshController.swift in Sources */,
 				A310316722B7A3A7C0569287 /* CalendarMonthView.swift in Sources */,
@@ -879,6 +904,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				7D651CDD1B2BA12C40118997 /* AlarmSound.swift in Sources */,
+				E0C1A8067698079AFF3A9759 /* AppRuntimeConfiguration.swift in Sources */,
 				D09D65AE13BF991F1CC95C77 /* AppSettings.swift in Sources */,
 				383B5DB7A2F34517217C819D /* Color+Hex.swift in Sources */,
 				3E48BB5ACB4DD47A20F4EC32 /* Date+Calendar.swift in Sources */,
@@ -935,7 +961,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.example.shiftalarm;
+				PRODUCT_BUNDLE_IDENTIFIER = "$(SHIFTALARM_APP_BUNDLE_ID)";
 				SDKROOT = iphoneos;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -944,6 +970,7 @@
 		};
 		15B6FE57187C163C4CDF25A9 /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 8C89AF5139387E11E11B17F7 /* SigningDefaults.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				CLANG_ANALYZER_NONNULL = YES;
@@ -1019,7 +1046,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.example.shiftalarm;
+				PRODUCT_BUNDLE_IDENTIFIER = "$(SHIFTALARM_APP_BUNDLE_ID)";
 				SDKROOT = iphoneos;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -1037,7 +1064,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.example.shiftalarm.widget;
+				PRODUCT_BUNDLE_IDENTIFIER = "$(SHIFTALARM_WIDGET_BUNDLE_ID)";
 				SDKROOT = iphoneos;
 				SKIP_INSTALL = YES;
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -1056,7 +1083,7 @@
 					"@executable_path/Frameworks",
 					"@loader_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.example.shiftalarm.tests;
+				PRODUCT_BUNDLE_IDENTIFIER = "$(SHIFTALARM_TESTS_BUNDLE_ID)";
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/ShiftAlarm.app/ShiftAlarm";
@@ -1074,7 +1101,7 @@
 					"@executable_path/Frameworks",
 					"@loader_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.example.shiftalarm.tests;
+				PRODUCT_BUNDLE_IDENTIFIER = "$(SHIFTALARM_TESTS_BUNDLE_ID)";
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/ShiftAlarm.app/ShiftAlarm";
@@ -1083,6 +1110,7 @@
 		};
 		F27D93715612C4E53A704D08 /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 8C89AF5139387E11E11B17F7 /* SigningDefaults.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				CLANG_ANALYZER_NONNULL = YES;
@@ -1162,7 +1190,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.example.shiftalarm.widget;
+				PRODUCT_BUNDLE_IDENTIFIER = "$(SHIFTALARM_WIDGET_BUNDLE_ID)";
 				SDKROOT = iphoneos;
 				SKIP_INSTALL = YES;
 				SWIFT_EMIT_LOC_STRINGS = YES;

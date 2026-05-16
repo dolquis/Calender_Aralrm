@@ -93,8 +93,9 @@ DESTINATION='platform=iOS Simulator,name=iPhone 17 Pro,OS=26.5' bash scripts/ver
 bash scripts/verify.sh test
 ```
 
-The Tests target covers rotation expansion, day resolver priority logic, and the share-bundle
-codec.
+The Tests target currently runs 56 XCTest cases across domain, services, App Intents, HealthKit
+helpers, background refresh, deep links, sharing, and snapshot coverage. Five DayCell snapshot tests
+are skipped by default unless `SNAPSHOT_TESTING_ENABLED=1` is set.
 
 ## Architecture notes
 
@@ -104,14 +105,30 @@ codec.
 - `DayResolver` resolves per-date precedence as **manual > holiday > rotation > none**.
 - `BGAppRefreshTask` keeps the lookahead window (default 30 days) populated when the app is
   backgrounded.
-- The Widget shares state through an App Group (`group.com.example.shiftalarm`) SwiftData store.
+- The Widget shares state through the configured App Group (default:
+  `group.com.example.shiftalarm`) SwiftData store.
 - AlarmKit SDK is referenced via `#if canImport(AlarmKit)` so the codebase still parses on
-  toolchains without the SDK; the unit tests run on any iOS 17+ simulator.
+  toolchains without the SDK. The AlarmKit / ActivityKit API surface was checked against Xcode 26.5;
+  `AlarmConfigurationBuilder` uses the current `AlarmManager.AlarmConfiguration.alarm(...)` factory
+  and avoids the iOS 26.1 `AlarmPresentation.Alert.stopButton` deprecation when possible.
 
 ## Customizing the bundle id / app group
 
-Edit `project.yml` (top-level `options.bundleIdPrefix` and the entitlements files) and re-run
-`scripts/regen.sh`.
+For simulator builds, the defaults in `Config/SigningDefaults.xcconfig` are enough. For real-device
+AlarmKit validation, copy `Config/LocalSigning.xcconfig.example` to
+`Config/LocalSigning.xcconfig`, fill the Apple Developer Team ID plus registered bundle IDs and App
+Group, then run:
+
+```sh
+bash scripts/regen.sh
+bash scripts/p0-readiness.sh
+bash scripts/p0-device-build.sh
+```
+
+`Config/LocalSigning.xcconfig` is ignored by git so local signing values do not leak into commits.
+The readiness script intentionally fails while the default `com.example.*` placeholders are still in
+use. The device build script runs the same readiness check before building for
+`generic/platform=iOS`.
 
 ## Roadmap (designed for, not yet implemented)
 

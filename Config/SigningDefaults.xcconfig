@@ -1,0 +1,16 @@
+// Default signing and identifier values for local simulator builds.
+// Create Config/LocalSigning.xcconfig from LocalSigning.xcconfig.example to override
+// these values for real-device P0 validation.
+
+SHIFTALARM_APP_BUNDLE_ID = com.example.shiftalarm
+SHIFTALARM_WIDGET_BUNDLE_ID = com.example.shiftalarm.widget
+SHIFTALARM_TESTS_BUNDLE_ID = com.example.shiftalarm.tests
+SHIFTALARM_APP_GROUP_ID = group.com.example.shiftalarm
+SHIFTALARM_BG_REFRESH_TASK_ID = com.example.shiftalarm.refreshAlarms
+SHIFTALARM_URL_TYPE_NAME = com.example.shiftalarm.url
+SHIFTALARM_BUNDLE_UTI = com.example.shiftalarm.bundle
+
+DEVELOPMENT_TEAM =
+CODE_SIGN_STYLE = Automatic
+
+#include? "LocalSigning.xcconfig"

@@ -13,12 +13,22 @@ public enum AlarmConfigurationBuilder {
         label: String,
         soundID: String
     ) -> AlarmManager.AlarmConfiguration<ShiftAlarmAttributes> {
-        let alert = AlarmPresentation.Alert(
-            title: LocalizedStringResource(stringLiteral: label),
-            stopButton: .stopButton,
-            secondaryButton: .openAppButton,
-            secondaryButtonBehavior: .custom
-        )
+        let title = LocalizedStringResource(stringLiteral: label)
+        let alert: AlarmPresentation.Alert
+        if #available(iOS 26.1, *) {
+            alert = AlarmPresentation.Alert(
+                title: title,
+                secondaryButton: .openAppButton,
+                secondaryButtonBehavior: .custom
+            )
+        } else {
+            alert = AlarmPresentation.Alert(
+                title: title,
+                stopButton: .stopButton,
+                secondaryButton: .openAppButton,
+                secondaryButtonBehavior: .custom
+            )
+        }
         let presentation = AlarmPresentation(alert: alert)
         let attributes = AlarmAttributes<ShiftAlarmAttributes>(
             presentation: presentation,
@@ -31,7 +41,7 @@ public enum AlarmConfigurationBuilder {
         } else {
             sound = .named(soundID)
         }
-        return AlarmManager.AlarmConfiguration(
+        return AlarmManager.AlarmConfiguration.alarm(
             schedule: schedule,
             attributes: attributes,
             sound: sound
