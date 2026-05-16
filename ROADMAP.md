@@ -4,12 +4,12 @@
 **開発仕様兼ロードマップ**です。タスクは優先度（P0 → P3）順、各項目に
 **目的 / 対象ファイル / 完了条件 (DoD)** を明記しています。
 
-最終更新: 2026-05-15
+最終更新: 2026-05-17
 対象ブランチ運用: タスクごとに `feature/<topic>` を切り、main へ PR。
 
 ---
 
-## 0. 現状サマリ（2026-05-15 時点）
+## 0. 現状サマリ（2026-05-17 時点）
 
 - iOS 26+ / Swift 6 / SwiftUI + SwiftData / AlarmKit ベースのシフト勤務向けアラームアプリ。
 - 主要レイヤー（Domain / Services / Features / Widget / Live Activity / Sharing / Deep link / ja-en ローカライズ）は実装済み。
@@ -17,7 +17,7 @@
 - P0-1 は Xcode 26.5 / iOS 26.5 SDK でコードレベル検証に着手済み。
   `AlarmPresentation.Alert.stopButton` の iOS 26.1 deprecation を回避し、
   `AlarmManager.AlarmConfiguration.alarm(...)` に寄せた。実機確認は未完了。
-- テスト 56 件 (13 ファイル + snapshot support) 緑。通常の `scripts/verify.sh` では
+- テスト 56 件 (14 ファイル) 緑。通常の `scripts/verify.sh` では
   5 件の snapshot test は `SNAPSHOT_TESTING_ENABLED=1` 未指定のため skip。
   CI は `macos-26` / Xcode 26+ で `scripts/verify.sh` を実行。
 - オープン Issue / オープン PR は 0。
@@ -30,6 +30,7 @@
   - **#11 Sleep / HealthKit / App Intents の P1/P2 レビュー反映**
   - **#12 ROADMAP / README の P1/P2-2 進捗反映**
   - **#13 DayResolverInputBuilder 抽出、DI seam、CI / テスト拡充**
+  - **#14 P0-2 signing readiness ワークフロー (`scripts/p0-readiness.sh` / `scripts/p0-device-build.sh`)**
 
 未確定 / 既知の不安要素:
 
@@ -49,7 +50,7 @@
 |---|---|---|
 | **P0** | リリース前検証 | 実機/実シミュレータでゴールデンパス完走 |
 | **P1** | UX 完成度 | アクセシビリティ監査 / 空・エラー UX 揃え / オンボーディング |
-| **P2** | README ロードマップ実装 | iCloud / Bedtime / Watch のいずれか 1 つを TestFlight 配布 |
+| **P2** | 新機能拡張（シフト体験の自動化） | Bedtime + Sleep schedule を TestFlight 配布、画像解析 / パターン検出 / 連休越境のいずれかを着手 |
 | **P3** | 品質・運用 | TestFlight 自動配布 + UI/統合テスト緑 |
 
 ---
@@ -195,23 +196,10 @@
 
 ---
 
-## 4. P2 — README ロードマップ実装
+## 4. P2 — 新機能拡張（シフト体験の自動化）
 
-### P2-1. iCloud 同期（CloudKit）（未着手）
-
-- **目的**: `ModelConfiguration(cloudKitDatabase:)` で SwiftData を CloudKit と同期。
-- **対象**:
-  - `Sources/Domain/Persistence/ModelContainer+Shared.swift`
-  - `Sources/Domain/Persistence/SchemaV1.swift`
-  - `App/ShiftAlarm.entitlements`（iCloud, CloudKit, App Group）
-  - `project.yml`
-- **設計メモ**:
-  - Widget は App Group の local store を読むので、CloudKit ↔ local の同期境界は
-    App ターゲットに閉じる。Widget は **読み取り専用** を維持する。
-  - 競合解決は SwiftData の組込みポリシーをまず採用、不足があれば最終更新優先で上書き。
-- **DoD**:
-  - 2 端末で 1 つの iCloud アカウントにサインインし、プリセット / ローテ / 割当が双方向同期される。
-  - Widget が壊れない。
+> **スコープ外（不採用）**: iCloud 同期 (CloudKit) / Apple Watch コンパニオン。
+> 過去 ROADMAP の旧 P2-1 / P2-3 は方針として削除した。
 
 ### P2-2. Bedtime reminder（T-N 分前のプレアラーム）✅ 完了 (PR #10 / #11)
 
@@ -230,18 +218,106 @@
   - `Sources/Services/AppIntents/` — `GetSleepWindowIntent` ほか Shortcuts 公開。
 - テスト: `Tests/DomainTests/SleepWindowResolverTests.swift`。
 
-### P2-3. Apple Watch コンパニオン（未着手）
+### P2-α. シフトパターン自動検出 → プリセット / ローテ提案（未着手）
 
-- **目的**: 時計アプリ風の独立ウォッチアプリで「今日 / 明日のアラーム」を表示。
-- **前提作業**:
-  - `Sources/Domain` を独立した Swift package / static framework に切り出し、
-    Watch ターゲットからも参照可能にする（現状は App ターゲット内）。
-- **対象**:
-  - `project.yml` に WatchApp ターゲット追加
-  - 新規: `Watch/` ディレクトリ
+- **目的**: ユーザが手動で日付ごとに割り当てているアラーム履歴から **周期性を検出** し、
+  「これローテとして登録しませんか？」と提案する。手作業の反復を吸収しオンボーディング
+  後のリテンションを上げる。
+- **検出すべき例**:
+  1. **単純周期**: 1 週間ごとに「夜勤週」「昼勤週」が交互。
+  2. **複雑周期**: 月火（昼）水木（休）金土（夜）月火（休）水木金土（昼）月火水木（昼）…
+     のような **多週周期**。
+- **アプローチ**:
+  - 直近 N 日（既定 90 日）の `DayAssignment` から `(weekday, presetID|.off)` の列を抽出。
+  - 候補周期長 7〜35 日を総当たりし、autocorrelation 風スコア + 編集距離で best fit を選ぶ。
+  - 一致率 ≥ しきい値（既定 0.85）かつ最低 2 周期分の観測がある場合のみ提案する。
+- **対象ファイル**:
+  - 新規 `Sources/Domain/Logic/ShiftPatternDetector.swift`（純粋ロジック）
+  - 新規 `Sources/Features/Rotation/PatternSuggestionView.swift`
+  - 既存 `Sources/Features/Rotation/RotationListView.swift` に CTA 追加
+  - 既存 `Sources/Features/Onboarding/OnboardingView.swift` に「履歴からの提案」分岐追加
+  - 既存 `Sources/Domain/Models/AppSettings.swift` に提案スヌーズ用フラグを追加
+  - テスト: 新規 `Tests/DomainTests/ShiftPatternDetectorTests.swift`
 - **DoD**:
-  - Watch 単独で次のアラームが見える。
-  - iPhone と Watch で SwiftData / CloudKit を共有（P2-1 完了後が望ましい）。
+  - 単純な「昼夜交互週」プリセットが 14 日分の履歴から正しく抽出される。
+  - 22 日複雑パターンが正しく 1 つの提案として抽出される。
+  - 提案を受け入れると `RotationPattern` として保存され、以後のカレンダーに反映される。
+  - 提案を却下したら 30 日間同じ提案を再表示しない。
+
+### P2-β. 長期連休を挟んだ昼夜シフト切替（未着手）
+
+- **目的**: お盆・ゴールデンウィーク等の **連続休暇** をユーザが設定したとき、休暇前の最後
+  のシフトと休暇後の最初のシフトを **意図通りに切り替える**。
+  プリセット / ローテに **連休越境ポリシー** を持たせて自動適用する。
+- **対象シナリオ**:
+  - 連休前が夜勤ブロックで終わっていたら、連休明けは昼勤始まりにする（既定ポリシー
+    `.invert`）。
+  - ユーザがポリシーを「連休前と同じ位置から続行 (`.continue`)」「逆転 (`.invert`)」
+    「リセット (`.resetToDay`)」から選べる。
+- **アプローチ**:
+  - `HolidayOverride` を連続範囲として束ねる `VacationPeriod` 概念を導入。
+    （3 日以上連続でユーザが明示的に "連休" マークしたもの）
+  - `RotationPattern` / `ShiftPreset` に `crossVacationPolicy` を追加。
+  - `RotationExpander` を vacation-aware に拡張: 連休範囲を周期計算から除外しつつ、復帰
+    時に policy に従ってオフセットを再計算する。
+- **対象ファイル**:
+  - 既存 `Sources/Domain/Models/HolidayOverride.swift` に `isVacationGroup` フラグ
+  - 新規 `Sources/Domain/Models/VacationPeriod.swift`（SwiftData @Model、SchemaV1
+    マイグレーション必要）
+  - 既存 `Sources/Domain/Logic/RotationExpander.swift` を vacation-aware に拡張
+  - 新規 `Sources/Domain/Logic/VacationAwareRotation.swift`（policy 適用ロジック）
+  - 既存の祝日/有休 UI に "連休としてまとめる" 操作を追加
+  - 既存 `Sources/Features/Presets/PresetEditorView.swift` に policy ピッカー追加
+  - テスト: 新規 `Tests/DomainTests/VacationAwareRotationTests.swift`
+- **DoD**:
+  - 既定 (`.invert`) で連休前夜勤 → 連休 → 昼勤、が再現できる。
+  - `.continue` policy で連休前と同じ位相が維持される。
+  - `.resetToDay` で常に昼勤始まりになる。
+  - SwiftData マイグレーション後、既存 `HolidayOverride` は破壊されない。
+
+### P2-γ. シフト表画像の AI 解析 → カレンダー自動適用（未着手）
+
+- **目的**: 紙のシフト表や、職場のポータルから保存したカレンダー画像をアップロードする
+  だけで、AI が日付ごとのシフト（昼 / 夜 / 休 / 明 など）を読み取り、当アプリのカレンダ
+  ーに自動で割り当てる。手入力・JSON インポート以外の **第 3 の入力チャネル**。
+- **入力 UX**:
+  - `PhotosPicker` で写真ライブラリから、または `VisionKit.DataScannerViewController` で
+    その場でカメラ撮影。
+  - 複数枚（月またぎや見開き）にも対応。
+- **解析パイプライン**:
+  1. **OCR**: `Vision.VNRecognizeTextRequest`（ja / en）で全テキストと bounding box を抽出。
+  2. **構造検出**: テキスト座標から行/列のグリッドを推定し、(日付セル × 名前行) の表構造
+     を再構築。`VNRecognizeDocumentsRequest`（iOS 18+）が使える場合は優先利用。
+  3. **意味マッピング**: 抽出セル文字列を **iOS 26 の `FoundationModels`（on-device LLM）**
+     に渡し、`{date, shiftLabel} -> existing ShiftPreset?` の対応を生成。
+     既存プリセットが空ならラベルから自動命名で **新規 ShiftPreset を提案**する。
+     **オフライン推論を既定**にし、クラウド送信は無し。
+  4. **ユーザ名フィルタ**: 表に複数従業員行がある場合、初回にユーザ自身の名前を選択。次回
+     以降は `AppSettings.userNameOnRoster` に記憶。
+  5. **差分プレビュー**: 既存 `ShareImporter` の diff UI を再利用し、適用前にユーザが確認。
+- **対象ファイル**:
+  - 新規 `Sources/Services/Vision/ShiftImageOCR.swift`（Vision request ラッパ）
+  - 新規 `Sources/Services/Vision/ShiftImageParser.swift`（OCR → 構造 → 意味マッピング）
+  - 新規 `Sources/Services/Vision/FoundationModelsShiftMapper.swift`
+    （iOS 26 FoundationModels 呼び出し。利用不可ならルールベースに fallback）
+  - 新規 `Sources/Features/Import/ImageImportView.swift`（PhotosPicker + 進捗 + diff UI）
+  - 既存 `Sources/Services/Sharing/ShareImporter.swift` の diff/apply ロジックを再利用
+  - 既存 `Sources/Domain/Models/AppSettings.swift` に `userNameOnRoster` を追加
+  - 既存の Import/Export 画面から「画像から取り込む」導線を追加
+  - `App/Info.plist`: `NSCameraUsageDescription`, `NSPhotoLibraryUsageDescription` を追加
+  - テスト: 新規 `Tests/ServicesTests/ShiftImageParserTests.swift`
+    （`Resources/TestFixtures/` にサンプル画像を置き、構造抽出が安定するか確認）。
+    FoundationModels 部分は **プロトコル境界でモック**。
+- **DoD**:
+  - 月次シフト表サンプル（昼/夜/休 3 種ラベル）から 80% 以上のセルが正しく抽出される
+    （ja / en サンプル各 1 セット）。
+  - 抽出結果は `ShareImporter` と同じ差分プレビューでレビューしてから適用できる。
+  - FoundationModels が利用不可な OS / 機種でもルールベース fallback で動作する。
+  - **クラウド通信は発生しない**（プライバシー / ネット非依存）。
+- **既知の不確実性**:
+  - iOS 26 `FoundationModels` の API は実装着手時に `.swiftinterface` で再チェック。
+  - 手書きシフト表は OCR 精度が落ちる可能性。初版では印刷 / デジタル表に限定し、手書きは
+    バックログ扱い。
 
 ---
 
@@ -257,7 +333,7 @@
   - `Tests/ServicesTests/SleepIntentHelperTests.swift` — App Intents 用 sleep window 取得。
   - `Tests/ServicesTests/SleepSampleWriterTests.swift` — HealthKit 書込み対象 window 抽出。
   - `Tests/DomainTests/SleepWindowResolverTests.swift` — bedtime 計算 / 端境ケース。
-- 現状: 13 ファイル / 56 テスト緑（うち 5 件 snapshot は通常 verify では skip）。
+- 現状: 14 ファイル / 56 テスト緑（うち 5 件 snapshot は通常 verify では skip）。
 
 ### P3-2. UI / スナップショットテスト（一部着手）
 
@@ -319,6 +395,171 @@
 
 **次は `Config/LocalSigning.xcconfig` に実 Developer Team / bundle id / App Group を入れ、
 `bash scripts/p0-readiness.sh` を緑にしてから P0-3 golden path を実機で完走する。**
-P0-1 のコードレベル確認と P0-2 のローカル設定導線はできたため、残りのリリース前ゲートは
-実機での AlarmKit 認可ダイアログ、AlarmKit alert、Live Activity / Dynamic Island、
-Widget、共有 import/export の通し確認。
+P0-1 のコードレベル確認は済み、P0-2 の readiness / device-build スクリプトも PR #14 で
+マージ済みのため、残りのリリース前ゲートは実機での AlarmKit 認可ダイアログ、AlarmKit
+alert、Live Activity / Dynamic Island、Widget、共有 import/export の通し確認。
+
+P0-3 完了後の **新機能着手順** は P2-α (パターン検出) → P2-β (連休越境) → P2-γ (画像
+解析) を想定。最も既存ロジック (`RotationExpander` / `DayAssignment`) に近い P2-α を
+最初の差分にすると review コストが低い。
+
+---
+
+## 9. P2 テスト項目（実装ガイド）
+
+各 P2 タスクの **実装と検証を同時に進めるための test punch list**。各項目は
+「`Tests/...` の予定ファイル + 関数名 + 検証する性質」の三点セットで書く。
+TDD 的に最初に **赤いテスト** として並べてから実装すると、DoD と一対一で対応する。
+
+ユニットテストは「純ロジック」を、UI / Integration テストは「振る舞い」を、
+手動 (golden path) は「実機で確認すべき UX」を扱う。
+
+### 9-α. P2-α シフトパターン自動検出
+
+**ユニット — `Tests/DomainTests/ShiftPatternDetectorTests.swift`（新規）**
+
+| # | テスト名 | 検証する性質 |
+|---|---|---|
+| α-U1 | `testEmptyHistoryReturnsNoSuggestion` | 履歴 0 件 → `nil` |
+| α-U2 | `testFewerThanTwoCyclesReturnsNoSuggestion` | 1 周期分しか観測が無い場合 → 提案無し |
+| α-U3 | `testSimpleWeeklyAlternationDetected` | 14 日 (昼週 → 夜週) で `period=14` を検出 |
+| α-U4 | `testSimpleDailyAlternationDetected` | 14 日 (昼/夜 交互) で `period=2` を検出 |
+| α-U5 | `testComplexMultiWeekPatternDetected` | 22 日 (例: 月火昼/水木休/金土夜/月火休/水木金土昼/月火水木昼) を 1 つの 22 日周期として検出 |
+| α-U6 | `testNoisySequenceBelowThresholdRejected` | 一致率が `< 0.85` なら提案無し |
+| α-U7 | `testThresholdAdjustableViaConfig` | しきい値を境にして検出/未検出が切り替わる |
+| α-U8 | `testSuggestionPreservesPresetIDOrder` | 結果列が `[presetID \| .off]` の順序を保持 |
+| α-U9 | `testSkipDayMappedToExplicitOff` | `skip` フラグ付きの日が `.off` として認識される |
+| α-U10 | `testRotationGeneratedAssignmentsExcludedFromInput` | rotation 由来の自動値は検出入力から除外し、手動入力のみを見る |
+| α-U11 | `testHistoryWindowDefaultIs90Days` | 検出窓は既定 90 日（境界テスト: 89 / 90 / 91 日） |
+| α-U12 | `testCanonicalizationStartsFromMonday` | 検出結果は週初を月曜に揃えて返す（曜日ズレ吸収） |
+
+**統合 / UI — `Tests/ServicesTests/PatternSuggestionFlowTests.swift`（新規）**
+
+| # | テスト名 | 検証する性質 |
+|---|---|---|
+| α-I1 | `testSuggestionAppearsAfterDetectionFires` | RotationListView で提案カードが表示される |
+| α-I2 | `testAcceptCreatesRotationPattern` | 受諾で `RotationPattern` が SwiftData に永続化 |
+| α-I3 | `testAcceptSchedulesAlarmsForFutureDates` | 受諾後 `AlarmScheduler` の diff-sync で未来日のアラーム登録が増える |
+| α-I4 | `testRejectSetsSnoozeUntilDate` | 却下で `AppSettings.patternSuggestionSnoozedUntil` に 30 日後の値 |
+| α-I5 | `testSnoozedSuggestionNotShownAgain` | スヌーズ期間中は提案が再表示されない |
+| α-I6 | `testOnboardingPathTriggersSuggestion` | Onboarding 完了直後にサンプル履歴があれば提案分岐に入る |
+
+**手動 (golden path)**
+
+- 22 日分の混合シフトを Calendar で手動割当 → Rotation 画面に提案バナー出現を確認。
+- 受諾後、適用範囲外の翌月セルがプリセット色で自動展開されるか確認。
+
+---
+
+### 9-β. P2-β 長期連休を挟んだ昼夜シフト切替
+
+**ユニット — `Tests/DomainTests/VacationAwareRotationTests.swift`（新規）**
+
+| # | テスト名 | 検証する性質 |
+|---|---|---|
+| β-U1 | `testNoVacationPeriodProducesIdenticalResultToBaseExpander` | 連休無し → 既存 `RotationExpander` と完全一致 |
+| β-U2 | `testInvertPolicyFlipsNightToDayAfterVacation` | 連休前=夜勤 → 連休明け初日=昼勤（既定） |
+| β-U3 | `testInvertPolicyFlipsDayToNightAfterVacation` | 連休前=昼勤 → 連休明け初日=夜勤 |
+| β-U4 | `testContinuePolicyMaintainsPhase` | `.continue` で連休前と同じ位相が続く |
+| β-U5 | `testResetToDayPolicyAlwaysStartsDay` | `.resetToDay` でどんな連休前でも昼勤始まり |
+| β-U6 | `testVacationDaysHaveNoPresetAssignment` | 連休セルは `nil` (skip) で返る |
+| β-U7 | `testShortHolidayBelowMinDurationNotVacation` | 連続日数 `< 3`（既定）は通常祝日として処理 |
+| β-U8 | `testIsVacationGroupFlagRequired` | 連続 ≥ 3 日でも `isVacationGroup=false` なら通常処理 |
+| β-U9 | `testMultipleVacationPeriodsHandledIndependently` | お盆 + GW など複数連休の独立適用 |
+| β-U10 | `testManualOverrideInsideVacationWins` | 連休内に手動割当があれば手動を優先 |
+| β-U11 | `testHigherPriorityRotationOverridesAfterVacation` | 連休越境後も rotation の priority が尊重される |
+| β-U12 | `testVacationAtMonthBoundary` | 月境界（例: 4/29 〜 5/8）で連休が分断されず 1 つとして扱われる |
+| β-U13 | `testVacationAtYearBoundary` | 年末年始（12/30 〜 1/3）でも同上 |
+
+**スキーマ — `Tests/DomainTests/SchemaV1MigrationTests.swift`（既存 or 新規）**
+
+| # | テスト名 | 検証する性質 |
+|---|---|---|
+| β-S1 | `testMigrationFromV1AddsCrossVacationPolicyDefault` | 既存 `RotationPattern` / `ShiftPreset` に `.invert` が付く |
+| β-S2 | `testMigrationPreservesExistingHolidayOverrides` | 既存 `HolidayOverride` が破壊されない |
+| β-S3 | `testMigrationCreatesNoVacationPeriodAutomatically` | マイグレーション時に自動で連休をまとめない（明示操作必須） |
+
+**統合 — `Tests/ServicesTests/AlarmSchedulerTests.swift`（拡張）**
+
+| # | テスト名 | 検証する性質 |
+|---|---|---|
+| β-I1 | `testAlarmSchedulerSkipsAlarmsDuringVacation` | 連休範囲の AlarmKit 登録が無い |
+| β-I2 | `testAlarmSchedulerRegistersFlippedAlarmAfterVacation` | 連休明け初日のアラーム時刻が `.invert` で正しい |
+| β-I3 | `testDayResolverReturnsCorrectPresetAfterVacation` | `DayResolver` で連休明け初日のプリセットが解決 |
+
+**手動 (golden path)**
+
+- 夜勤を 1 週間続けた後 8/13-16 を連休としてマーク → 8/17 が昼勤化することを Calendar /
+  Widget / Live Activity で確認。
+- policy を `.continue` に切替 → 8/17 が夜勤継続することを確認。
+
+---
+
+### 9-γ. P2-γ シフト表画像の AI 解析
+
+**ユニット — `Tests/ServicesTests/ShiftImageOCRTests.swift`（新規）**
+
+| # | テスト名 | 検証する性質 |
+|---|---|---|
+| γ-U1 | `testOCRExtractsAllVisibleCellsFromJapaneseSample` | ja サンプル画像 → 全テキスト + bounding box |
+| γ-U2 | `testOCRExtractsAllVisibleCellsFromEnglishSample` | en サンプル画像 → 同上 |
+| γ-U3 | `testOCRHandlesRotatedImageWithinTolerance` | ±10° 回転画像でも抽出可能 |
+| γ-U4 | `testOCRReturnsEmptyForBlankImage` | 真っ白画像 → 空配列、エラー無し |
+
+**ユニット — `Tests/ServicesTests/ShiftImageParserTests.swift`（新規）**
+
+| # | テスト名 | 検証する性質 |
+|---|---|---|
+| γ-U5 | `testGridStructureRecognitionForMonthlyTable` | OCR 結果 → (date × employee) のセル配列 |
+| γ-U6 | `testGridStructureFallbackWhenNoTableDetected` | `VNRecognizeDocumentsRequest` が空なら座標クラスタリングへ fallback |
+| γ-U7 | `testCellLabelMapsToShiftPreset` | "昼" / "夜" / "休" / "D" / "N" を既存 ShiftPreset に対応付け |
+| γ-U8 | `testUnknownLabelMarkedAsAmbiguous` | 未知ラベルは `nil` ではなく `.unresolved` で返す |
+| γ-U9 | `testMultiPageMergePreservesOrder` | 月またぎ 2 枚を 1 件の `DayAssignment` 集合にマージ |
+| γ-U10 | `testUserNameFilterIncludesOnlySelectedRow` | 「ユーザ名」選択時、その行だけ抽出 |
+| γ-U11 | `testParserHandlesPartiallyOccludedTable` | セル欠損があっても抽出済み分のみ返す |
+| γ-U12 | `testNoNetworkRequestsDuringParse` | パイプライン中に URL リクエストが発生しない（`URLProtocol` で監視） |
+
+**ユニット (Mapper モック) — `Tests/ServicesTests/FoundationModelsShiftMapperTests.swift`（新規）**
+
+| # | テスト名 | 検証する性質 |
+|---|---|---|
+| γ-U13 | `testRuleBasedMapperUsedWhenModelUnavailable` | `FoundationModels` 利用不可環境で rule-based fallback が動く |
+| γ-U14 | `testModelMapperReturnsHighConfidenceMapping` | モック返却で confidence ≥ 閾値なら確定マッピング |
+| γ-U15 | `testLowConfidenceMappingMarkedUnresolved` | confidence < 閾値 → `.unresolved` |
+| γ-U16 | `testMapperRespectsPreviousNamingHint` | 既存 ShiftPreset 名と最も近いものを優先 |
+
+**統合 — `Tests/ServicesTests/ImageImportIntegrationTests.swift`（新規）**
+
+| # | テスト名 | 検証する性質 |
+|---|---|---|
+| γ-I1 | `testImportProducesShareImporterCompatibleDiff` | 抽出結果が `ShareImporter` と同型の diff (`add` / `update` / `delete`) を返す |
+| γ-I2 | `testApplyDiffPersistsAssignments` | 適用で SwiftData に書き込まれ Calendar 表示が更新 |
+| γ-I3 | `testRetainsExistingManualOverrides` | 取込前の手動上書きは破壊されない（衝突時は `add` ではなく `update` 候補） |
+| γ-I4 | `testRetryOnPartialFailureKeepsAlreadyAppliedDays` | 途中失敗時に既適用日はロールバックされない（idempotent） |
+
+**精度 DoD — `Tests/Fixtures/ShiftImages/` に手動アノテーション付きで配置**
+
+| # | 指標 | 値 |
+|---|---|---|
+| γ-D1 | ja 月次サンプル 30 日 × 1 行で **セル一致率** | ≥ 80% |
+| γ-D2 | en 月次サンプル 30 日 × 1 行で **セル一致率** | ≥ 80% |
+| γ-D3 | ユーザ名フィルタの正解率（複数行表） | ≥ 95% |
+
+**手動 (golden path)**
+
+- 機内モードで画像を取込 → 通信エラーが出ず正しく抽出 → 差分プレビュー → 適用 → Calendar
+  に反映。
+- カメラ撮影 (`DataScannerViewController`) で撮影 → 同じパイプラインで適用できる。
+- `FoundationModels` が利用不可な OS にフォールバックを設定 → ルールベースで動作する。
+
+---
+
+### 9-x. テスト実行・運用ルール
+
+- 単体テストはすべて `scripts/verify.sh` 既定実行で緑にする。
+- 画像 fixtures はリポジトリに含めるが大きさ上限は **1 ファイル 500 KB**。超えるなら
+  画像を縮小するか圧縮 PDF にする。
+- `FoundationModels` は **実モデル呼び出しを CI でしない**。プロトコル境界でモック。
+- 手動 (golden path) は P0-3 のチェックリストに追記し、リリース前にユーザが実機で走らせる。
+- スナップショットテスト (P3-2 拡張) は `SNAPSHOT_TESTING_ENABLED=1` 環境変数で
+  `verify.sh` から enable／skip を制御する既存運用を踏襲する。
