@@ -220,6 +220,8 @@
 
 ### P2-α. シフトパターン自動検出 → プリセット / ローテ提案（未着手）
 
+> アルゴリズム詳細: [docs/p2-algorithms.md §1](docs/p2-algorithms.md#1-p2-α--シフトパターン自動検出)
+
 - **目的**: ユーザが手動で日付ごとに割り当てているアラーム履歴から **周期性を検出** し、
   「これローテとして登録しませんか？」と提案する。手作業の反復を吸収しオンボーディング
   後のリテンションを上げる。
@@ -228,8 +230,10 @@
   2. **複雑周期**: 月火（昼）水木（休）金土（夜）月火（休）水木金土（昼）月火水木（昼）…
      のような **多週周期**。
 - **アプローチ**:
-  - 直近 N 日（既定 90 日）の `DayAssignment` から `(weekday, presetID|.off)` の列を抽出。
-  - 候補周期長 7〜35 日を総当たりし、autocorrelation 風スコア + 編集距離で best fit を選ぶ。
+  - 直近 N 日（既定 90 日）の `DayAssignment` から `(date, presetID|.off|wildcard)` の列を抽出。
+    **手動割当の無い日は wildcard** として一致率算定の分母から除外する。
+  - 候補周期長 2〜35 日を総当たりし、スロットごとの最頻値マッチ率で best fit を選ぶ。
+  - スロット観測密度 ≥ 0.5（既定）を別途要求し、スパース履歴での過学習を防ぐ。
   - 一致率 ≥ しきい値（既定 0.85）かつ最低 2 周期分の観測がある場合のみ提案する。
 - **対象ファイル**:
   - 新規 `Sources/Domain/Logic/ShiftPatternDetector.swift`（純粋ロジック）
@@ -246,6 +250,8 @@
 
 ### P2-β. 長期連休を挟んだ昼夜シフト切替（未着手）
 
+> アルゴリズム詳細: [docs/p2-algorithms.md §2](docs/p2-algorithms.md#2-p2-β--連休越境ローテーション)
+
 - **目的**: お盆・ゴールデンウィーク等の **連続休暇** をユーザが設定したとき、休暇前の最後
   のシフトと休暇後の最初のシフトを **意図通りに切り替える**。
   プリセット / ローテに **連休越境ポリシー** を持たせて自動適用する。
@@ -257,13 +263,20 @@
 - **アプローチ**:
   - `HolidayOverride` を連続範囲として束ねる `VacationPeriod` 概念を導入。
     （3 日以上連続でユーザが明示的に "連休" マークしたもの）
-  - `RotationPattern` / `ShiftPreset` に `crossVacationPolicy` を追加。
+  - `RotationPattern.crossVacationPolicy` を **既定** (`.invert`) として持ち、
+    `ShiftPreset.crossVacationPolicy?` を **optional override** とする（連休直前の
+    最後のプリセットに override があれば pattern を上書き）。
   - `RotationExpander` を vacation-aware に拡張: 連休範囲を周期計算から除外しつつ、復帰
     時に policy に従ってオフセットを再計算する。
 - **対象ファイル**:
   - 既存 `Sources/Domain/Models/HolidayOverride.swift` に `isVacationGroup` フラグ
-  - 新規 `Sources/Domain/Models/VacationPeriod.swift`（SwiftData @Model、SchemaV1
+  - 新規 `Sources/Domain/Models/VacationPeriod.swift`（SwiftData @Model、SchemaV1→V2
     マイグレーション必要）
+  - 既存 `Sources/Domain/Models/RotationPattern.swift` に
+    `crossVacationPolicy: CrossVacationPolicy = .invert` と
+    `dayStartSlotIndex: Int?` を追加
+  - 既存 `Sources/Domain/Models/ShiftPreset.swift` に
+    `crossVacationPolicy: CrossVacationPolicy?`（nil = pattern に従う）を追加
   - 既存 `Sources/Domain/Logic/RotationExpander.swift` を vacation-aware に拡張
   - 新規 `Sources/Domain/Logic/VacationAwareRotation.swift`（policy 適用ロジック）
   - 既存の祝日/有休 UI に "連休としてまとめる" 操作を追加
@@ -276,6 +289,8 @@
   - SwiftData マイグレーション後、既存 `HolidayOverride` は破壊されない。
 
 ### P2-γ. シフト表画像の AI 解析 → カレンダー自動適用（未着手）
+
+> アルゴリズム詳細: [docs/p2-algorithms.md §3](docs/p2-algorithms.md#3-p2-γ--シフト表画像インポート)
 
 - **目的**: 紙のシフト表や、職場のポータルから保存したカレンダー画像をアップロードする
   だけで、AI が日付ごとのシフト（昼 / 夜 / 休 / 明 など）を読み取り、当アプリのカレンダ
