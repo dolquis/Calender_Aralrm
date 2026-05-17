@@ -22,7 +22,8 @@ public enum SharedPersistence {
             configuration = ModelConfiguration(
                 "ShiftAlarmStore",
                 schema: schema,
-                url: storeURL()
+                url: storeURL(),
+                cloudKitDatabase: .none
             )
         }
         do {
