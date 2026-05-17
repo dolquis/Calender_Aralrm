@@ -22,9 +22,12 @@
 ## 2. 開発状況のステートマシン
 
 現在地は **P1 群 (P1-1〜P1-4) と P2-2 (Sleep / Bedtime / HealthKit / App Intents)
-完了、P0-1 は Xcode 26.5 でコードレベル確認済み、P0-2 の local signing 導線も追加済み。
-次は `Config/LocalSigning.xcconfig` に実 Developer Portal 値を入れて
-`scripts/p0-readiness.sh` を緑にし、P0-3 の実機 golden path 検証**。
+完了、P0-1 は Xcode 26.5 でコードレベル確認済み、P0-2 の readiness / device-build
+スクリプトも PR #14 でマージ済み。次は `Config/LocalSigning.xcconfig` に実 Developer
+Portal 値を入れて `scripts/p0-readiness.sh` を緑にし、P0-3 の実機 golden path 検証**。
+新機能ロードマップは P2-α (シフトパターン自動検出) / P2-β (長期連休越境) / P2-γ
+(シフト表画像 AI 解析) — `ROADMAP.md` §4 を参照。iCloud 同期と Apple Watch は
+**スコープ外（不採用）**。
 詳細フェーズは `ROADMAP.md` §1 を見ること。
 
 完了済みの主要 PR:
@@ -40,6 +43,8 @@
 - #11 Sleep / HealthKit / App Intents の P1/P2 レビュー反映と CI 修正
 - #12 ROADMAP / README の P1/P2-2 進捗反映
 - #13 `DayResolverInputBuilder` 抽出、DI seam、CI / テスト拡充
+- #14 P0-2 signing readiness ワークフロー (`scripts/p0-readiness.sh` /
+  `scripts/p0-device-build.sh`)
 
 オープン PR / Issue は 0。
 
@@ -96,7 +101,7 @@ CI は `.github/workflows/ios.yml` が `macos-26` / Xcode 26+ で
 - `Sources/Domain/Persistence/SchemaV1.swift` — SwiftData スキーマ。
   non-optional 追加はマイグレーションが必要。
 - `App/ShiftAlarm.entitlements`, `Widget/ShiftAlarmWidget.entitlements` —
-  App Group / AlarmKit / iCloud。
+  App Group / AlarmKit / HealthKit。
 - `Sources/Services/Sharing/ShiftBundleCodec.swift` —
   `.shiftalarm` 公開フォーマット。互換性を壊さないこと
   （PR #5 の legacy `exportedAt` 受け入れと `CalendarDay` を踏襲）。
@@ -127,5 +132,5 @@ CI は `.github/workflows/ios.yml` が `macos-26` / Xcode 26+ で
 
 1. `ROADMAP.md` の該当タスクの「対象ファイル」「DoD」
 2. `ROADMAP.md` §6「ファイル別の触るときの注意」
-3. 過去 PR の説明文（特に #1 / #2 / #5 / #6 / #7 / #10 / #11）
+3. 過去 PR の説明文（特に #1 / #2 / #5 / #6 / #7 / #10 / #11 / #14）
 4. `README.md` の Architecture notes セクション

@@ -109,12 +109,19 @@ bash scripts/p0-device-build.sh
 readiness script が意図的に失敗します。device build script は同じ readiness check を通してから
 `generic/platform=iOS` 向けにビルドします。
 
-## 将来拡張（実装余地として設計）
+## 将来拡張（次に実装する候補）
 
-- iCloud 同期（`ModelConfiguration(cloudKitDatabase:)` で後付け可能）
-- Apple Watch コンパニオン（`Sources/Domain` を共有する）
+- **シフトパターン自動検出** — 既存のアラーム履歴から周期性を検出し、「これローテとして
+  登録しませんか？」と提案する。単純な昼夜交互週から多週の複雑パターンまでカバー。
+- **長期連休を挟んだ昼夜シフト切替** — お盆 / ゴールデンウィークなどを 1 つの "連休" として
+  マークし、連休前後で昼夜を入れ替えるポリシー（invert / continue / reset-to-day）を
+  ローテに適用する。
+- **シフト表画像の AI 取込** — 紙やポータル画面のシフト表を写真でアップロードすると、
+  端末内 OCR (`Vision`) と iOS 26 の `FoundationModels` がグリッドを解析し、既存の
+  JSON インポートと同じ差分プレビューで適用できる。クラウド送信なし。
 
-詳細なフェーズ計画は `ROADMAP.md` を参照。
+iCloud 同期と Apple Watch コンパニオンは検討の結果 **スコープ外**。詳細なフェーズ計画は
+`ROADMAP.md` を参照。
 
 ## ライセンス
 

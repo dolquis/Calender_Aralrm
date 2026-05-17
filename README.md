@@ -132,10 +132,18 @@ use. The device build script runs the same readiness check before building for
 
 ## Roadmap (designed for, not yet implemented)
 
-- iCloud sync via `ModelConfiguration(cloudKitDatabase:)`
-- Apple Watch companion using the shared `Sources/Domain` target
+- **Shift-pattern auto-detection** — analyze the user's existing assignments and suggest a
+  ready-to-use rotation when a periodic schedule (e.g. weekly day/night alternation, or a
+  multi-week cycle) is detected.
+- **Vacation-aware shift flip** — let users mark long holidays (お盆 / GW etc.) as a single
+  vacation block, and apply a configurable policy (invert / continue / reset-to-day) to
+  the shift that resumes after the break.
+- **Shift-roster image import (AI)** — upload a photo of a printed or digital shift table;
+  on-device OCR (`Vision`) + iOS 26 `FoundationModels` parse the grid and propose
+  assignments through the same diff-preview as the JSON importer. No cloud round-trip.
 
-See `ROADMAP.md` for the full phased plan.
+iCloud sync and an Apple Watch companion were considered earlier and are now **out of
+scope**. See `ROADMAP.md` for the full phased plan.
 
 ## License
 
