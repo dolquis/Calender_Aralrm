@@ -4,12 +4,12 @@
 **開発仕様兼ロードマップ**です。タスクは優先度（P0 → P3）順、各項目に
 **目的 / 対象ファイル / 完了条件 (DoD)** を明記しています。
 
-最終更新: 2026-05-17
+最終更新: 2026-05-18
 対象ブランチ運用: タスクごとに `feature/<topic>` を切り、main へ PR。
 
 ---
 
-## 0. 現状サマリ（2026-05-17 時点）
+## 0. 現状サマリ（2026-05-18 時点）
 
 - iOS 26+ / Swift 6 / SwiftUI + SwiftData / AlarmKit ベースのシフト勤務向けアラームアプリ。
 - 主要レイヤー（Domain / Services / Features / Widget / Live Activity / Sharing / Deep link / ja-en ローカライズ）は実装済み。
@@ -41,6 +41,8 @@
   key、`NSAlarmKitUsageDescription`、`Config/LocalSigning.xcconfig` による実機向け
   signing override 導線は入っている。実 Team ID / bundle id / App Group の値は未設定。
 - 実機 / 実 iOS 26 シミュレータでのゴールデンパス通し検証は未実施。
+- P2 拡張案 A1 / A2 / A3 / A4 + 新規 P2-δ / P2-η を §4 / §9 と
+  `docs/p2-algorithms.md` §1-3 末尾 + §5-6 に追記済み（実装は未着手）。
 
 ---
 
@@ -248,6 +250,46 @@
   - 提案を受け入れると `RotationPattern` として保存され、以後のカレンダーに反映される。
   - 提案を却下したら 30 日間同じ提案を再表示しない。
 
+- **A1. 受入後ドリフト検出（派生 / 未着手）**
+
+  > アルゴリズム詳細: [docs/p2-algorithms.md §1.9](docs/p2-algorithms.md#19-受入後ドリフト検出)
+
+  - 受諾済み `RotationPattern` に対し、直近 30 日の `DayAssignment`（手動上書き）が
+    指定割合を超えたら「パターン更新を提案」する。
+  - `AppSettings.patternDriftThreshold: Double = 0.15`（既定 15%）。
+  - 再評価は `ShiftPatternDetector` を再実行し、新 `SuggestedRotation` の `fingerprint`
+    が既存 pattern と異なる場合のみカード表示。同 fingerprint なら抑止。
+  - 受諾で **新規 pattern を別 priority** として insert（既存 pattern は
+    `isActive=false` にフラグ）。
+  - 却下は通常の 30 日スヌーズ（α-I4/I5 と同じパス）を共用。
+  - **対象ファイル**:
+    - 既存 `Sources/Domain/Models/AppSettings.swift` に `patternDriftThreshold` 追加
+    - 既存 `Sources/Domain/Logic/ShiftPatternDetector.swift` に `detectDrift(...)` 追加
+    - 既存 `Sources/Features/Rotation/RotationListView.swift` に「更新提案カード」分岐追加
+  - **DoD**:
+    - 不一致率 < 閾値で再提案が走らない。
+    - 閾値超 & 新 fingerprint で再提案カードが出る。
+    - 受諾で旧 pattern が無効化、新 pattern が active 化される。
+
+- **A2. 曜日×週序検出（派生 / 未着手）**
+
+  > アルゴリズム詳細: [docs/p2-algorithms.md §1.10](docs/p2-algorithms.md#110-dow-検出)
+
+  - 純粋周期に乗らない「第 1・第 3 金曜は夜勤」「毎月最終週は休」型の **DOW
+    (day-of-week × week-of-month)** パターンを別アルゴリズムで検出。
+  - 結果は `SuggestedRotation` ではなく `SuggestedDOWRule { dayOfWeek, weekOfMonth,
+    presetID, observedMatches }` のリストとして返し、UI 上は通常ローテ提案と並列の
+    カードで表示。
+  - 受諾時は v1 では **`HolidayOverride`** に展開（週序計算で範囲展開、複数月分を
+    一括 insert）。`RecurrenceRule` モデル化はバックログ扱い。
+  - **対象ファイル**:
+    - 新規 `Sources/Domain/Logic/DayOfWeekPatternDetector.swift`（α 検出器の兄弟）
+    - 既存 `Sources/Features/Rotation/RotationListView.swift` に DOW 提案カードを追加
+  - **DoD**:
+    - 第 1・第 3 金曜のみ夜勤の履歴で 2 つの `SuggestedDOWRule` が返る。
+    - 観測 1 件など低密度パターンは検出されない。
+    - α 周期検出と DOW 検出が同入力で並走し、両ヒット時は両カードが出る。
+
 ### P2-β. 長期連休を挟んだ昼夜シフト切替（未着手）
 
 > アルゴリズム詳細: [docs/p2-algorithms.md §2](docs/p2-algorithms.md#2-p2-β--連休越境ローテーション)
@@ -287,6 +329,27 @@
   - `.continue` policy で連休前と同じ位相が維持される。
   - `.resetToDay` で常に昼勤始まりになる。
   - SwiftData マイグレーション後、既存 `HolidayOverride` は破壊されない。
+
+- **A4. 連休自動グルーピング（opt-in 派生 / 未着手）**
+
+  > アルゴリズム詳細: [docs/p2-algorithms.md §2.8](docs/p2-algorithms.md#28-自動グルーピング提案フロー)
+
+  - β-S3「マイグレーションで自動グルーピングしない」を踏襲しつつ、**初回 β 画面
+    オープン時にだけ**「連続 3 日以上の既存 `HolidayOverride` を `VacationPeriod`
+    としてまとめますか？」プロンプトを 1 回出す。
+  - `AppSettings.vacationAutoGroupingOffered: Bool = false`。プロンプト表示で
+    `true` に更新し、二度と出さない。
+  - 受諾で各連続範囲を `VacationPeriod` 化し、範囲内 `HolidayOverride.isVacationGroup`
+    を `true` にする。
+  - 却下は単にフラグを `true` にして閉じる（再表示なし、手動で個別作成は常時可能）。
+  - **対象ファイル**:
+    - 既存 `Sources/Domain/Models/AppSettings.swift` に
+      `vacationAutoGroupingOffered` 追加
+    - 既存 `Sources/Features/Holidays/HolidayManagerView.swift` に提案 sheet 追加
+  - **DoD**:
+    - 連続 3 日以上のみ候補化される（2 日以下は除外）。
+    - 候補から個別に除外できる。
+    - フラグ `true` 後は β 画面再オープンで再表示しない。
 
 ### P2-γ. シフト表画像の AI 解析 → カレンダー自動適用（未着手）
 
@@ -333,6 +396,107 @@
   - iOS 26 `FoundationModels` の API は実装着手時に `.swiftinterface` で再チェック。
   - 手書きシフト表は OCR 精度が落ちる可能性。初版では印刷 / デジタル表に限定し、手書きは
     バックログ扱い。
+
+- **A3. ラベル学習キャッシュ（派生 / 未着手）**
+
+  > アルゴリズム詳細: [docs/p2-algorithms.md §3.12](docs/p2-algorithms.md#312-ラベル学習キャッシュ)
+
+  - 差分プレビュー UI でユーザがラベル → preset 対応を手動修正したら、その対応を
+    `AppSettings.learnedLabelMappingsJSON` に JSON 保存。
+  - `LabelKey = "<NFKC + lowercase>(label)|<userNameOnRoster?>"`。
+  - 次回パイプラインで **Pass A（ルール）の前** に参照、ヒットなら
+    `MapResult.existingPreset(_, confidence: 1.0)` 相当を返す。
+  - `nil` を覚えるケース = `.off`（「これは休」を学習）。
+  - 上限 200 エントリ。超過時は `learnedAt` 古い順に LRU 退避。
+  - 設定画面に「学習データをリセット」ボタンを追加（A3 範囲内）。
+  - クラウド送信なし。
+  - **対象ファイル**:
+    - 既存 `Sources/Domain/Models/AppSettings.swift` に `learnedLabelMappingsJSON: String`
+      フィールド追加（Dictionary は SwiftData 制約により JSON 文字列で保持）
+    - 既存（未実装）`Sources/Services/Vision/FoundationModelsShiftMapper.swift` で
+      キャッシュ参照
+    - 既存（未実装）`Sources/Features/Import/ImageImportView.swift` のプレビュー
+      補正ハンドラで保存
+    - 既存 `Sources/Features/Settings/` 配下にリセットボタン追加
+  - **DoD**:
+    - キャッシュヒットがルールベース / LLM より優先される。
+    - `.off` 学習が次回呼出でヒット。
+    - 上限超過で最古エントリが退避。
+    - 補正がプレビュー → 適用フローを通すと `AppSettings` に永続化される。
+
+---
+
+### P2-δ. シフトスワップ — 代行 / 被代行のアラーム正当性（未着手）
+
+> アルゴリズム詳細: [docs/p2-algorithms.md §5](docs/p2-algorithms.md#5-p2-δ--シフトスワップ)
+
+- **目的**: 同僚と勤務を交換した日でも **正しいシフトのアラームが鳴る** ことを保証する。
+  「火曜の昼勤を A に代わってもらった / 水曜の夜勤を代わってあげた」を 1 操作で記録し、
+  対象日の `DayAssignment` を更新、`AlarmScheduler` の diff-sync を発火する。
+- **対象シナリオ**:
+  1. **被代行 (off)**: 自分が出勤予定だった日を同僚に代わってもらう → 当日のアラームを
+     ミュート（`skipAlarm = true`）し、`SwapRecord` に「A に代行依頼」を残す。
+  2. **代行 (on)**: 自分が休み予定だった日に同僚の代わりに出勤する → 当日のプリセットを
+     出勤シフトに上書きし、アラーム登録。
+  3. **同時スワップ (exchange)**: 1 + 2 を同じ操作で記録。
+- **データモデル（V2 → V3）**:
+  - 新規 `@Model SwapRecord { id, date, kind: .covered|.covering|.exchange,
+    counterpartyLabel: String, note: String, createdAt }`。
+  - `DayAssignment` には **フィールド追加なし**。出勤 / 欠勤は通常の `DayAssignment` で
+    表現し、`SwapRecord` はメタデータ専用。
+  - これにより `DayResolver` / `AlarmScheduler` は **完全に無改変**（既存の手動優先パス
+    がそのまま機能する）。
+- **対象ファイル**:
+  - 新規 `Sources/Domain/Models/SwapRecord.swift`（SwiftData @Model、Schema V2 → V3）
+  - 新規 `Sources/Domain/Persistence/SchemaV3.swift` + 既存 `MigrationPlan` 拡張
+  - 既存 `Sources/Features/Calendar/DayDetailEditorView.swift` にスワップアクション追加
+  - 既存 `Sources/Features/Calendar/DayCell.swift` に「↔」バッジ追加
+  - 既存 `Sources/Domain/Logic/DayResolverInputBuilder.swift` に SwapRecord スナップ
+    ショット同梱（UI バッジ用、resolver 自体は使わない）
+  - テスト: 新規 `Tests/DomainTests/SwapRecordTests.swift` /
+    `Tests/DomainTests/SchemaV2MigrationTests.swift` /
+    `Tests/ServicesTests/AlarmSchedulerTests.swift` 拡張
+- **UX**:
+  - 日付詳細画面に「シフト交代」ボタン → kind 選択 → 相手ラベル入力 → 該当日の
+    `DayAssignment` を upsert（出勤化なら preset 選択、欠勤化なら skip）→ `SwapRecord`
+    を作成。
+  - 月カレンダーのバッジで「↔」アイコン表示（VoiceOver 文言: "シフト交代済み"）。
+- **DoD**:
+  - 「代行 (on)」記録後、当日のアラームが指定プリセットの時刻で AlarmKit に登録。
+  - 「被代行 (off)」記録後、当日のアラーム登録が消える。
+  - SwiftData V2 → V3 マイグレーション後、既存データ非破壊。
+  - 月カレンダーで「↔」バッジが該当日に出る（VoiceOver 含む）。
+
+---
+
+### P2-η. 家族共有用 .ics エクスポート（未着手）
+
+> アルゴリズム詳細: [docs/p2-algorithms.md §6](docs/p2-algorithms.md#6-p2-η--ics-エクスポート)
+
+- **目的**: 月単位の確定シフトを **iCalendar (.ics) ファイル** として書き出し、AirDrop /
+  Mail / メッセージで家族に渡せるようにする。受け取り側は標準 Calendar アプリで
+  読み取り専用購読する。**CloudKit は使わない**。
+- **対象範囲**:
+  - エクスポートは **手動操作の都度**。バックグラウンド同期はしない。
+  - 1 ファイル = 1 ヶ月分（既定）。範囲ピッカーで 1〜12 ヶ月選択可。
+  - 1 シフト = 1 `VEVENT`。`SUMMARY = preset.name`、`DTSTART/DTEND` は
+    `alarmTime` を起点に 30 分のダミーイベント。
+  - 連休 (`VacationPeriod`) と `skipAlarm` 日はイベント化しない。
+  - `PRODID = -//ShiftAlarm//ja//EN`、`X-WR-CALNAME` は固定文字列。
+- **対象ファイル**:
+  - 新規 `Sources/Services/Sharing/ICSExporter.swift`（純ロジック）
+  - 新規 `Sources/Features/Sharing/ICSExportView.swift`（範囲ピッカー + 共有シート）
+  - 既存 Import/Export 画面に「.ics で書き出し」導線追加
+  - テスト: 新規 `Tests/ServicesTests/ICSExporterTests.swift` /
+    `Tests/ServicesTests/ICSExportFlowTests.swift`
+- **DoD**:
+  - 1 ヶ月分の `.ics` が macOS / iOS Calendar、Google Calendar、Outlook で
+    時刻・タイトル・タイムゾーン正しく読める。
+  - 個人情報（`counterpartyLabel`、note）はエクスポートに含まれない（preset 名のみ）。
+  - 機内モードで書き出し → 共有シートで保存可能（ネット通信なし）。
+- **既知の不確実性**:
+  - 終日イベント (`DTSTART;VALUE=DATE`) でなく 30 分イベントとして書く判断は要レビュー。
+    家族側で「6 時から夜勤?」と誤読しない文面 / X-プロパティを実装時に詰める。
 
 ---
 
@@ -447,6 +611,11 @@ TDD 的に最初に **赤いテスト** として並べてから実装すると�
 | α-U10 | `testRotationGeneratedAssignmentsExcludedFromInput` | rotation 由来の自動値は検出入力から除外し、手動入力のみを見る |
 | α-U11 | `testHistoryWindowDefaultIs90Days` | 検出窓は既定 90 日（境界テスト: 89 / 90 / 91 日） |
 | α-U12 | `testCanonicalizationStartsFromMonday` | 検出結果は週初を月曜に揃えて返す（曜日ズレ吸収） |
+| α-U13 | `testDriftBelowThresholdSuppressesReSuggestion` | A1: 不一致率 < 閾値で `detectDrift` が `nil` |
+| α-U14 | `testDriftAboveThresholdReturnsNewSuggestion` | A1: 閾値超 → 検出再走 → 新 fingerprint なら提案返却 |
+| α-U15 | `testDOWDetectorFindsFirstAndThirdFriday` | A2: 第 1・第 3 金曜のみ夜勤履歴 → 2 ルール検出 |
+| α-U16 | `testDOWDetectorRejectsLowDensity` | A2: 観測 1 件のみ → `nil` |
+| α-U17 | `testPeriodicAndDOWCoexistBothReturned` | A2: 7 日交互 + 第 1 金曜上書き → 両提案 |
 
 **統合 / UI — `Tests/ServicesTests/PatternSuggestionFlowTests.swift`（新規）**
 
@@ -458,6 +627,7 @@ TDD 的に最初に **赤いテスト** として並べてから実装すると�
 | α-I4 | `testRejectSetsSnoozeUntilDate` | 却下で `AppSettings.patternSuggestionSnoozedUntil` に 30 日後の値 |
 | α-I5 | `testSnoozedSuggestionNotShownAgain` | スヌーズ期間中は提案が再表示されない |
 | α-I6 | `testOnboardingPathTriggersSuggestion` | Onboarding 完了直後にサンプル履歴があれば提案分岐に入る |
+| α-I7 | `testAcceptDriftDeactivatesPreviousPattern` | A1: ドリフト受諾で旧 pattern が `isActive=false`、新 pattern が active |
 
 **手動 (golden path)**
 
@@ -485,6 +655,8 @@ TDD 的に最初に **赤いテスト** として並べてから実装すると�
 | β-U11 | `testHigherPriorityRotationOverridesAfterVacation` | 連休越境後も rotation の priority が尊重される |
 | β-U12 | `testVacationAtMonthBoundary` | 月境界（例: 4/29 〜 5/8）で連休が分断されず 1 つとして扱われる |
 | β-U13 | `testVacationAtYearBoundary` | 年末年始（12/30 〜 1/3）でも同上 |
+| β-U17 | `testAutoGroupingDetectsThreePlusConsecutiveHolidays` | A4: 連続 3 日以上で候補化、2 日以下は除外 |
+| β-U18 | `testAutoGroupingRespectsUserSelection` | A4: 候補から個別除外したら除外分は作成されない |
 
 **スキーマ — `Tests/DomainTests/SchemaV1MigrationTests.swift`（既存 or 新規）**
 
@@ -501,6 +673,7 @@ TDD 的に最初に **赤いテスト** として並べてから実装すると�
 | β-I1 | `testAlarmSchedulerSkipsAlarmsDuringVacation` | 連休範囲の AlarmKit 登録が無い |
 | β-I2 | `testAlarmSchedulerRegistersFlippedAlarmAfterVacation` | 連休明け初日のアラーム時刻が `.invert` で正しい |
 | β-I3 | `testDayResolverReturnsCorrectPresetAfterVacation` | `DayResolver` で連休明け初日のプリセットが解決 |
+| β-I4 | `testAutoGroupingPromptShownOnlyOnce` | A4: フラグ `true` 後は β 画面再オープンで表示無し |
 
 **手動 (golden path)**
 
@@ -542,6 +715,9 @@ TDD 的に最初に **赤いテスト** として並べてから実装すると�
 | γ-U14 | `testModelMapperReturnsHighConfidenceMapping` | モック返却で confidence ≥ 閾値なら確定マッピング |
 | γ-U15 | `testLowConfidenceMappingMarkedUnresolved` | confidence < 閾値 → `.unresolved` |
 | γ-U16 | `testMapperRespectsPreviousNamingHint` | 既存 ShiftPreset 名と最も近いものを優先 |
+| γ-U17 | `testLearnedMappingTakesPrecedenceOverRuleBased` | A3: キャッシュに `"早"→nightID` を入れた状態でルールの `早→dayID` を上書き |
+| γ-U18 | `testLearnedOffMappingPersists` | A3: `.off` 学習が次回呼出でヒット |
+| γ-U19 | `testLRUEvictionAt201stEntry` | A3: 上限超過で最古エントリが破棄 |
 
 **統合 — `Tests/ServicesTests/ImageImportIntegrationTests.swift`（新規）**
 
@@ -551,6 +727,7 @@ TDD 的に最初に **赤いテスト** として並べてから実装すると�
 | γ-I2 | `testApplyDiffPersistsAssignments` | 適用で SwiftData に書き込まれ Calendar 表示が更新 |
 | γ-I3 | `testRetainsExistingManualOverrides` | 取込前の手動上書きは破壊されない（衝突時は `add` ではなく `update` 候補） |
 | γ-I4 | `testRetryOnPartialFailureKeepsAlreadyAppliedDays` | 途中失敗時に既適用日はロールバックされない（idempotent） |
+| γ-I5 | `testUserCorrectionInPreviewPersistsToSettings` | A3: プレビュー UI 補正 → 適用後 `AppSettings.learnedLabelMappingsJSON` 反映 |
 
 **精度 DoD — `Tests/Fixtures/ShiftImages/` に手動アノテーション付きで配置**
 
@@ -566,6 +743,71 @@ TDD 的に最初に **赤いテスト** として並べてから実装すると�
   に反映。
 - カメラ撮影 (`DataScannerViewController`) で撮影 → 同じパイプラインで適用できる。
 - `FoundationModels` が利用不可な OS にフォールバックを設定 → ルールベースで動作する。
+
+---
+
+### 9-δ. P2-δ シフトスワップ
+
+**ユニット — `Tests/DomainTests/SwapRecordTests.swift`（新規）**
+
+| # | テスト名 | 検証する性質 |
+|---|---|---|
+| δ-U1 | `testCoveredMarksDayAsSkipAlarm` | `.covered` 操作で `DayAssignment.skipAlarm == true` |
+| δ-U2 | `testCoveringUpsertsAssignmentWithPreset` | `.covering` 操作で `DayAssignment.preset == 指定` |
+| δ-U3 | `testSwapRecordMetadataPersists` | `counterpartyLabel` と `kind` が読み戻し可能 |
+| δ-U4 | `testPastDateSwapAccepted` | 過去日でも記録は作成可能 |
+| δ-U5 | `testDeletingSwapRecordKeepsAssignment` | レコード削除で割当は残る |
+
+**スキーマ — `Tests/DomainTests/SchemaV2MigrationTests.swift`（新規）**
+
+| # | テスト名 | 検証する性質 |
+|---|---|---|
+| δ-S1 | `testMigrationV2ToV3PreservesExistingData` | V2 で書いた行が V3 で全件読める |
+| δ-S2 | `testMigrationV2ToV3AddsNoSwapRecords` | migration 直後 `SwapRecord` count == 0 |
+
+**統合 — `Tests/ServicesTests/AlarmSchedulerTests.swift`（拡張）**
+
+| # | テスト名 | 検証する性質 |
+|---|---|---|
+| δ-I1 | `testCoveringDayGetsScheduledAlarm` | `.covering` 記録後の対象日に AlarmKit 登録 |
+| δ-I2 | `testCoveredDayRemovesScheduledAlarm` | `.covered` 記録後に当該日の登録が消える |
+| δ-I3 | `testSwapDoesNotAffectOtherDays` | スワップ日以外の登録は変化しない |
+
+**手動 (golden path)**
+
+- 今週金曜の昼勤を「同僚 X に代行してもらう」→ 金曜のアラームが鳴らないことを実機で確認。
+- 翌週月曜（休み予定）を「Y の代わりに昼勤」→ 月曜にプリセット色のセル + アラームが
+  鳴ることを実機で確認。
+
+---
+
+### 9-η. P2-η .ics エクスポート
+
+**ユニット — `Tests/ServicesTests/ICSExporterTests.swift`（新規）**
+
+| # | テスト名 | 検証する性質 |
+|---|---|---|
+| η-U1 | `testEmptyRangeProducesValidEmptyCalendar` | 範囲内に出勤日 0 → `VCALENDAR` のみ、`VEVENT` 0 |
+| η-U2 | `testSingleEventFormatMatchesRFC5545` | 1 件出勤の出力を行ごとに固定アサート（CRLF + 必須プロパティ全て） |
+| η-U3 | `testSummaryEscapesSpecialCharacters` | preset 名に `;,\n\\` を含む → エスケープ済 |
+| η-U4 | `testSkipAlarmDayExcluded` | `skipAlarm` 日は `VEVENT` に含まれない |
+| η-U5 | `testVacationPeriodDayExcluded` | 連休範囲はスキップ |
+| η-U6 | `testUIDIsDeterministicAcrossRuns` | 同入力で 2 回エクスポートしても同 UID |
+| η-U7 | `testTimezoneSetToCalendarCurrent` | `X-WR-TIMEZONE` と `TZID` が一致 |
+| η-U8 | `testNoNetworkRequestsDuringExport` | `URLProtocol` 監視で `requestCount == 0` |
+| η-U9 | `testMultiMonthExportWithinLimit` | 12 ヶ月分でも順序がカレンダー昇順 |
+
+**統合 — `Tests/ServicesTests/ICSExportFlowTests.swift`（新規）**
+
+| # | テスト名 | 検証する性質 |
+|---|---|---|
+| η-I1 | `testExportFromContainerEmitsValidICS` | `ModelContainer` シード → エクスポート → ヘッダ・件数アサート |
+| η-I2 | `testExportRoundtripViaEventKit` | 出力ファイルを `EKEventStore` で読み戻し、件数とサマリ一致 |
+
+**手動 (golden path)**
+
+- iPhone で 1 ヶ月分書き出し → AirDrop で別端末に送信 → 標準 Calendar で全件読めることを確認。
+- Outlook / Google Calendar に読み込ませて時刻が正しい TZ で表示されることを確認。
 
 ---
 
