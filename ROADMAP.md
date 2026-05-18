@@ -793,7 +793,7 @@ TDD 的に最初に **赤いテスト** として並べてから実装すると�
 | η-U4 | `testSkipAlarmDayExcluded` | `skipAlarm` 日は `VEVENT` に含まれない |
 | η-U5 | `testVacationPeriodDayExcluded` | 連休範囲はスキップ |
 | η-U6 | `testUIDIsDeterministicAcrossRuns` | 同入力で 2 回エクスポートしても同 UID |
-| η-U7 | `testTimezoneSetToCalendarCurrent` | `X-WR-TIMEZONE` と `TZID` が一致 |
+| η-U7 | `testUTCConversionMatchesCalendarTimezone` | `X-WR-TIMEZONE` が `calendar.timeZone.identifier` と一致、`DTSTART` は UTC（末尾 `Z`） |
 | η-U8 | `testNoNetworkRequestsDuringExport` | `URLProtocol` 監視で `requestCount == 0` |
 | η-U9 | `testMultiMonthExportWithinLimit` | 12 ヶ月分でも順序がカレンダー昇順 |
 
@@ -802,7 +802,7 @@ TDD 的に最初に **赤いテスト** として並べてから実装すると�
 | # | テスト名 | 検証する性質 |
 |---|---|---|
 | η-I1 | `testExportFromContainerEmitsValidICS` | `ModelContainer` シード → エクスポート → ヘッダ・件数アサート |
-| η-I2 | `testExportRoundtripViaEventKit` | 出力ファイルを `EKEventStore` で読み戻し、件数とサマリ一致 |
+| η-I2 | `testExportParseRoundtrip` | 出力文字列をテスト内 `ICSTestParser` で再パースし、件数・SUMMARY・UTC DTSTART が一致（EventKit には ICS 取込 API が無いためファイルレベル検証で代替、詳細 `docs/p2-algorithms.md §6.8.1`） |
 
 **手動 (golden path)**
 

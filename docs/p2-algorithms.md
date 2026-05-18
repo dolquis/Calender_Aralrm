@@ -1218,7 +1218,11 @@ ROADMAP §4 P2-η に対応。月単位の確定シフトを iCalendar 形式で
 
 ### 6.2 出力フォーマット
 
-RFC 5545 準拠の iCalendar:
+RFC 5545 準拠の iCalendar。v1 では **UTC（Z 形式）** で時刻を出力し、
+`VTIMEZONE` ブロックを省略する。これは TZID 参照（`DTSTART;TZID=...`）に対する
+VTIMEZONE 同梱が RFC 5545 §3.6.5 で要求される一方、IANA 名のみで動かす Apple Calendar
+以外（特に Outlook）でずれが出るのを避けるため。`Asia/Tokyo` 6:00 のシフトは
+`20260519T210000Z` として出力され、受信側のローカル TZ で正しくレンダされる。
 
 ```
 BEGIN:VCALENDAR
@@ -1230,8 +1234,8 @@ X-WR-TIMEZONE:Asia/Tokyo
 BEGIN:VEVENT
 UID:<deterministic>@shiftalarm.local
 DTSTAMP:20260518T120000Z
-DTSTART;TZID=Asia/Tokyo:20260520T060000
-DTEND;TZID=Asia/Tokyo:20260520T063000
+DTSTART:20260519T210000Z
+DTEND:20260519T213000Z
 SUMMARY:昼勤
 END:VEVENT
 ...
@@ -1249,7 +1253,9 @@ END:VCALENDAR
 - `UID` は決定論的: `sha256("\(yyyy-MM-dd)|\(presetID.uuidString)")@shiftalarm.local`。
   同入力で再エクスポートしても同 UID → 受け取り側で購読更新が安定 (η-U6)。
 - `DTEND = DTSTART + 30 分` の固定長ダミー区間。
-- `DTSTAMP` は **エクスポート時刻**（UTC）。テストでは DI で固定。
+- `DTSTAMP`、`DTSTART`、`DTEND` はすべて **UTC**（末尾 `Z`）。テストでは DI で固定。
+- `X-WR-TIMEZONE` は **情報ヘッダのみ**（受信側がプロパティ非対応でも害は無い）。
+  iCal セマンティクスとしては UTC 時刻が正。
 
 ### 6.3 イベント化対象
 
@@ -1263,9 +1269,14 @@ END:VCALENDAR
 
 ### 6.4 タイムゾーン
 
-- `X-WR-TIMEZONE` と `TZID=` は同じ値（`calendar.timeZone.identifier`）。
-- `VTIMEZONE` ブロックは v1 では出力しない（受け取り側で IANA 名解決を期待）。
-  Outlook で日本以外の TZ が問題化した場合は v2 で `VTIMEZONE` 追加を検討。
+- ローカル時刻 → UTC 変換に `calendar.timeZone`（既定: `Calendar.current.timeZone`）を
+  使う。例えば `Asia/Tokyo` の `2026-05-20 06:00` は `20260519T210000Z` に変換される。
+- `X-WR-TIMEZONE` は **エクスポート時のユーザ TZ 識別子**（情報ヘッダ）。受信側で
+  非対応でも `DTSTART` の UTC が正なので時刻ズレなし。
+- `VTIMEZONE` ブロックは v1 では出力しない。代わりに UTC で出すため、Apple Calendar /
+  Google Calendar / Outlook 全てで同じ瞬間時刻が表示される（DoD と整合）。
+- v2 で「ローカル時刻 + VTIMEZONE」方式へ切り替える場合は、IANA TZ → RFC 5545
+  `VTIMEZONE`（`STANDARD` / `DAYLIGHT` + `RRULE`）の自動生成が必要。バックログ。
 
 ### 6.5 ネットワークガード
 
@@ -1319,11 +1330,43 @@ extension ICSExporter {
 | η-U3 | §6.2 エスケープ規則 |
 | η-U4 / η-U5 | §6.3 フィルタ |
 | η-U6 | §6.2 UID 決定論性（sha256 が同入力で同値） |
-| η-U7 | §6.4 X-WR-TIMEZONE = TZID |
+| η-U7 | §6.4 UTC 変換: `Asia/Tokyo 06:00` → `20260519T210000Z` を行アサート。`X-WR-TIMEZONE` が `calendar.timeZone.identifier` と一致 |
 | η-U8 | §6.5 ネットワークガード |
 | η-U9 | range の `startOfDay` 昇順で resolvedDays を辿るため自然に昇順 |
 | η-I1 | in-memory `ModelContainer` シード → `DayResolver` → `ICSExporter.export` |
-| η-I2 | 出力ファイルを `EKEventStore.importICS(...)`（または同等）で読み戻し |
+| η-I2 | 出力文字列をテスト内パーサで再パース（後述 §6.8.1）し、`VEVENT` 件数 / `SUMMARY` / UTC `DTSTART` を assert。EventKit には ICS ファイル取込 API が無いため、ファイルレベルのアサートで代替 |
+
+#### 6.8.1 テスト用 ICS パーサ（η-I2 用）
+
+EventKit には ICS ファイルを直接取り込む公開 API が存在しない
+（`EKEventStore` は `EKEvent` を生成 / 永続化はできても外部 `.ics` を読まない）。
+そのため η-I2 はテストターゲット内に **最小 iCalendar パーサ** を置いて検証する:
+
+```swift
+struct ParsedICSEvent: Equatable {
+    let uid: String
+    let summary: String
+    let dtstart: Date  // UTC
+    let dtend: Date    // UTC
+}
+
+enum ICSTestParser {
+    static func parse(_ text: String) throws -> [ParsedICSEvent]
+}
+```
+
+- 行は `\r\n` 区切り。
+- `BEGIN:VEVENT` / `END:VEVENT` で区切る。
+- 各イベント内で `UID:`、`SUMMARY:`、`DTSTART:`、`DTEND:` をプリフィックス比較で
+  抽出（`TZID=` 付きは v1 では出ない前提）。
+- `DTSTART:20260519T210000Z` を ISO8601 で `Date` にパース。
+- `SUMMARY` のエスケープ復号（`\\` / `\,` / `\;` / `\n`）も実装。
+- 想定 30 行以下の小実装。テストターゲット限定で `Tests/Support/ICSTestParser.swift`
+  に置く（プロダクション側へは出さない）。
+
+別案: 既存の **`EventKit.EKCalendar` を経由した実機経路**（カレンダー App に
+共有シートで読ませる）は CI で動かせないため、p0-3 ゴールデンパス（手動 / 実機）
+として残す。η-I2 はあくまでパース整合性の単体性検証に絞る。
 
 ### 6.9 PR 分割案
 
