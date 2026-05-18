@@ -1175,7 +1175,7 @@ public enum SwapKind: Int, Codable, Sendable, CaseIterable {
 
 - `DayResolverInputBuilder` に `swapRecords: [SwapRecordSnapshot]` を追加
   （ただし `DayResolver` 内部では使わず、UI レイヤから参照する）。
-- `DayCell` で `swapRecords[date] != nil` なら「↔」アイコンを描画。
+- `DayCellView` で `swapRecords[date] != nil` なら「↔」アイコンを描画。
 - VoiceOver: `"\(presetName), シフト交代済み"`。
 
 ### 5.6 テスト対応
@@ -1197,7 +1197,7 @@ public enum SwapKind: Int, Codable, Sendable, CaseIterable {
 
 1. `feature/p2-delta-schema-v3` — `SwapRecord` 追加 + V3 migration + migration テスト。
 2. `feature/p2-delta-day-editor` — DayDetailEditorView 操作 + AlarmScheduler 統合テスト。
-3. `feature/p2-delta-badge` — DayCell バッジ + a11y。
+3. `feature/p2-delta-badge` — `DayCellView` バッジ + a11y。
 
 ---
 

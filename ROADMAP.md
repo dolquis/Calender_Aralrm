@@ -450,7 +450,7 @@
   - 新規 `Sources/Domain/Models/SwapRecord.swift`（SwiftData @Model、Schema V2 → V3）
   - 新規 `Sources/Domain/Persistence/SchemaV3.swift` + 既存 `MigrationPlan` 拡張
   - 既存 `Sources/Features/Calendar/DayDetailEditorView.swift` にスワップアクション追加
-  - 既存 `Sources/Features/Calendar/DayCell.swift` に「↔」バッジ追加
+  - 既存 `Sources/Features/Calendar/DayCellView.swift` に「↔」バッジ追加
   - 既存 `Sources/Domain/Logic/DayResolverInputBuilder.swift` に SwapRecord スナップ
     ショット同梱（UI バッジ用、resolver 自体は使わない）
   - テスト: 新規 `Tests/DomainTests/SwapRecordTests.swift` /
