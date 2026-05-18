@@ -129,6 +129,125 @@ public struct SuggestedRotation: Equatable, Sendable {
 | α-U11 | `windowDays` 境界 |
 | α-U12 | 月曜正規化（1.5 節） |
 
+### 1.9 受入後ドリフト検出
+
+派生機能 **A1**（ROADMAP §4 P2-α A1）の本体ロジック。
+
+**入力:**
+
+- `pattern: RotationPatternSnapshot`（既に受諾済み、`isActive == true`）
+- `recentManualAssignments: [Date: DayAssignmentSnapshot]`（直近 30 日）
+- `presets: [UUID: ShiftPresetSnapshot]`
+- `today: Date`、`calendar: Calendar`
+- `threshold: Double = AppSettings.patternDriftThreshold`（既定 0.15）
+
+**手順:**
+
+1. `window = [today - 30 days, today - 1]` を `calendar.startOfDay` で正規化。
+2. 各日 `d ∈ window` について:
+   - `expected = pattern.slots[baseSlotIndex(d, pattern)]`（連休越境拡張があれば
+     `VacationAwareRotation` を使う）
+   - `manual = recentManualAssignments[d]`
+   - `manual == nil`（手動上書き無し）の日は分母に含めない（ローテ展開を信頼）。
+   - `manual != nil` 日のうち `manual.presetID ≠ expected` の件数を分子に。
+3. `mismatchRate = mismatches / observed`。`observed == 0` なら `nil` を返す。
+4. `mismatchRate < threshold` → `nil`。
+5. しきい値超 → `ShiftPatternDetector.detect(...)` を **同じ `recentManualAssignments`
+   入力で再走** → 新 `SuggestedRotation` を返す。
+6. 呼び出し側（`RotationListView` / 同 ViewModel）は新 `fingerprint` を既存 pattern
+   から導出した fingerprint と比較し、**異なる場合のみ** カードを表示する。
+7. スヌーズ判定は α-I4/I5 と同じ `patternSuggestionSnoozedFingerprint` / `Until` を
+   共用する。
+
+**受諾フロー:**
+
+- 新 `RotationPattern` を **新規 priority** で insert（既存 pattern の priority より
+  高く、または同等）。
+- 既存 pattern の `isActive = false` をセット（履歴保持目的）。
+- `AlarmScheduler.refreshScheduledAlarms()` を呼出。
+
+**API シグネチャ案:**
+
+```swift
+extension ShiftPatternDetector {
+    public func detectDrift(
+        pattern: RotationPatternSnapshot,
+        recentManualAssignments: [Date: DayAssignmentSnapshot],
+        presets: [UUID: ShiftPresetSnapshot],
+        today: Date,
+        calendar: Calendar,
+        threshold: Double
+    ) -> SuggestedRotation?
+}
+```
+
+### 1.10 DOW 検出
+
+派生機能 **A2**（ROADMAP §4 P2-α A2）の本体ロジック。α 周期検出器と
+**並走** する別アルゴリズム。
+
+**Configuration 追加:**
+
+```swift
+extension ShiftPatternDetector.Configuration {
+    public var minDOWDensity: Double = 0.6
+    public var minDOWMatchRate: Double = 0.85
+}
+```
+
+**手順:**
+
+1. 各日 `d ∈ window`（α と同 90 日窓）について `(weekday, weekOfMonth)` を計算:
+   - `weekday = calendar.component(.weekday, from: d)`（1..7）
+   - `weekOfMonth = calendar.component(.weekOfMonth, from: d)`（1..6）
+2. 観測を `Dictionary<DOWKey, [Symbol]>` に集約（Symbol は α と同じ
+   `.preset(UUID)` / `.off` / nil）。
+3. 各キーについて:
+   - `observedCount` = 非 nil シンボル数
+   - `expectedCount` = 窓内でその `(weekday, weekOfMonth)` が出現した回数
+   - `density = observedCount / expectedCount`
+   - `mode` = 最頻値（α と同じタイブレーク規則）
+   - `matchRate = count(symbols == mode) / observedCount`
+4. `density ≥ minDOWDensity` かつ `matchRate ≥ minDOWMatchRate` のキーを採用。
+5. 採用キーごとに `SuggestedDOWRule { dayOfWeek, weekOfMonth, presetID, observedMatches,
+   confidence: matchRate }` を生成。
+
+**出力:**
+
+```swift
+public struct SuggestedDOWRule: Equatable, Sendable {
+    public let dayOfWeek: Int            // 1..7（calendar 由来）
+    public let weekOfMonth: Int          // 1..6
+    public let presetID: UUID?           // .off → nil
+    public let observedMatches: Int
+    public let confidence: Double
+}
+```
+
+**受諾フロー:**
+
+v1 では `HolidayOverride` 経由で展開する（新 `@Model` を作らない）:
+
+- 採用された各 `SuggestedDOWRule` について、次の 6 ヶ月の該当日を計算。
+- 各該当日に `HolidayOverride(date: d, presetID: rule.presetID,
+  skipAlarm: rule.presetID == nil, isVacationGroup: false)` を upsert。
+- 6 ヶ月の境界は **ユーザが UI で再生成を承認するまで** 自動更新しない（過剰書込み
+  を避ける）。
+
+将来的に `RecurrenceRule` モデル化（バックログ）に置き換える前提で、`HolidayOverride`
+側に展開元 `RuleID` を持たせる選択肢を残す（v1 ではまだ実装しない）。
+
+### 1.11 テスト対応（A1 / A2）
+
+| ROADMAP test | アルゴリズム上の保証 |
+|---|---|
+| α-U13 | §1.9 step 4 のしきい値ゲート |
+| α-U14 | §1.9 step 5-6（再検出 + fingerprint 比較） |
+| α-U15 | §1.10 step 4 で第 1・第 3 金曜の 2 キーが採用される |
+| α-U16 | §1.10 step 3-4 の density ゲート |
+| α-U17 | α 周期検出と §1.10 DOW 検出が独立に走り、両者の出力が UI で並列表示される |
+| α-I7 | §1.9 受諾フローで旧 pattern が `isActive=false` 化 |
+
 ---
 
 ## 2. P2-β — 連休越境ローテーション
@@ -326,6 +445,73 @@ return p.slots
 | β-S1/2/3 | 2.2 節 |
 | β-I1/2/3 | 2.5 節 |
 | β-U14/U15/U16 | 4.3.3 節（preset override） |
+
+### 2.8 自動グルーピング提案フロー
+
+派生機能 **A4**（ROADMAP §4 P2-β A4）の本体ロジック。β-S3 の不変条件
+「マイグレーションで自動グルーピングしない」を踏襲しつつ、**初回 β 画面オープン
+時に 1 回だけ**ユーザ同意を取って既存 `HolidayOverride` を `VacationPeriod` に
+昇格させる。
+
+**検出:**
+
+1. SwiftData query: `HolidayOverride` を `date` 昇順で取得。
+2. ランレングス: 隣接日 `date_i+1 == date_i + 1 day` を連続とみなし、ラン化。
+3. ラン長 `≥ 3` のものを候補化（β-U7 と同じ最短日数）。
+4. 各候補に「範囲 + 含まれる祝日ラベル」を付与して候補リストにまとめる。
+
+**提示:**
+
+- 初回 β 画面（`HolidayManagerView` / `RotationListView` どちらでもよい — 設計時に
+  選択）オープン時、`AppSettings.vacationAutoGroupingOffered == false` なら sheet を
+  開く。
+- sheet には候補リストを表示、チェックボックスで個別に含める / 含めない選択可。
+- 「全てまとめる」「選択分のみまとめる」「あとで」の 3 ボタン。
+
+**適用:**
+
+- 選択された各 ran について:
+  - `VacationPeriod(startDate: run.start, endDate: run.end,
+    label: "自動グルーピング: \(label_set.joined(", "))")` を insert。
+  - 範囲内 `HolidayOverride.isVacationGroup = true` を更新。
+- 適用後 `AppSettings.vacationAutoGroupingOffered = true`。
+
+**閉じる:**
+
+- 「あとで」または sheet 閉じるだけでも `vacationAutoGroupingOffered = true` に
+  する（再表示しない）。ユーザは後から個別に手動で `VacationPeriod` を作成できる
+  ので、機会を逃しても困らない。
+
+**API シグネチャ案:**
+
+```swift
+public enum VacationAutoGrouping {
+    public static func detectCandidates(
+        holidays: [HolidayOverride],
+        calendar: Calendar,
+        minRunLength: Int = 3
+    ) -> [VacationCandidate]
+
+    public static func apply(
+        candidates: [VacationCandidate],
+        context: ModelContext
+    ) throws
+}
+
+public struct VacationCandidate: Equatable, Sendable {
+    public let startDate: Date
+    public let endDate: Date
+    public let holidayLabels: [String]
+}
+```
+
+**テスト対応:**
+
+| ROADMAP test | アルゴリズム上の根拠 |
+|---|---|
+| β-U17 | §2.8 検出 step 3（≥ 3 日のみ） |
+| β-U18 | apply で選択された候補のみ insert |
+| β-I4 | sheet 表示時に `vacationAutoGroupingOffered = true` を立てる |
 
 ---
 
@@ -560,6 +746,93 @@ ROADMAP §7 規則 6 に従い `Resources/Localizable.xcstrings` に両言語を
 | γ-U13–U16 | §3.6 |
 | γ-I1–I4 | §3.7 (`ShareImporter` 再利用) |
 | γ-D1–D3 | `Tests/Fixtures/ShiftImages/` で精度測定（ROADMAP §9-x の 1 ファイル 500 KB 上限） |
+
+### 3.12 ラベル学習キャッシュ
+
+派生機能 **A3**（ROADMAP §4 P2-γ A3）の本体ロジック。差分プレビュー UI で
+ユーザが手動修正したラベル → preset 対応を保存し、次回の Pass A より前に参照
+することで OCR/LLM 推論の精度を経験的に上げる。
+
+**保存先:**
+
+- `AppSettings.learnedLabelMappingsJSON: String`（既定: `"{}"`）。
+- SwiftData の Dictionary 制約を避けるため JSON 文字列で保持。
+- ロード時に `Data` → `JSONDecoder` で `[String: LearnedMapping]` にデコード。
+- 保存時に `JSONEncoder` で再シリアライズ。
+
+**型:**
+
+```swift
+public struct LearnedMapping: Codable, Equatable, Sendable {
+    public let presetID: UUID?      // nil → .off を意味する
+    public let isOff: Bool
+    public let learnedAt: Date
+}
+
+public typealias LabelKey = String  // "<NFKC + lowercase>(label)|<userNameOnRoster?>"
+```
+
+`LabelKey` の構築:
+
+```swift
+let normalized = label.precomposedStringWithCompatibilityMapping.lowercased()
+let key = "\(normalized)|\(AppSettings.userNameOnRoster ?? "")"
+```
+
+**マッパへの組込:**
+
+`FoundationModelsShiftMapper.map(...)` の冒頭で参照:
+
+```
+for label in labels:
+    let key = makeKey(label)
+    if let cached = learned[key]:
+        result[label] = cached.isOff
+            ? .off(confidence: 1.0)
+            : (cached.presetID.flatMap { id in
+                existingPresets.first { $0.id == id }
+                    .map { _ in MapResult.existingPreset(id, confidence: 1.0) }
+              } ?? .unresolved(reason: "cached_preset_deleted"))
+    else:
+        // Pass A → Pass B に進む（既存ロジック）
+```
+
+**ユーザ補正フローでの書込:**
+
+`ImageImportView` の差分プレビューでユーザがマッピングを変更したら：
+
+1. 補正された `(label, presetID?)` を抽出。
+2. `LabelKey` を計算。
+3. `LearnedMapping(presetID:, isOff: presetID == nil, learnedAt: Date.now)` を
+   `learnedLabelMappings[key] = ...` で upsert。
+4. JSON 再シリアライズ → `AppSettings.learnedLabelMappingsJSON` に保存。
+
+**LRU 退避:**
+
+- 上限 200 エントリ。
+- 書込み時に `learned.count > 200` なら `learnedAt` 古い順に 1 件削除。
+- 等タイムスタンプは `LabelKey` 辞書順タイブレーク（決定論性）。
+
+**削除セマンティクス:**
+
+- 設定画面に「学習データをリセット」ボタンを追加。
+- リセット = `learnedLabelMappingsJSON = "{}"`。
+- 個別エントリ削除は UI からは提供しない（v1 は全消去のみ）。
+
+**プライバシー:**
+
+- すべて `AppSettings`（ローカル SwiftData）に保存。
+- export (`.shiftalarm`) には含めない（`ShiftBundleCodec` から除外）。
+- iCloud / CloudKit は使わない（前提）。
+
+**テスト対応:**
+
+| ROADMAP test | アルゴリズム上の根拠 |
+|---|---|
+| γ-U17 | キャッシュヒット時 Pass A をスキップし confidence 1.0 を返す |
+| γ-U18 | `isOff = true` を保存 → 読み戻し |
+| γ-U19 | 200 件入った状態で 201 件目を書込 → 最古退避 |
+| γ-I5 | プレビュー補正ハンドラが JSON 再シリアライズ → 永続化 |
 
 ---
 
@@ -820,3 +1093,301 @@ assert（γ-U12）。
 
 3 段階の gating で CI は速度と決定論を保ちつつ、DoD の精度測定はオンデマンドで
 可能にする。
+
+---
+
+## 5. P2-δ — シフトスワップ
+
+ROADMAP §4 P2-δ に対応。同僚との勤務交換を 1 操作で記録し、**スワップした日でも
+正しいシフトのアラームが鳴る** ことを保証する。
+
+### 5.1 データモデル追加（Schema V3）
+
+**新規 @Model `SwapRecord`**（`Sources/Domain/Models/SwapRecord.swift`）:
+
+```swift
+@Model public final class SwapRecord {
+    @Attribute(.unique) public var id: UUID
+    public var date: Date              // startOfDay 正規化
+    public var kindRaw: Int            // 0=.covered, 1=.covering, 2=.exchange
+    public var counterpartyLabel: String
+    public var note: String
+    public var createdAt: Date
+
+    public init(
+        id: UUID = UUID(),
+        date: Date,
+        kind: SwapKind,
+        counterpartyLabel: String,
+        note: String = "",
+        createdAt: Date = Date()
+    )
+}
+
+public enum SwapKind: Int, Codable, Sendable, CaseIterable {
+    case covered = 0      // 自分が休む（同僚が代わってくれた）
+    case covering = 1     // 自分が出る（同僚の代わりに出勤）
+    case exchange = 2     // 双方向（v2 検討）
+}
+```
+
+`date` は `calendar.startOfDay(for:)` 正規化。`@Relationship` は持たず、
+`DayAssignment` とは独立に存在する（書き戻し負荷最小化のため）。
+
+### 5.2 スキーマ migration（V2 → V3）
+
+- `SwapRecord` 追加のみ。SwiftData lightweight migration で吸収。
+- 新規 `Sources/Domain/Persistence/SchemaV3.swift` + 既存 `MigrationPlan` 拡張:
+  - `SchemaV3.versionIdentifier = Schema.Version(3, 0, 0)`
+  - `SchemaMigrationPlan.stages += [.lightweight(from: V2, to: V3)]`
+- 既存 `DayAssignment` / `RotationPattern` / `VacationPeriod` / `ShiftPreset` /
+  `HolidayOverride` / `AppSettings` は **非破壊** (δ-S1)。
+- migration 直後 `SwapRecord.count == 0` (δ-S2)。
+
+### 5.3 操作フロー
+
+`DayDetailEditorView` に「シフト交代」ボタンを追加し、以下のハンドラを実装:
+
+```
+入力: (date, kind, counterpartyLabel, optionalPresetID)
+処理:
+  1. DayAssignment を upsert:
+     - .covered: presetID = nil, skipAlarm = true
+     - .covering: presetID = optionalPresetID (必須), skipAlarm = false
+     - .exchange: 2 つの date を順次処理（v2）
+  2. SwapRecord を insert (date, kind, counterpartyLabel, note)
+  3. await AlarmScheduler.refreshScheduledAlarms()
+```
+
+**重要:** `DayResolver` / `AlarmScheduler` は **完全に無改変**。
+手動 `DayAssignment` がローテーション / 連休 / 祝日に勝つ既存の優先順位
+（PR #5 で確立、`docs/p2-algorithms.md` §2.4 で再確認済み）が
+そのまま機能するため、スワップ専用の resolver 拡張は不要。
+
+### 5.4 過去日 / 削除セマンティクス
+
+- 過去日でも `SwapRecord` は作成可（履歴目的）。`AlarmScheduler` の
+  `lookaheadDays` 範囲外は登録対象外、これは既存ロジックそのまま (δ-U4)。
+- `SwapRecord` 削除では `DayAssignment` の値は元に戻さない (δ-U5)。
+  「スワップを取り消す」UI は v2 検討。
+
+### 5.5 UI バッジ
+
+- `DayResolverInputBuilder` に `swapRecords: [SwapRecordSnapshot]` を追加
+  （ただし `DayResolver` 内部では使わず、UI レイヤから参照する）。
+- `DayCellView` で `swapRecords[date] != nil` なら「↔」アイコンを描画。
+- VoiceOver: `"\(presetName), シフト交代済み"`。
+
+### 5.6 テスト対応
+
+| ROADMAP test | アルゴリズム上の根拠 |
+|---|---|
+| δ-U1 | §5.3 step 1 `.covered` 分岐 |
+| δ-U2 | §5.3 step 1 `.covering` 分岐 |
+| δ-U3 | §5.1 全フィールドの read/write 往復 |
+| δ-U4 | §5.4（過去日は記録のみ、AlarmKit 登録は既存 lookahead でカット） |
+| δ-U5 | §5.4 削除セマンティクス |
+| δ-S1 | §5.2 lightweight migration の非破壊性 |
+| δ-S2 | §5.2 自動 insert 無し |
+| δ-I1 | §5.3 step 3 → AlarmScheduler diff-sync で `.covering` 日に登録 |
+| δ-I2 | §5.3 step 1 `.covered` → `skipAlarm = true` → diff-sync で削除 |
+| δ-I3 | DayResolver 無改変なので他日には影響しない |
+
+### 5.7 PR 分割案
+
+1. `feature/p2-delta-schema-v3` — `SwapRecord` 追加 + V3 migration + migration テスト。
+2. `feature/p2-delta-day-editor` — DayDetailEditorView 操作 + AlarmScheduler 統合テスト。
+3. `feature/p2-delta-badge` — `DayCellView` バッジ + a11y。
+
+---
+
+## 6. P2-η — .ics エクスポート
+
+ROADMAP §4 P2-η に対応。月単位の確定シフトを iCalendar 形式で書き出し、家族が
+標準 Calendar アプリで読める形で共有する。
+
+### 6.1 入力
+
+- `range: ClosedRange<Date>`（`startOfDay` ベース、最大 12 ヶ月）
+- `resolvedDays: [ResolvedDay]`（`DayResolver` を range 全日に走らせた結果）
+- `presets: [UUID: ShiftPresetSnapshot]`
+- `calendar: Calendar`
+- `timeZone: TimeZone = calendar.timeZone`
+
+`AlarmScheduler` の diff-sync 経路と独立に動く、純粋関数。
+
+### 6.2 出力フォーマット
+
+RFC 5545 準拠の iCalendar。v1 では **UTC（Z 形式）** で時刻を出力し、
+`VTIMEZONE` ブロックを省略する。これは TZID 参照（`DTSTART;TZID=...`）に対する
+VTIMEZONE 同梱が RFC 5545 §3.6.5 で要求される一方、IANA 名のみで動かす Apple Calendar
+以外（特に Outlook）でずれが出るのを避けるため。`Asia/Tokyo` 6:00 のシフトは
+`20260519T210000Z` として出力され、受信側のローカル TZ で正しくレンダされる。
+
+```
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//ShiftAlarm//ja//EN
+CALSCALE:GREGORIAN
+X-WR-CALNAME:ShiftAlarm Export
+X-WR-TIMEZONE:Asia/Tokyo
+BEGIN:VEVENT
+UID:<deterministic>@shiftalarm.local
+DTSTAMP:20260518T120000Z
+DTSTART:20260519T210000Z
+DTEND:20260519T213000Z
+SUMMARY:昼勤
+END:VEVENT
+...
+END:VCALENDAR
+```
+
+**規則:**
+
+- 改行は **CRLF** 固定（`\r\n`）。
+- `SUMMARY` のエスケープ（RFC 5545 §3.3.11）:
+  - `\` → `\\`
+  - `,` → `\,`
+  - `;` → `\;`
+  - 改行 → `\n`
+- `UID` は決定論的: `sha256("\(yyyy-MM-dd)|\(presetID.uuidString)")@shiftalarm.local`。
+  同入力で再エクスポートしても同 UID → 受け取り側で購読更新が安定 (η-U6)。
+- `DTEND = DTSTART + 30 分` の固定長ダミー区間。
+- `DTSTAMP`、`DTSTART`、`DTEND` はすべて **UTC**（末尾 `Z`）。テストでは DI で固定。
+- `X-WR-TIMEZONE` は **情報ヘッダのみ**（受信側がプロパティ非対応でも害は無い）。
+  iCal セマンティクスとしては UTC 時刻が正。
+
+### 6.3 イベント化対象
+
+| 条件 | イベント化 |
+|---|---|
+| `resolved.preset != nil && skipAlarm == false && !inVacationPeriod` | する |
+| `skipAlarm == true` | しない (η-U4) |
+| 連休範囲内 (`VacationPeriod` でカバー) | しない (η-U5) |
+| preset 削除済み | しない（preset 名が解決できないため） |
+| 過去日 (`< today`) | する（履歴としても残せる） |
+
+### 6.4 タイムゾーン
+
+- ローカル時刻 → UTC 変換に `calendar.timeZone`（既定: `Calendar.current.timeZone`）を
+  使う。例えば `Asia/Tokyo` の `2026-05-20 06:00` は `20260519T210000Z` に変換される。
+- `X-WR-TIMEZONE` は **エクスポート時のユーザ TZ 識別子**（情報ヘッダ）。受信側で
+  非対応でも `DTSTART` の UTC が正なので時刻ズレなし。
+- `VTIMEZONE` ブロックは v1 では出力しない。代わりに UTC で出すため、Apple Calendar /
+  Google Calendar / Outlook 全てで同じ瞬間時刻が表示される（DoD と整合）。
+- v2 で「ローカル時刻 + VTIMEZONE」方式へ切り替える場合は、IANA TZ → RFC 5545
+  `VTIMEZONE`（`STANDARD` / `DAYLIGHT` + `RRULE`）の自動生成が必要。バックログ。
+
+### 6.5 ネットワークガード
+
+- `ICSExporter` は **`URLSession` を生成しない**（γ と同じ規約）。
+- テストでは `URLSessionConfiguration.default.protocolClasses` に
+  `NetworkBlockingURLProtocol` を入れ、エクスポート中の `requestCount == 0`
+  を assert (η-U8)。
+
+### 6.6 API シグネチャ案
+
+```swift
+public protocol ICalendarExporting: Sendable {
+    func export(
+        range: ClosedRange<Date>,
+        resolvedDays: [ResolvedDay],
+        presets: [UUID: ShiftPresetSnapshot],
+        calendar: Calendar,
+        timeZone: TimeZone,
+        now: Date
+    ) -> String
+}
+
+public struct ICSExporter: ICalendarExporting { ... }
+```
+
+ファイル書込みは別レイヤ:
+
+```swift
+extension ICSExporter {
+    public func write(
+        text: String,
+        toTemporaryFileNamed filename: String
+    ) throws -> URL
+}
+```
+
+`ICSExportView` で `URL` を取得し、`ShareLink` に渡す。
+
+### 6.7 個人情報フィルタ
+
+- `SwapRecord.counterpartyLabel`、`DayAssignment.note` は **出力に含めない**。
+- preset 名（`昼勤` / `夜勤` 等）と時刻のみ。
+- export ファイル名は `ShiftAlarm-YYYY-MM.ics`。
+
+### 6.8 テスト対応
+
+| ROADMAP test | アルゴリズム上の根拠 |
+|---|---|
+| η-U1 | range 内出勤 0 件 → `VCALENDAR` のみ、`VEVENT` 0 |
+| η-U2 | 固定入力で行ごとに固定アサート（CRLF + 必須プロパティ） |
+| η-U3 | §6.2 エスケープ規則 |
+| η-U4 / η-U5 | §6.3 フィルタ |
+| η-U6 | §6.2 UID 決定論性（sha256 が同入力で同値） |
+| η-U7 | §6.4 UTC 変換: `Asia/Tokyo 06:00` → `20260519T210000Z` を行アサート。`X-WR-TIMEZONE` が `calendar.timeZone.identifier` と一致 |
+| η-U8 | §6.5 ネットワークガード |
+| η-U9 | range の `startOfDay` 昇順で resolvedDays を辿るため自然に昇順 |
+| η-I1 | in-memory `ModelContainer` シード → `DayResolver` → `ICSExporter.export` |
+| η-I2 | 出力文字列をテスト内パーサで再パース（後述 §6.8.1）し、`VEVENT` 件数 / `SUMMARY` / UTC `DTSTART` を assert。EventKit には ICS ファイル取込 API が無いため、ファイルレベルのアサートで代替 |
+
+#### 6.8.1 テスト用 ICS パーサ（η-I2 用）
+
+EventKit には ICS ファイルを直接取り込む公開 API が存在しない
+（`EKEventStore` は `EKEvent` を生成 / 永続化はできても外部 `.ics` を読まない）。
+そのため η-I2 はテストターゲット内に **最小 iCalendar パーサ** を置いて検証する:
+
+```swift
+struct ParsedICSEvent: Equatable {
+    let uid: String
+    let summary: String
+    let dtstart: Date  // UTC
+    let dtend: Date    // UTC
+}
+
+enum ICSTestParser {
+    static func parse(_ text: String) throws -> [ParsedICSEvent]
+}
+```
+
+- 行は `\r\n` 区切り。
+- `BEGIN:VEVENT` / `END:VEVENT` で区切る。
+- 各イベント内で `UID:`、`SUMMARY:`、`DTSTART:`、`DTEND:` をプリフィックス比較で
+  抽出（`TZID=` 付きは v1 では出ない前提）。
+- `DTSTART:20260519T210000Z` を ISO8601 で `Date` にパース。
+- `SUMMARY` のエスケープ復号（`\\` / `\,` / `\;` / `\n`）も実装。
+- 想定 30 行以下の小実装。テストターゲット限定で `Tests/Support/ICSTestParser.swift`
+  に置く（プロダクション側へは出さない）。
+
+別案: 既存の **`EventKit.EKCalendar` を経由した実機経路**（カレンダー App に
+共有シートで読ませる）は CI で動かせないため、p0-3 ゴールデンパス（手動 / 実機）
+として残す。η-I2 はあくまでパース整合性の単体性検証に絞る。
+
+### 6.9 PR 分割案
+
+1. `feature/p2-eta-ics-exporter` — 純ロジック + ユニットテスト。
+2. `feature/p2-eta-ics-share-ui` — `ICSExportView` + 共有シート + 統合テスト。
+
+---
+
+## 7. P2 拡張 ロードマップ的優先順位（参考）
+
+P2 本体 (α / β / γ) と派生 (A1-A4) と新規 (δ / η) の **推奨着手順** は、独立性 ×
+リスクで決める:
+
+| 順 | タスク | 理由 |
+|---|---|---|
+| 1 | A1 (P2-α ドリフト検出) | α 本体実装の有無に関係なく `AppSettings` 拡張 1 件で動かせる。リスク最小 |
+| 2 | A3 (P2-γ ラベル学習) | γ 本体実装の中に組込む形が綺麗。γ-本体と同 PR でも別 PR でも可 |
+| 3 | P2-η (.ics エクスポート) | 既存 `DayResolver` / `ShareImporter` 経路だけ使うので独立、UI も小規模 |
+| 4 | A4 (β 自動グルーピング) | β 本体 (Schema V2) が landing した直後に同型 sheet で追加 |
+| 5 | A2 (DOW 検出) | `HolidayOverride` 大量 insert があるため、α 本体と並列稼動の検証が必要 |
+| 6 | P2-δ (シフトスワップ) | Schema V3 を要するため β の V2 が landing した後。最大規模 |
+
+α / β / γ 本体と派生機能の **依存関係は強くない** ため、人員リソースに応じて
+派生機能を先行させることも可能。
