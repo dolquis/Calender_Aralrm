@@ -5,14 +5,14 @@ import SwiftData
 public struct PatternSuggestionView: View {
     let suggestion: ShiftPatternDetector.SuggestedRotation
     let presets: [UUID: ShiftPresetSnapshot]
-    let onAccept: @MainActor () -> Void
-    let onReject: @MainActor () -> Void
+    let onAccept: () -> Void
+    let onReject: () -> Void
 
     public init(
         suggestion: ShiftPatternDetector.SuggestedRotation,
         presets: [UUID: ShiftPresetSnapshot],
-        onAccept: @escaping @MainActor () -> Void,
-        onReject: @escaping @MainActor () -> Void
+        onAccept: @escaping () -> Void,
+        onReject: @escaping () -> Void
     ) {
         self.suggestion = suggestion
         self.presets = presets
