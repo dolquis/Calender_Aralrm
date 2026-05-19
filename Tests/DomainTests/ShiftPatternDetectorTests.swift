@@ -300,4 +300,71 @@ final class ShiftPatternDetectorTests: XCTestCase {
         XCTAssertEqual(r1?.fingerprint, r2?.fingerprint)
         XCTAssertFalse(r1?.fingerprint.isEmpty ?? true)
     }
+
+    // MARK: - A1 Drift detection
+
+    private func makeAllDayPattern() -> RotationPatternSnapshot {
+        RotationPatternSnapshot(
+            id: UUID(),
+            name: "All Day",
+            anchorDate: Self.windowStart,
+            cycleLength: 1,
+            slots: [Self.dayID],
+            startDate: nil,
+            endDate: nil,
+            priority: 0,
+            isActive: true
+        )
+    }
+
+    // α-U13: mismatch rate below threshold → detectDrift returns nil
+    func testDriftBelowThresholdReturnsNil() {
+        let pattern = makeAllDayPattern()
+        // Last 30 days all assign dayID — matches the all-day pattern, 0 mismatches.
+        var assignments: [Date: DayAssignmentSnapshot] = [:]
+        for i in 0..<30 {
+            let day = calendar.date(byAdding: .day, value: i - 30, to: Self.today)!
+            assignments[day] = DayAssignmentSnapshot(
+                presetID: Self.dayID, overrideTime: nil, skipAlarm: false, note: "")
+        }
+        let detector = ShiftPatternDetector()
+        let result = detector.detectDrift(
+            pattern: pattern,
+            recentManualAssignments: assignments,
+            presets: [:],
+            today: Self.today,
+            calendar: calendar,
+            threshold: 0.15
+        )
+        XCTAssertNil(result, "Mismatch rate 0% is below threshold; should not suggest update")
+    }
+
+    // α-U14: mismatch rate above threshold → detectDrift calls detect() and returns a suggestion
+    func testDriftAboveThresholdReturnsNewSuggestion() {
+        // Pattern claims every day is dayID (1-slot cycle).
+        let pattern = makeAllDayPattern()
+        // Provide 90 days of alternating dayID/nightID history so detect() finds a 2-day cycle.
+        var assignments: [Date: DayAssignmentSnapshot] = [:]
+        for i in 0..<90 {
+            let day = calendar.date(byAdding: .day, value: i - 90, to: Self.today)!
+            let pid: UUID = i % 2 == 0 ? Self.dayID : Self.nightID
+            assignments[day] = DayAssignmentSnapshot(
+                presetID: pid, overrideTime: nil, skipAlarm: false, note: "")
+        }
+        // ~50% of the 30-day window mismatches the all-day pattern → well above 15% threshold.
+        let detector = ShiftPatternDetector()
+        let result = detector.detectDrift(
+            pattern: pattern,
+            recentManualAssignments: assignments,
+            presets: [:],
+            today: Self.today,
+            calendar: calendar,
+            threshold: 0.15
+        )
+        XCTAssertNotNil(result, "50% mismatch rate exceeds threshold; a new suggestion should be returned")
+        if let r = result {
+            // The new suggestion should describe a 2-day cycle, not the original 1-day cycle.
+            XCTAssertEqual(r.cycleLength, 2)
+        }
+    }
 }
