@@ -3,7 +3,6 @@ import SwiftData
 
 public struct ICSExportView: View {
     @Environment(\.modelContext) private var modelContext
-    @Environment(AppDependencies.self) private var dependencies
     @State private var fileURL: URL?
     @State private var preparing = false
     @State private var errorMessage: String?
@@ -52,20 +51,20 @@ public struct ICSExportView: View {
         preparing = true
         errorMessage = nil
         fileURL = nil
+        let input = DayResolverInputBuilder.make(context: modelContext, calendar: Calendar.current)
         do {
-            fileURL = try buildICSFile(container: dependencies.modelContainer, months: monthCount)
+            fileURL = try buildICSFile(input: input, months: monthCount)
         } catch {
             errorMessage = error.localizedDescription
         }
         preparing = false
     }
 
-    private func buildICSFile(container: ModelContainer, months: Int) throws -> URL {
+    private func buildICSFile(input: DayResolverInput, months: Int) throws -> URL {
         let calendar = Calendar.current
         let today = calendar.startOfDay(for: Date.now)
         let endDate = calendar.date(byAdding: .month, value: months, to: today)!
 
-        let input = DayResolverInputBuilder.make(context: ModelContext(container), calendar: calendar)
         var resolvedDays: [ResolvedDay] = []
         var cursor = today
         while cursor <= endDate {
