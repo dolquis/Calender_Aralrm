@@ -48,6 +48,7 @@ public struct ICSExportView: View {
         .navigationTitle("ics.export.nav_title")
     }
 
+    @MainActor
     private func prepare() {
         preparing = true
         errorMessage = nil
