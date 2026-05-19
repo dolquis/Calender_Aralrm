@@ -39,7 +39,8 @@ public struct Configuration {
 |---|---|
 | `manualAssignments` に存在しない | `nil` (ワイルドカード) |
 | `skipAlarm == true` または `presetID == nil` | `.off` |
-| `presetID == someUUID` | `.preset(UUID)` |
+| `presetID == someUUID` かつ `presets` に存在 | `.preset(UUID)` |
+| `presetID == someUUID` だが `presets` に存在しない | `nil` (ワイルドカード) |
 
 結果: `series: [Symbol?]` 長さ `windowDays`。
 
@@ -50,10 +51,12 @@ public struct Configuration {
 
 候補 `P ∈ [minCycleLength, maxCycleLength]` について:
 
-1. `floor(series.count / P) ≥ minCycles` を満たさなければ `P` を棄却。
+1. 各スロットの `expectedCount[s] ≥ minCycles` を満たさなければ `P` を棄却。
 2. インデックスを `i mod P` でグループ化。各スロット `s ∈ 0..<P` について:
    - 非 nil シンボルを `{s, s+P, s+2P, ...}` から集める。
-   - `density[s] = observedCount / cyclesCount`。
+   - `expectedCount[s]`: window 内で `i mod P == s` になる日数
+     （90 日窓の末尾にある部分サイクルを含む）。
+   - `density[s] = observedCount / expectedCount[s]`。
    - `mode[s] = 非 nil シンボルの最頻値`（タイブレーク: 窓内の最初の出現が早い側）。
    - `slotMatchRate[s] = count(symbols == mode[s]) / observedCount`
      （分母にワイルドカードを含めない — 確定済み設計）。
@@ -117,7 +120,7 @@ public struct SuggestedRotation: Equatable, Sendable {
 | ROADMAP test | アルゴリズム上の保証 |
 |---|---|
 | α-U1 | 空 series → どの `P` も `minCycles` を満たさず `nil` |
-| α-U2 | `cyclesCount < 2` → `P` 棄却 |
+| α-U2 | 各スロットの `expectedCount < 2` → `P` 棄却 |
 | α-U3 | 14 日交互: `P=14` score 1.0; `P=2` score 0.5 → `P=14` 勝 |
 | α-U4 | "DNDNDN..." `P=2` score 1.0 → タイブレークで `P=2` |
 | α-U5 | 22 日混合: `P=22` のみ閾値超え |

@@ -76,12 +76,18 @@ public struct ShiftPatternDetector: Sendable {
         let windowStart = calendar.startOfDay(
             for: calendar.date(byAdding: .day, value: -configuration.windowDays, to: today)!
         )
+        let normalizedAssignments = manualAssignments
+            .sorted { $0.key < $1.key }
+            .reduce(into: [Date: DayAssignmentSnapshot]()) { result, entry in
+                result[calendar.startOfDay(for: entry.key)] = entry.value
+            }
+
         // Build ordered series [Symbol?] length windowDays; nil = wildcard
         var series: [Symbol?] = Array(repeating: nil, count: configuration.windowDays)
         for i in 0..<configuration.windowDays {
             let day = calendar.date(byAdding: .day, value: i, to: windowStart)!
-            if let snap = manualAssignments[day] {
-                series[i] = snap.skipAlarm || snap.presetID == nil ? .off : .preset(snap.presetID!)
+            if let snap = normalizedAssignments[day] {
+                series[i] = symbol(for: snap, presets: presets)
             }
         }
         let observedCount = series.compactMap { $0 }.count
@@ -91,8 +97,10 @@ public struct ShiftPatternDetector: Sendable {
         var bestMatchRate: Double = -1
 
         for cycleLength in configuration.minCycleLength...configuration.maxCycleLength {
-            let cyclesCount = configuration.windowDays / cycleLength
-            guard cyclesCount >= configuration.minCycles else { continue }
+            let possibleOccurrencesBySlot = (0..<cycleLength).map { slot in
+                possibleOccurrences(slot: slot, cycleLength: cycleLength, windowDays: configuration.windowDays)
+            }
+            guard possibleOccurrencesBySlot.allSatisfy({ $0 >= configuration.minCycles }) else { continue }
 
             var slotObs: [[Symbol]] = Array(repeating: [], count: cycleLength)
             for i in 0..<configuration.windowDays {
@@ -107,7 +115,7 @@ public struct ShiftPatternDetector: Sendable {
 
             for s in 0..<cycleLength {
                 let obs = slotObs[s]
-                let density = Double(obs.count) / Double(cyclesCount)
+                let density = Double(obs.count) / Double(possibleOccurrencesBySlot[s])
                 guard density >= configuration.minDensityPerSlot else { densityOk = false; break }
 
                 // Find mode; tiebreak = first occurrence wins (lower series index = earlier)
@@ -193,6 +201,18 @@ public struct ShiftPatternDetector: Sendable {
     }
 
     // MARK: - Helpers
+
+    private func symbol(for assignment: DayAssignmentSnapshot, presets: [UUID: ShiftPresetSnapshot]) -> Symbol? {
+        guard !assignment.skipAlarm else { return .off }
+        guard let presetID = assignment.presetID else { return .off }
+        guard presets[presetID] != nil else { return nil }
+        return .preset(presetID)
+    }
+
+    private func possibleOccurrences(slot: Int, cycleLength: Int, windowDays: Int) -> Int {
+        guard slot < windowDays else { return 0 }
+        return ((windowDays - 1 - slot) / cycleLength) + 1
+    }
 
     private func firstMonday(onOrAfter date: Date, calendar: Calendar) -> Date {
         var current = date

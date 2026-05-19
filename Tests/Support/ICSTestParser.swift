@@ -54,6 +54,7 @@ enum ICSTestParser {
     private static func parseUTCDate(_ value: String) throws -> Date {
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyyMMdd'T'HHmmss'Z'"
+        formatter.locale = Locale(identifier: "en_US_POSIX")
         formatter.timeZone = TimeZone(identifier: "UTC")!
         formatter.calendar = Calendar(identifier: .gregorian)
         guard let date = formatter.date(from: value) else {

@@ -40,12 +40,14 @@ public struct ICSExporter: ICalendarExporting, Sendable {
             "X-WR-TIMEZONE:\(timeZone.identifier)",
         ]
 
+        var exportCalendar = calendar
+        exportCalendar.timeZone = timeZone
         let dtstamp = Self.utcString(from: now)
-        var cursor = calendar.startOfDay(for: range.lowerBound)
+        var cursor = exportCalendar.startOfDay(for: range.lowerBound)
 
         for resolved in resolvedDays {
             defer {
-                cursor = calendar.date(byAdding: .day, value: 1, to: cursor)!
+                cursor = exportCalendar.date(byAdding: .day, value: 1, to: cursor)!
             }
 
             // Must have a preset, a fire time, and not skip the alarm
@@ -58,12 +60,12 @@ public struct ICSExporter: ICalendarExporting, Sendable {
             else { continue }
 
             // Build local Date for the alarm moment then convert to UTC
-            var comps = calendar.dateComponents([.year, .month, .day], from: cursor)
+            var comps = exportCalendar.dateComponents([.year, .month, .day], from: cursor)
             comps.hour = alarmHour
             comps.minute = alarmMinute
             comps.second = 0
             comps.timeZone = timeZone
-            guard let alarmDate = calendar.date(from: comps) else { continue }
+            guard let alarmDate = exportCalendar.date(from: comps) else { continue }
             let endDate = alarmDate.addingTimeInterval(30 * 60)
 
             let uid = Self.deterministicUID(date: cursor, presetID: presetID)
@@ -95,6 +97,7 @@ public struct ICSExporter: ICalendarExporting, Sendable {
     static func utcString(from date: Date) -> String {
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyyMMdd'T'HHmmss'Z'"
+        formatter.locale = Locale(identifier: "en_US_POSIX")
         formatter.timeZone = TimeZone(identifier: "UTC")!
         formatter.calendar = Calendar(identifier: .gregorian)
         return formatter.string(from: date)
@@ -103,6 +106,7 @@ public struct ICSExporter: ICalendarExporting, Sendable {
     static func deterministicUID(date: Date, presetID: UUID) -> String {
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd"
+        formatter.locale = Locale(identifier: "en_US_POSIX")
         formatter.timeZone = TimeZone(identifier: "UTC")!
         let dateStr = formatter.string(from: date)
         let raw = "\(dateStr)|\(presetID.uuidString)"
@@ -112,11 +116,31 @@ public struct ICSExporter: ICalendarExporting, Sendable {
     }
 
     static func escapeText(_ text: String) -> String {
-        text
-            .replacingOccurrences(of: "\\", with: "\\\\")
-            .replacingOccurrences(of: ",", with: "\\,")
-            .replacingOccurrences(of: ";", with: "\\;")
-            .replacingOccurrences(of: "\n", with: "\\n")
-            .replacingOccurrences(of: "\r\n", with: "\\n")
+        var escaped = ""
+        let scalars = Array(text.unicodeScalars)
+        var index = scalars.startIndex
+        while index < scalars.endIndex {
+            let scalar = scalars[index]
+            switch scalar.value {
+            case 0x5C:
+                escaped += "\\\\"
+            case 0x2C:
+                escaped += "\\,"
+            case 0x3B:
+                escaped += "\\;"
+            case 0x0D:
+                let next = scalars.index(after: index)
+                if next < scalars.endIndex, scalars[next].value == 0x0A {
+                    index = next
+                }
+                escaped += "\\n"
+            case 0x0A:
+                escaped += "\\n"
+            default:
+                escaped.unicodeScalars.append(scalar)
+            }
+            index = scalars.index(after: index)
+        }
+        return escaped
     }
 }

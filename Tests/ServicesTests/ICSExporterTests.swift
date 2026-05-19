@@ -99,6 +99,26 @@ final class ICSExporterTests: XCTestCase {
         XCTAssertTrue(result.contains("SUMMARY:昼\\,夜\\;A\\\\B\\nC"))
     }
 
+    func testSummaryEscapesCRLFWithoutBareCarriageReturn() throws {
+        let presetID = UUID()
+        let special = ShiftPresetSnapshot(
+            id: presetID, name: "A\r\nB\rC",
+            colorHex: "#000", alarmTime: DateComponents(hour: 6, minute: 0),
+            soundID: "s"
+        )
+        let today = date(2026, 5, 19)
+        let result = exporter.export(
+            range: today...today,
+            resolvedDays: [.rotation(presetID: presetID, alarmTime: DateComponents(hour: 6, minute: 0))],
+            presets: [presetID: special],
+            calendar: calendar,
+            timeZone: tokyoTZ,
+            now: today
+        )
+        XCTAssertTrue(result.contains("SUMMARY:A\\nB\\nC\r\n"))
+        XCTAssertFalse(result.contains("SUMMARY:A\r\\nB"), "Escaped SUMMARY must not leave a bare CR")
+    }
+
     // MARK: - η-U4: skipAlarm day produces no event
 
     func testSkipAlarmExcluded() throws {
@@ -165,6 +185,23 @@ final class ICSExporterTests: XCTestCase {
         XCTAssertTrue(result.contains("DTEND:20260518T213000Z"),
                       "Expected DTEND:20260518T213000Z in:\n\(result)")
         XCTAssertTrue(result.contains("X-WR-TIMEZONE:Asia/Tokyo"))
+    }
+
+    func testExportUsesProvidedTimeZoneForLocalDayBoundaries() throws {
+        var utcCalendar = Calendar(identifier: .gregorian)
+        utcCalendar.timeZone = TimeZone(identifier: "UTC")!
+        let today = date(2026, 5, 19) // 2026-05-19 in Asia/Tokyo
+        let resolved = ResolvedDay.rotation(presetID: Self.dayID, alarmTime: DateComponents(hour: 6, minute: 0))
+        let result = exporter.export(
+            range: today...today,
+            resolvedDays: [resolved],
+            presets: makePresets(),
+            calendar: utcCalendar,
+            timeZone: tokyoTZ,
+            now: today
+        )
+        XCTAssertTrue(result.contains("DTSTART:20260518T210000Z"),
+                      "The exported local day should be interpreted in the provided time zone")
     }
 
     // MARK: - η-U9: ascending date order
