@@ -48,25 +48,18 @@ public struct ICSExportView: View {
         .navigationTitle("ics.export.nav_title")
     }
 
-    @MainActor
     private func prepare() {
         preparing = true
         errorMessage = nil
         fileURL = nil
-        let container = dependencies.modelContainer
-        let months = monthCount
-        Task {
-            do {
-                let url = try buildICSFile(container: container, months: months)
-                fileURL = url
-            } catch {
-                errorMessage = error.localizedDescription
-            }
-            preparing = false
+        do {
+            fileURL = try buildICSFile(container: dependencies.modelContainer, months: monthCount)
+        } catch {
+            errorMessage = error.localizedDescription
         }
+        preparing = false
     }
 
-    @MainActor
     private func buildICSFile(container: ModelContainer, months: Int) throws -> URL {
         let calendar = Calendar.current
         let today = calendar.startOfDay(for: Date.now)
