@@ -81,7 +81,7 @@ public struct ICSExporter: ICalendarExporting, Sendable {
         }
 
         lines.append("END:VCALENDAR")
-        return lines.joined(separator: "\r\n") + "\r\n"
+        return lines.flatMap { Self.foldContentLine($0) }.joined(separator: "\r\n") + "\r\n"
     }
 
     // MARK: - Write helpers
@@ -142,5 +142,29 @@ public struct ICSExporter: ICalendarExporting, Sendable {
             index = scalars.index(after: index)
         }
         return escaped
+    }
+
+    static func foldContentLine(_ line: String, limit: Int = 75) -> [String] {
+        guard line.utf8.count > limit else { return [line] }
+
+        var folded: [String] = []
+        var current = ""
+        var currentOctets = 0
+
+        for scalar in line.unicodeScalars {
+            let scalarOctets = String(scalar).utf8.count
+            if currentOctets + scalarOctets > limit, !current.isEmpty {
+                folded.append(current)
+                current = " "
+                currentOctets = 1
+            }
+            current.unicodeScalars.append(scalar)
+            currentOctets += scalarOctets
+        }
+
+        if !current.isEmpty {
+            folded.append(current)
+        }
+        return folded
     }
 }

@@ -17,7 +17,7 @@ enum ICSTestParser {
     }
 
     static func parse(_ text: String) throws -> [ParsedICSEvent] {
-        let lines = text.components(separatedBy: "\r\n")
+        let lines = unfoldContentLines(text.components(separatedBy: "\r\n"))
         var events: [ParsedICSEvent] = []
         var inEvent = false
         var uid = ""
@@ -49,6 +49,19 @@ enum ICSTestParser {
             }
         }
         return events
+    }
+
+    private static func unfoldContentLines(_ lines: [String]) -> [String] {
+        var unfolded: [String] = []
+        for line in lines where !line.isEmpty {
+            if let first = line.first, first == " " || first == "\t" {
+                guard let last = unfolded.indices.last else { continue }
+                unfolded[last] += line.dropFirst()
+            } else {
+                unfolded.append(line)
+            }
+        }
+        return unfolded
     }
 
     private static func parseUTCDate(_ value: String) throws -> Date {

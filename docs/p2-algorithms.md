@@ -1248,6 +1248,8 @@ END:VCALENDAR
 **規則:**
 
 - 改行は **CRLF** 固定（`\r\n`）。
+- content line は UTF-8 octet 数で 75 octets 以下に fold する。継続行は 1 文字目を
+  whitespace prefix にする（RFC 5545 §3.1）。
 - `SUMMARY` のエスケープ（RFC 5545 §3.3.11）:
   - `\` → `\\`
   - `,` → `\,`

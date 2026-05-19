@@ -119,6 +119,34 @@ final class ICSExporterTests: XCTestCase {
         XCTAssertFalse(result.contains("SUMMARY:A\r\\nB"), "Escaped SUMMARY must not leave a bare CR")
     }
 
+    func testLongSummaryIsFoldedAt75OctetsAndRoundTrips() throws {
+        let presetID = UUID()
+        let longName = String(repeating: "長いシフト名", count: 8)
+        let special = ShiftPresetSnapshot(
+            id: presetID, name: longName,
+            colorHex: "#000", alarmTime: DateComponents(hour: 6, minute: 0),
+            soundID: "s"
+        )
+        let today = date(2026, 5, 19)
+        let result = exporter.export(
+            range: today...today,
+            resolvedDays: [.rotation(presetID: presetID, alarmTime: DateComponents(hour: 6, minute: 0))],
+            presets: [presetID: special],
+            calendar: calendar,
+            timeZone: tokyoTZ,
+            now: today
+        )
+
+        let physicalLines = result.components(separatedBy: "\r\n").filter { !$0.isEmpty }
+        XCTAssertTrue(physicalLines.allSatisfy { $0.utf8.count <= 75 },
+                      "Every physical content line must be folded to 75 octets or fewer")
+        XCTAssertTrue(physicalLines.contains { $0.hasPrefix(" ") },
+                      "A long SUMMARY should produce at least one continuation line")
+
+        let events = try ICSTestParser.parse(result)
+        XCTAssertEqual(events.first?.summary, longName)
+    }
+
     // MARK: - η-U4: skipAlarm day produces no event
 
     func testSkipAlarmExcluded() throws {
