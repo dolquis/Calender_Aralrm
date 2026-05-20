@@ -125,6 +125,22 @@ CI は `.github/workflows/ios.yml` が `macos-26` / Xcode 26+ で
    `Config/LocalSigning.xcconfig` にコピーし、Team ID / bundle id / App Group を実値にする。
    その後 `bash scripts/regen.sh` と `bash scripts/p0-readiness.sh` を実行する。
 6. PR 説明には **何を直したか / なぜ / どうテストしたか** を書く。
+7. **プッシュ・PR 作成前にセルフレビューを必ず実施する**（下記 §6.1）。
+
+### 6.1 プッシュ / PR 作成前のセルフレビュー
+
+変更をプッシュして PR を作成する**前**に、必ず以下を実施すること。
+
+1. `git diff`（新規ファイルは `git status`）で差分全体を読み返し、
+   意図しない変更・デバッグコード・コメントアウトの残骸が混入していないか確認する。
+2. `bash scripts/verify.sh` が緑であることを確認する。実機向け変更を含む場合は
+   `bash scripts/p0-readiness.sh` も確認する。
+3. 上記 §5「触ってよい / 触ってはいけないもの」に違反していないか確認する。
+4. ローカライズ追加時は `Resources/Localizable.xcstrings` の ja / en 両方を確認する。
+5. コミットメッセージと PR 説明に **何を直したか / なぜ / どうテストしたか** が
+   書かれているか確認する。
+
+セルフレビューで問題が見つかった場合は、プッシュ前に修正すること。
 
 ---
 
