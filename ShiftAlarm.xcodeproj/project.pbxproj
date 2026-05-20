@@ -51,6 +51,7 @@
 		5FE572458982245B0FFBBB2E /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 962E4F1AA089D96922581BBE /* SettingsView.swift */; };
 		65744F30B5FB98E138CAA895 /* HolidaysJP.json in Resources */ = {isa = PBXBuildFile; fileRef = E6966462FDD7CC0A26D6C5CF /* HolidaysJP.json */; };
 		66D04F9FBFAF82893B9DF58B /* ShiftBundleCodec.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3E0AC7231CD3545E0E4F37BE /* ShiftBundleCodec.swift */; };
+		67F24FB99340A320B99A1BAE /* ICSExportDateRangeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B9A56B5CB8BC65C024F6709 /* ICSExportDateRangeTests.swift */; };
 		6D7BA26244A90C4BC79F61DD /* DynamicIslandViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = C022CC0962033A45DDBB8195 /* DynamicIslandViews.swift */; };
 		6DFCA6A3C644793948543DF4 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D8943DE1A572A76A702F17B2 /* OnboardingView.swift */; };
 		7772C677C567D25266CDD47C /* RotationEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5A4BEA0B464B11496544190 /* RotationEditorView.swift */; };
@@ -198,6 +199,7 @@
 		57FEF2F22EDF88E58C805408 /* PresetListViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PresetListViewModel.swift; sourceTree = "<group>"; };
 		58CAFC82AB82E58ACD5E06C9 /* LiveActivityController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveActivityController.swift; sourceTree = "<group>"; };
 		5B20C6E8ABF5C82878661E3F /* ICSExporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ICSExporter.swift; sourceTree = "<group>"; };
+		5B9A56B5CB8BC65C024F6709 /* ICSExportDateRangeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ICSExportDateRangeTests.swift; sourceTree = "<group>"; };
 		5D837D13E36B1A14BFC6929F /* ImportView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImportView.swift; sourceTree = "<group>"; };
 		5EEDC6043940812D023C62FC /* DeepLinkRouterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeepLinkRouterTests.swift; sourceTree = "<group>"; };
 		60156AC0A2670B38EC572EAF /* README.ja.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.ja.md; sourceTree = "<group>"; };
@@ -515,6 +517,7 @@
 				54B9557854989FD02866E581 /* AppRuntimeConfigurationTests.swift */,
 				793BB747CA26E40B93C6FE2F /* BGRefreshControllerTests.swift */,
 				5EEDC6043940812D023C62FC /* DeepLinkRouterTests.swift */,
+				5B9A56B5CB8BC65C024F6709 /* ICSExportDateRangeTests.swift */,
 				11E8D2A64477D09713A87A66 /* ICSExporterTests.swift */,
 				D6F3F7A3FCC6C7B97F57BC23 /* ShareImporterTests.swift */,
 				F826880AB3E9631FE7905EA4 /* SleepIntentHelperTests.swift */,
@@ -854,6 +857,7 @@
 				5AA85CFFDCF9BD51C9237456 /* DayResolverInputBuilderTests.swift in Sources */,
 				B14334F8AF073CD6391C6AC0 /* DayResolverTests.swift in Sources */,
 				06EC3C472A5E23E3F3E6325C /* DeepLinkRouterTests.swift in Sources */,
+				67F24FB99340A320B99A1BAE /* ICSExportDateRangeTests.swift in Sources */,
 				4DFF01B7820780E95870D469 /* ICSExporterTests.swift in Sources */,
 				561A1C34E5122F321A7FE147 /* ICSTestParser.swift in Sources */,
 				D4CDC0B8C3557D54B63419A4 /* RotationExpanderTests.swift in Sources */,
