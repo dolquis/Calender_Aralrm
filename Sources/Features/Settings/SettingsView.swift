@@ -78,6 +78,9 @@ public struct SettingsView: View {
                 NavigationLink("settings.export") {
                     ExportView()
                 }
+                NavigationLink("ics.export.nav_title") {
+                    ICSExportView()
+                }
                 NavigationLink("settings.import") {
                     ImportView()
                 }

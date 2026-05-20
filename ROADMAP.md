@@ -4,7 +4,7 @@
 **開発仕様兼ロードマップ**です。タスクは優先度（P0 → P3）順、各項目に
 **目的 / 対象ファイル / 完了条件 (DoD)** を明記しています。
 
-最終更新: 2026-05-18
+最終更新: 2026-05-19
 対象ブランチ運用: タスクごとに `feature/<topic>` を切り、main へ PR。
 
 ---
@@ -14,13 +14,14 @@
 - iOS 26+ / Swift 6 / SwiftUI + SwiftData / AlarmKit ベースのシフト勤務向けアラームアプリ。
 - 主要レイヤー（Domain / Services / Features / Widget / Live Activity / Sharing / Deep link / ja-en ローカライズ）は実装済み。
 - **P1 群（オンボーディング / a11y / 空状態 UX / Widget タイムライン）と P2-2（Bedtime reminder, Sleep schedule, HealthKit, App Intents）まで完了**。
+- **P2-α（ShiftPatternDetector + RotationListView 提案カード）および P2-η（ICSExporter + ICSExportView）を実装済み（PR #19）**。
 - P0-1 は Xcode 26.5 / iOS 26.5 SDK でコードレベル検証に着手済み。
   `AlarmPresentation.Alert.stopButton` の iOS 26.1 deprecation を回避し、
   `AlarmManager.AlarmConfiguration.alarm(...)` に寄せた。実機確認は未完了。
 - テスト 56 件 (14 ファイル) 緑。通常の `scripts/verify.sh` では
   5 件の snapshot test は `SNAPSHOT_TESTING_ENABLED=1` 未指定のため skip。
   CI は `macos-26` / Xcode 26+ で `scripts/verify.sh` を実行。
-- オープン Issue / オープン PR は 0。
+- オープン Issue は 0。オープン PR: #19（P2-α / P2-η、draft）。
 - マージ済み主要 PR:
   - #1 初期スキャフォールド（救出は #5）/ #2 EventKit 祝日 / #3 DayEditor 状態漏れ修正
   - #5 PR #1 残差救出 / #6 Swift 6・CI 安定化
@@ -31,6 +32,13 @@
   - **#12 ROADMAP / README の P1/P2-2 進捗反映**
   - **#13 DayResolverInputBuilder 抽出、DI seam、CI / テスト拡充**
   - **#14 P0-2 signing readiness ワークフロー (`scripts/p0-readiness.sh` / `scripts/p0-device-build.sh`)**
+  - **#18 P2-α アルゴリズム仕様・テスト計画 + P2-δ / P2-η 提案書**
+
+オープン PR:
+- **#19** (draft): P2-α `ShiftPatternDetector` + `PatternSuggestionView` + `RotationListView` 提案カード。
+  P2-η `ICSExporter` + `ICSExportView` + `SettingsView` 導線。
+  テスト: `ShiftPatternDetectorTests` (α-U1〜U12 + 指紋決定論性 + A1 drift α-U13/U14)、
+  `ICSExporterTests` (η-U1〜U9)、`ICSTestParser`。
 
 未確定 / 既知の不安要素:
 
@@ -41,8 +49,9 @@
   key、`NSAlarmKitUsageDescription`、`Config/LocalSigning.xcconfig` による実機向け
   signing override 導線は入っている。実 Team ID / bundle id / App Group の値は未設定。
 - 実機 / 実 iOS 26 シミュレータでのゴールデンパス通し検証は未実施。
-- P2 拡張案 A1 / A2 / A3 / A4 + 新規 P2-δ / P2-η を §4 / §9 と
-  `docs/p2-algorithms.md` §1-3 末尾 + §5-6 に追記済み（実装は未着手）。
+- P2 拡張案 A2 / A3 / A4 + P2-β / P2-γ / P2-δ は未着手。
+- A1 ドリフト検出アルゴリズム (`ShiftPatternDetector.detectDrift`) は実装済み、
+  `RotationListView` への UI 統合は未着手。
 
 ---
 
@@ -220,7 +229,7 @@
   - `Sources/Services/AppIntents/` — `GetSleepWindowIntent` ほか Shortcuts 公開。
 - テスト: `Tests/DomainTests/SleepWindowResolverTests.swift`。
 
-### P2-α. シフトパターン自動検出 → プリセット / ローテ提案（未着手）
+### P2-α. シフトパターン自動検出 → プリセット / ローテ提案 ✅ コア実装済み (PR #19)
 
 > アルゴリズム詳細: [docs/p2-algorithms.md §1](docs/p2-algorithms.md#1-p2-α--シフトパターン自動検出)
 
@@ -469,7 +478,7 @@
 
 ---
 
-### P2-η. 家族共有用 .ics エクスポート（未着手）
+### P2-η. 家族共有用 .ics エクスポート ✅ 実装済み (PR #19)
 
 > アルゴリズム詳細: [docs/p2-algorithms.md §6](docs/p2-algorithms.md#6-p2-η--ics-エクスポート)
 
@@ -572,15 +581,19 @@
 
 ## 8. 「次の 1 手」
 
-**次は `Config/LocalSigning.xcconfig` に実 Developer Team / bundle id / App Group を入れ、
-`bash scripts/p0-readiness.sh` を緑にしてから P0-3 golden path を実機で完走する。**
-P0-1 のコードレベル確認は済み、P0-2 の readiness / device-build スクリプトも PR #14 で
-マージ済みのため、残りのリリース前ゲートは実機での AlarmKit 認可ダイアログ、AlarmKit
-alert、Live Activity / Dynamic Island、Widget、共有 import/export の通し確認。
+**P2-α / P2-η の実装は PR #19 でレビュー待ち。**
+PR #19 のマージ後、次の優先順位:
 
-P0-3 完了後の **新機能着手順** は P2-α (パターン検出) → P2-β (連休越境) → P2-γ (画像
-解析) を想定。最も既存ロジック (`RotationExpander` / `DayAssignment`) に近い P2-α を
-最初の差分にすると review コストが低い。
+1. **P0-3 実機ゴールデンパス**: `Config/LocalSigning.xcconfig` に実 Developer Team /
+   bundle id / App Group を入れ、`bash scripts/p0-readiness.sh` を緑にしてから
+   AlarmKit 認可ダイアログ・アラーム発火・Live Activity / Widget の通し確認。
+
+2. **A1 RotationListView 統合**: `ShiftPatternDetector.detectDrift()` は実装済みのため、
+   `RotationListView.detectPattern()` にドリフト検出を追加し、受入で旧 pattern を
+   `isActive = false` にするフローを実装する。
+
+3. **P2-β 連休越境ローテーション**: `RotationExpander` の vacation-aware 拡張（最大規模の
+   次タスク）。SwiftData V2 マイグレーションが必要。
 
 ---
 

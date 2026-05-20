@@ -9,6 +9,10 @@ public final class AppSettings {
     public var liveActivityLeadHours: Int
     public var preferredLanguageRaw: String?
     public var hasOnboarded: Bool
+    /// Snooze expiry for pattern suggestion card. nil = not snoozed.
+    public var patternSuggestionSnoozedUntil: Date?
+    /// Fingerprint of the snoozed suggestion. New fingerprint bypasses snooze.
+    public var patternSuggestionSnoozedFingerprint: String?
 
     public init(
         id: UUID = UUID(),
@@ -16,7 +20,9 @@ public final class AppSettings {
         lookaheadDays: Int = 30,
         liveActivityLeadHours: Int = 8,
         preferredLanguageRaw: String? = nil,
-        hasOnboarded: Bool = false
+        hasOnboarded: Bool = false,
+        patternSuggestionSnoozedUntil: Date? = nil,
+        patternSuggestionSnoozedFingerprint: String? = nil
     ) {
         self.id = id
         self.defaultSoundID = defaultSoundID
@@ -24,5 +30,7 @@ public final class AppSettings {
         self.liveActivityLeadHours = liveActivityLeadHours
         self.preferredLanguageRaw = preferredLanguageRaw
         self.hasOnboarded = hasOnboarded
+        self.patternSuggestionSnoozedUntil = patternSuggestionSnoozedUntil
+        self.patternSuggestionSnoozedFingerprint = patternSuggestionSnoozedFingerprint
     }
 }

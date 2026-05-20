@@ -10,9 +10,11 @@
 		0174AAF68B2E3E2A19D663D0 /* AppSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 25EF6E612249CDD90B0DF266 /* AppSettings.swift */; };
 		06EC3C472A5E23E3F3E6325C /* DeepLinkRouterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5EEDC6043940812D023C62FC /* DeepLinkRouterTests.swift */; };
 		09AE8637AA7A1550C68CCF21 /* NextAlarmWidgetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 901393113CB436834EDD704A /* NextAlarmWidgetView.swift */; };
+		0A57A6A18030668A011EBC05 /* ShiftPatternDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0BD8459A156DE552C6D27A01 /* ShiftPatternDetector.swift */; };
 		111A9CBA9F6F30EE2C85FD61 /* ShiftAlarmWidgetBundle.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2EC4F99A8F0A74E9927F65C /* ShiftAlarmWidgetBundle.swift */; };
 		171C6BED9FDE00AF5D23F313 /* NextAlarmWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = D41E08794DF55638993BF943 /* NextAlarmWidget.swift */; };
 		1AA60F370276D3F3DDD0858C /* SnapshotTesting in Frameworks */ = {isa = PBXBuildFile; productRef = 211E6AD0D1FC41D4BA961064 /* SnapshotTesting */; };
+		1AF0CB961721667FB6A16D1F /* ShiftPatternDetectorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 481125C64907856732CF7C61 /* ShiftPatternDetectorTests.swift */; };
 		1D91354AF5A61F6AB8A2BA34 /* AlarmAuthorization.swift in Sources */ = {isa = PBXBuildFile; fileRef = 86AC780F46CD0EFCA4DF5AEF /* AlarmAuthorization.swift */; };
 		1FA8627BBE71AEB50CF94BBC /* RotationPattern.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01A6D3137CBF6EC9B8450199 /* RotationPattern.swift */; };
 		2E24C232F9A0BBA799E0B687 /* RootTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C8378ACE0174B3C7539D092 /* RootTabView.swift */; };
@@ -21,6 +23,7 @@
 		37E3A90E7EA9CE9C9DF95660 /* SleepWindowResolver.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55223407E0767E40503E1B8F /* SleepWindowResolver.swift */; };
 		383B5DB7A2F34517217C819D /* Color+Hex.swift in Sources */ = {isa = PBXBuildFile; fileRef = 52D57AD950572E2CCA4232B2 /* Color+Hex.swift */; };
 		39A8CDF23526D9EF7ABA5E33 /* SleepSampleWriter.swift in Sources */ = {isa = PBXBuildFile; fileRef = C043264095B90E0E95E70527 /* SleepSampleWriter.swift */; };
+		39BD5B1B121ECD026E2C9D08 /* ICSExporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B20C6E8ABF5C82878661E3F /* ICSExporter.swift */; };
 		3BD18C6F32FDE39AEEC9207F /* AppRuntimeConfigurationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 54B9557854989FD02866E581 /* AppRuntimeConfigurationTests.swift */; };
 		3C984403E021A44165F6AD0A /* LiveActivityController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 58CAFC82AB82E58ACD5E06C9 /* LiveActivityController.swift */; };
 		3D9AD07FA135279F069A95B7 /* RotationPattern.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01A6D3137CBF6EC9B8450199 /* RotationPattern.swift */; };
@@ -31,9 +34,12 @@
 		47BCB8CE39BFD3E8D6B877CF /* NextAlarmTimelineProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 625E7CC86536529ACA657B37 /* NextAlarmTimelineProvider.swift */; };
 		48D9A4D6A5B89234DCE0AA1D /* AlarmSchedulerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44A558A859D64ED35D3CDBDC /* AlarmSchedulerTests.swift */; };
 		4AF4B70277A466A66A7BB27C /* PresetEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C225FB49C8AC78F1CFE806C /* PresetEditorView.swift */; };
+		4BED736D108F38EE3C7339C8 /* ShiftPatternDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0BD8459A156DE552C6D27A01 /* ShiftPatternDetector.swift */; };
 		4D9F5895CD7278737103138F /* SleepWindowResolver.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55223407E0767E40503E1B8F /* SleepWindowResolver.swift */; };
+		4DFF01B7820780E95870D469 /* ICSExporterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 11E8D2A64477D09713A87A66 /* ICSExporterTests.swift */; };
 		4F79487B08D15B0A5613F341 /* SleepWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 169F03BD2562EF87D45D75D8 /* SleepWindow.swift */; };
 		54DCA27615376194E3668B8E /* ShiftPreset.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0D19828236FA58FCCD74F1E8 /* ShiftPreset.swift */; };
+		561A1C34E5122F321A7FE147 /* ICSTestParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE3CC80D73634D745A6A655B /* ICSTestParser.swift */; };
 		57A1C1A7062992462E0C498C /* HolidayManagerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EC87F1DFCE568D6F82190C34 /* HolidayManagerView.swift */; };
 		595DD904DD3F3FC6B930B69E /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = A5DCD8CE526744533D3AE8A6 /* Localizable.xcstrings */; };
 		59E045412F860A1A96A16407 /* DateRange.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8BE434E979A31ACF1C177CA4 /* DateRange.swift */; };
@@ -45,6 +51,7 @@
 		5FE572458982245B0FFBBB2E /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 962E4F1AA089D96922581BBE /* SettingsView.swift */; };
 		65744F30B5FB98E138CAA895 /* HolidaysJP.json in Resources */ = {isa = PBXBuildFile; fileRef = E6966462FDD7CC0A26D6C5CF /* HolidaysJP.json */; };
 		66D04F9FBFAF82893B9DF58B /* ShiftBundleCodec.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3E0AC7231CD3545E0E4F37BE /* ShiftBundleCodec.swift */; };
+		67F24FB99340A320B99A1BAE /* ICSExportDateRangeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B9A56B5CB8BC65C024F6709 /* ICSExportDateRangeTests.swift */; };
 		6D7BA26244A90C4BC79F61DD /* DynamicIslandViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = C022CC0962033A45DDBB8195 /* DynamicIslandViews.swift */; };
 		6DFCA6A3C644793948543DF4 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D8943DE1A572A76A702F17B2 /* OnboardingView.swift */; };
 		7772C677C567D25266CDD47C /* RotationEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5A4BEA0B464B11496544190 /* RotationEditorView.swift */; };
@@ -77,6 +84,7 @@
 		BED6220DB45DDD71C8689E22 /* AppRuntimeConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81391A3DDB291E81E864ABD5 /* AppRuntimeConfiguration.swift */; };
 		BFEBC0400406189DEA7D64F9 /* ShiftAlarmAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2BE7C3EE15015E33BD13E8B /* ShiftAlarmAttributes.swift */; };
 		C02C4EA519F2C3B9D04AE928 /* EventKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 6A15CFD2D5D45A1C0701F7D3 /* EventKit.framework */; };
+		C3E2FEEAD3E24B47592E1188 /* ICSExportView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F9964DCDC9BA28F31B9555CC /* ICSExportView.swift */; };
 		C428B94E558D711BE463FD07 /* DateRange.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8BE434E979A31ACF1C177CA4 /* DateRange.swift */; };
 		C442F74D6FF8221A34BE483E /* ShareExporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 928D40B936D542854FCC6380 /* ShareExporter.swift */; };
 		C4EA2E7EF8BB1CDB894CF284 /* HolidayOverride.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E1ABFDF04BF0349708FA790 /* HolidayOverride.swift */; };
@@ -115,6 +123,7 @@
 		F5C5912A9C6A0E7CFC9EEFF7 /* AlarmSound.swift in Sources */ = {isa = PBXBuildFile; fileRef = E0CCEBE3E8C96F8D3D39213C /* AlarmSound.swift */; };
 		FB34CB81EEE05F0566DCFF02 /* ShiftPreset.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0D19828236FA58FCCD74F1E8 /* ShiftPreset.swift */; };
 		FCAB27B5CA1B8FE881F580A3 /* SchemaV1.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC70896375FEE52E7BE86999 /* SchemaV1.swift */; };
+		FED03603887DF55C4CEF2D6B /* PatternSuggestionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7310BE2E2465D1FB0C936204 /* PatternSuggestionView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -155,7 +164,9 @@
 		059A391B8DFBD9D78DF1E522 /* SleepSampleWriterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SleepSampleWriterTests.swift; sourceTree = "<group>"; };
 		0606D6A04A403EED752A5D77 /* DayResolverTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DayResolverTests.swift; sourceTree = "<group>"; };
 		0B5D48CC86C2125679C92B3B /* ShiftBundleCodecTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShiftBundleCodecTests.swift; sourceTree = "<group>"; };
+		0BD8459A156DE552C6D27A01 /* ShiftPatternDetector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShiftPatternDetector.swift; sourceTree = "<group>"; };
 		0D19828236FA58FCCD74F1E8 /* ShiftPreset.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShiftPreset.swift; sourceTree = "<group>"; };
+		11E8D2A64477D09713A87A66 /* ICSExporterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ICSExporterTests.swift; sourceTree = "<group>"; };
 		120336887FAA78783C26767B /* CalendarMonthViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarMonthViewModel.swift; sourceTree = "<group>"; };
 		160C6B232ACAFA66D4BF9A70 /* ShareImporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareImporter.swift; sourceTree = "<group>"; };
 		169F03BD2562EF87D45D75D8 /* SleepWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SleepWindow.swift; sourceTree = "<group>"; };
@@ -177,6 +188,7 @@
 		420D64D4EC8FE289FEDC387A /* PermissionStatusView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PermissionStatusView.swift; sourceTree = "<group>"; };
 		44A558A859D64ED35D3CDBDC /* AlarmSchedulerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlarmSchedulerTests.swift; sourceTree = "<group>"; };
 		44D66DDAAD3A152B092CC785 /* ShiftAlarm.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = ShiftAlarm.entitlements; sourceTree = "<group>"; };
+		481125C64907856732CF7C61 /* ShiftPatternDetectorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShiftPatternDetectorTests.swift; sourceTree = "<group>"; };
 		4993DAF98899EFFAA5892056 /* InfoPlist.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = InfoPlist.xcstrings; sourceTree = "<group>"; };
 		4C225FB49C8AC78F1CFE806C /* PresetEditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PresetEditorView.swift; sourceTree = "<group>"; };
 		4DF8BFCE4E014ADD1045BDA2 /* ShiftAlarmApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShiftAlarmApp.swift; sourceTree = "<group>"; };
@@ -186,12 +198,15 @@
 		55223407E0767E40503E1B8F /* SleepWindowResolver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SleepWindowResolver.swift; sourceTree = "<group>"; };
 		57FEF2F22EDF88E58C805408 /* PresetListViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PresetListViewModel.swift; sourceTree = "<group>"; };
 		58CAFC82AB82E58ACD5E06C9 /* LiveActivityController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveActivityController.swift; sourceTree = "<group>"; };
+		5B20C6E8ABF5C82878661E3F /* ICSExporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ICSExporter.swift; sourceTree = "<group>"; };
+		5B9A56B5CB8BC65C024F6709 /* ICSExportDateRangeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ICSExportDateRangeTests.swift; sourceTree = "<group>"; };
 		5D837D13E36B1A14BFC6929F /* ImportView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImportView.swift; sourceTree = "<group>"; };
 		5EEDC6043940812D023C62FC /* DeepLinkRouterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeepLinkRouterTests.swift; sourceTree = "<group>"; };
 		60156AC0A2670B38EC572EAF /* README.ja.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.ja.md; sourceTree = "<group>"; };
 		625E7CC86536529ACA657B37 /* NextAlarmTimelineProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NextAlarmTimelineProvider.swift; sourceTree = "<group>"; };
 		6A15CFD2D5D45A1C0701F7D3 /* EventKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = EventKit.framework; path = System/Library/Frameworks/EventKit.framework; sourceTree = SDKROOT; };
 		6FED4227C112BBB2ED2E01C3 /* AppIntents.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppIntents.framework; path = System/Library/Frameworks/AppIntents.framework; sourceTree = SDKROOT; };
+		7310BE2E2465D1FB0C936204 /* PatternSuggestionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PatternSuggestionView.swift; sourceTree = "<group>"; };
 		75776467D4B5146AC2590CA0 /* regen.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = regen.sh; sourceTree = "<group>"; };
 		79166C1FB771273ABC4C9109 /* PresetListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PresetListView.swift; sourceTree = "<group>"; };
 		793BB747CA26E40B93C6FE2F /* BGRefreshControllerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BGRefreshControllerTests.swift; sourceTree = "<group>"; };
@@ -245,12 +260,14 @@
 		E79E459829FCB649F8B069DF /* DayResolverInputBuilder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DayResolverInputBuilder.swift; sourceTree = "<group>"; };
 		EBB1ECB93A0D683208D123C6 /* AlarmService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlarmService.swift; sourceTree = "<group>"; };
 		EC87F1DFCE568D6F82190C34 /* HolidayManagerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HolidayManagerView.swift; sourceTree = "<group>"; };
+		EE3CC80D73634D745A6A655B /* ICSTestParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ICSTestParser.swift; sourceTree = "<group>"; };
 		EEEDE35FE689D0012567B5C9 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 		F0FC8D2A94B6B50E7DAE5819 /* DayResolverInputBuilderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DayResolverInputBuilderTests.swift; sourceTree = "<group>"; };
 		F459C419D55D6AA9892B4346 /* DeepLinkRouter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeepLinkRouter.swift; sourceTree = "<group>"; };
 		F4CB96BC64E3325BFFEB1166 /* Date+Calendar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Date+Calendar.swift"; sourceTree = "<group>"; };
 		F57502E93D536FE9914C3DA2 /* ShiftAlarmTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = ShiftAlarmTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		F826880AB3E9631FE7905EA4 /* SleepIntentHelperTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SleepIntentHelperTests.swift; sourceTree = "<group>"; };
+		F9964DCDC9BA28F31B9555CC /* ICSExportView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ICSExportView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -383,6 +400,7 @@
 				35017C9D5FB36DA39CD9EC30 /* DayResolver.swift */,
 				E79E459829FCB649F8B069DF /* DayResolverInputBuilder.swift */,
 				B0DE13B9D3287B1416F5A8E7 /* RotationExpander.swift */,
+				0BD8459A156DE552C6D27A01 /* ShiftPatternDetector.swift */,
 				55223407E0767E40503E1B8F /* SleepWindowResolver.swift */,
 			);
 			path = Logic;
@@ -421,9 +439,18 @@
 			path = Services;
 			sourceTree = "<group>";
 		};
+		4EE848047A924A1BCB987B2C /* Support */ = {
+			isa = PBXGroup;
+			children = (
+				EE3CC80D73634D745A6A655B /* ICSTestParser.swift */,
+			);
+			path = Support;
+			sourceTree = "<group>";
+		};
 		4EFBFCC2BF220534CAAE4D85 /* Sharing */ = {
 			isa = PBXGroup;
 			children = (
+				5B20C6E8ABF5C82878661E3F /* ICSExporter.swift */,
 				928D40B936D542854FCC6380 /* ShareExporter.swift */,
 				160C6B232ACAFA66D4BF9A70 /* ShareImporter.swift */,
 				3E0AC7231CD3545E0E4F37BE /* ShiftBundleCodec.swift */,
@@ -478,6 +505,7 @@
 				950AE1707A4010A5714FE461 /* DomainTests */,
 				746661BA03AD0FE0ABDE7574 /* ServicesTests */,
 				DA7C248B3F8593977867C806 /* SnapshotTests */,
+				4EE848047A924A1BCB987B2C /* Support */,
 			);
 			path = Tests;
 			sourceTree = "<group>";
@@ -489,6 +517,8 @@
 				54B9557854989FD02866E581 /* AppRuntimeConfigurationTests.swift */,
 				793BB747CA26E40B93C6FE2F /* BGRefreshControllerTests.swift */,
 				5EEDC6043940812D023C62FC /* DeepLinkRouterTests.swift */,
+				5B9A56B5CB8BC65C024F6709 /* ICSExportDateRangeTests.swift */,
+				11E8D2A64477D09713A87A66 /* ICSExporterTests.swift */,
 				D6F3F7A3FCC6C7B97F57BC23 /* ShareImporterTests.swift */,
 				F826880AB3E9631FE7905EA4 /* SleepIntentHelperTests.swift */,
 				059A391B8DFBD9D78DF1E522 /* SleepSampleWriterTests.swift */,
@@ -532,6 +562,7 @@
 				0606D6A04A403EED752A5D77 /* DayResolverTests.swift */,
 				03B220A2866CA3CF0D63D6C6 /* RotationExpanderTests.swift */,
 				0B5D48CC86C2125679C92B3B /* ShiftBundleCodecTests.swift */,
+				481125C64907856732CF7C61 /* ShiftPatternDetectorTests.swift */,
 				C4426481B926C070D52F5B98 /* SleepWindowResolverTests.swift */,
 			);
 			path = DomainTests;
@@ -551,6 +582,7 @@
 			isa = PBXGroup;
 			children = (
 				8A6B508E593CCDB0EE71C16C /* ExportView.swift */,
+				F9964DCDC9BA28F31B9555CC /* ICSExportView.swift */,
 				5D837D13E36B1A14BFC6929F /* ImportView.swift */,
 			);
 			path = Sharing;
@@ -596,6 +628,7 @@
 		D65678957F7FDBA7CF2F7AB2 /* Rotation */ = {
 			isa = PBXGroup;
 			children = (
+				7310BE2E2465D1FB0C936204 /* PatternSuggestionView.swift */,
 				C5A4BEA0B464B11496544190 /* RotationEditorView.swift */,
 				2DC4F0D51E132D85E2AF2883 /* RotationListView.swift */,
 				9ED995FDE72A7859141DE705 /* RotationPreviewView.swift */,
@@ -824,9 +857,13 @@
 				5AA85CFFDCF9BD51C9237456 /* DayResolverInputBuilderTests.swift in Sources */,
 				B14334F8AF073CD6391C6AC0 /* DayResolverTests.swift in Sources */,
 				06EC3C472A5E23E3F3E6325C /* DeepLinkRouterTests.swift in Sources */,
+				67F24FB99340A320B99A1BAE /* ICSExportDateRangeTests.swift in Sources */,
+				4DFF01B7820780E95870D469 /* ICSExporterTests.swift in Sources */,
+				561A1C34E5122F321A7FE147 /* ICSTestParser.swift in Sources */,
 				D4CDC0B8C3557D54B63419A4 /* RotationExpanderTests.swift in Sources */,
 				5F5B012597E124236B6C80C6 /* ShareImporterTests.swift in Sources */,
 				BA6498C6496DB7B7CA011551 /* ShiftBundleCodecTests.swift in Sources */,
+				1AF0CB961721667FB6A16D1F /* ShiftPatternDetectorTests.swift in Sources */,
 				C7F62952D8212BE0130B79DC /* SleepIntentHelperTests.swift in Sources */,
 				DDC572A572EFD4828440ADB8 /* SleepSampleWriterTests.swift in Sources */,
 				3F50CE5EF85830766A92B0A3 /* SleepWindowResolverTests.swift in Sources */,
@@ -865,10 +902,13 @@
 				57A1C1A7062992462E0C498C /* HolidayManagerView.swift in Sources */,
 				E6713003BA9DC6C1FE8665F2 /* HolidayOverride.swift in Sources */,
 				D71547B9C9327C27C631A9D5 /* HolidayProvider.swift in Sources */,
+				C3E2FEEAD3E24B47592E1188 /* ICSExportView.swift in Sources */,
+				39BD5B1B121ECD026E2C9D08 /* ICSExporter.swift in Sources */,
 				9B463F1F79EA44AEC7467BA7 /* ImportView.swift in Sources */,
 				3C984403E021A44165F6AD0A /* LiveActivityController.swift in Sources */,
 				AEB91B55706491AEF917EDEB /* ModelContainer+Shared.swift in Sources */,
 				6DFCA6A3C644793948543DF4 /* OnboardingView.swift in Sources */,
+				FED03603887DF55C4CEF2D6B /* PatternSuggestionView.swift in Sources */,
 				EA0816E558BA0EE98B14EE8E /* PermissionStatusView.swift in Sources */,
 				4AF4B70277A466A66A7BB27C /* PresetEditorView.swift in Sources */,
 				A7811C6773FD1BD8B5D574AC /* PresetListView.swift in Sources */,
@@ -888,6 +928,7 @@
 				88B5287B1ECD5E14F61F228C /* ShiftAlarmAttributes.swift in Sources */,
 				EA7B5A2C535ED25F0E403F9B /* ShiftAlarmShortcutsProvider.swift in Sources */,
 				66D04F9FBFAF82893B9DF58B /* ShiftBundleCodec.swift in Sources */,
+				4BED736D108F38EE3C7339C8 /* ShiftPatternDetector.swift in Sources */,
 				54DCA27615376194E3668B8E /* ShiftPreset.swift in Sources */,
 				E4677219743EEA60364CBB9C /* ShortcutsOnboardingView.swift in Sources */,
 				E56B6C09D299876877330940 /* SleepIntentHelper.swift in Sources */,
@@ -925,6 +966,7 @@
 				5C7030B898B9580DCE2D12CA /* ShiftAlarm.swift in Sources */,
 				BFEBC0400406189DEA7D64F9 /* ShiftAlarmAttributes.swift in Sources */,
 				111A9CBA9F6F30EE2C85FD61 /* ShiftAlarmWidgetBundle.swift in Sources */,
+				0A57A6A18030668A011EBC05 /* ShiftPatternDetector.swift in Sources */,
 				FB34CB81EEE05F0566DCFF02 /* ShiftPreset.swift in Sources */,
 				4F79487B08D15B0A5613F341 /* SleepWindow.swift in Sources */,
 				37E3A90E7EA9CE9C9DF95660 /* SleepWindowResolver.swift in Sources */,
