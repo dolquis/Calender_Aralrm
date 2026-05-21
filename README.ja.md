@@ -79,6 +79,17 @@ HealthKit 補助ロジック / Background refresh / Deep link / Sharing / Snapsh
 カバーしています。DayCell の snapshot test 5 件は通常 `verify.sh` では skip され、
 `SNAPSHOT_TESTING_ENABLED=1` 指定時に記録 / 検証されます。
 
+## コードスタイル
+
+Swift ソースは Xcode 26 ツールチェーン同梱の
+[`swift-format`](https://github.com/swiftlang/swift-format) で整形します。設定は
+リポジトリ直下の `.swift-format` です。CI の `lint` ジョブは違反があると失敗します。
+
+```sh
+bash scripts/lint.sh check   # 検査。違反があれば非ゼロ終了
+bash scripts/lint.sh fix     # その場で整形
+```
+
 ## アーキテクチャ概要
 
 - `AlarmScheduler`（`Sources/Services/AlarmKit/AlarmScheduler.swift`）が中核。

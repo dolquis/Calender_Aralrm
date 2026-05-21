@@ -58,10 +58,16 @@ bash scripts/verify.sh
 
 # 固定 destination で実行したい場合
 DESTINATION='platform=iOS Simulator,name=iPhone 17 Pro,OS=26.5' bash scripts/verify.sh
+
+# Swift コードスタイル検査 / 自動整形（CI の lint ジョブと同じ）
+bash scripts/lint.sh check   # 違反があれば非ゼロ終了
+bash scripts/lint.sh fix     # その場で整形
 ```
 
-CI は `.github/workflows/ios.yml` が `macos-26` / Xcode 26+ で
-`scripts/verify.sh` を実行する。**CI 緑 = ローカル `verify.sh` 緑** が前提。
+CI は `.github/workflows/ios.yml` が `macos-26` / Xcode 26+ で実行する。
+`build-test` ジョブが `scripts/verify.sh`、`lint` ジョブが `scripts/lint.sh check`
+（`swift-format`、設定は `.swift-format`）を並列に走らせる。
+**CI 緑 = ローカルで `verify.sh` と `lint.sh check` がともに緑** が前提。
 現状は 85 件の XCTest（16 テストクラス、うち DayCell snapshot 5 件は通常 verify で
 skip）を確認する。
 実機向け P0 確認は `bash scripts/p0-readiness.sh`、実機 build 入口は
@@ -118,8 +124,8 @@ skip）を確認する。
 
 1. `git diff`（新規ファイルは `git status`）で差分全体を読み返し、
    意図しない変更・デバッグコード・コメントアウトの残骸が混入していないか確認する。
-2. `bash scripts/verify.sh` が緑であることを確認する。実機向け変更を含む場合は
-   `bash scripts/p0-readiness.sh` も確認する。
+2. `bash scripts/lint.sh check` と `bash scripts/verify.sh` がともに緑であることを
+   確認する。実機向け変更を含む場合は `bash scripts/p0-readiness.sh` も確認する。
 3. 上記 §5「触ってよい / 触ってはいけないもの」に違反していないか確認する。
 4. ローカライズ追加時は `Resources/Localizable.xcstrings` の ja / en 両方を確認する。
 5. コミットメッセージと PR 説明に **何を直したか / なぜ / どうテストしたか** が

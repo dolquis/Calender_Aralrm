@@ -97,6 +97,17 @@ The Tests target currently runs 85 XCTest cases (16 test classes) across domain,
 Intents, HealthKit helpers, background refresh, deep links, sharing, and snapshot coverage. Five
 DayCell snapshot tests are skipped by default unless `SNAPSHOT_TESTING_ENABLED=1` is set.
 
+## Code style
+
+Swift sources are formatted with [`swift-format`](https://github.com/swiftlang/swift-format),
+bundled with the Xcode 26 toolchain and configured by `.swift-format` at the repository root.
+CI fails the `lint` job on any violation.
+
+```sh
+bash scripts/lint.sh check   # lint, non-zero exit on violations
+bash scripts/lint.sh fix     # reformat in place
+```
+
 ## Architecture notes
 
 - `AlarmScheduler` (`Sources/Services/AlarmKit/AlarmScheduler.swift`) is the heart of the app. It
