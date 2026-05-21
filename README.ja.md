@@ -74,10 +74,10 @@ DESTINATION='platform=iOS Simulator,name=iPhone 17 Pro,OS=26.5' bash scripts/ver
 bash scripts/verify.sh test
 ```
 
-現在は 56 件の XCTest で、Domain / Services / App Intents / HealthKit 補助ロジック /
-Background refresh / Deep link / Sharing / Snapshot をカバーしています。DayCell の
-snapshot test 5 件は通常 `verify.sh` では skip され、`SNAPSHOT_TESTING_ENABLED=1`
-指定時に記録 / 検証されます。
+現在は 85 件の XCTest（16 テストクラス）で、Domain / Services / App Intents /
+HealthKit 補助ロジック / Background refresh / Deep link / Sharing / Snapshot を
+カバーしています。DayCell の snapshot test 5 件は通常 `verify.sh` では skip され、
+`SNAPSHOT_TESTING_ENABLED=1` 指定時に記録 / 検証されます。
 
 ## アーキテクチャ概要
 
@@ -109,10 +109,17 @@ bash scripts/p0-device-build.sh
 readiness script が意図的に失敗します。device build script は同じ readiness check を通してから
 `generic/platform=iOS` 向けにビルドします。
 
-## 将来拡張（次に実装する候補）
+## ロードマップ
 
-- **シフトパターン自動検出** — 既存のアラーム履歴から周期性を検出し、「これローテとして
+最近実装済み:
+
+- **シフトパターン自動検出** — 既存の割当履歴から周期性を検出し、「これローテとして
   登録しませんか？」と提案する。単純な昼夜交互週から多週の複雑パターンまでカバー。
+- **家族向けカレンダー（`.ics`）エクスポート** — 割当を標準の `.ics` ファイルとして
+  書き出し、家族が自分のカレンダーアプリから購読できる。
+
+設計済み（未実装）:
+
 - **長期連休を挟んだ昼夜シフト切替** — お盆 / ゴールデンウィークなどを 1 つの "連休" として
   マークし、連休前後で昼夜を入れ替えるポリシー（invert / continue / reset-to-day）を
   ローテに適用する。

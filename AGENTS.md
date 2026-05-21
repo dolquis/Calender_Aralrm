@@ -19,34 +19,18 @@
 
 ---
 
-## 2. 開発状況のステートマシン
+## 2. 開発状況
 
-現在地は **P1 群 (P1-1〜P1-4) と P2-2 (Sleep / Bedtime / HealthKit / App Intents)
-完了、P0-1 は Xcode 26.5 でコードレベル確認済み、P0-2 の readiness / device-build
-スクリプトも PR #14 でマージ済み。次は `Config/LocalSigning.xcconfig` に実 Developer
-Portal 値を入れて `scripts/p0-readiness.sh` を緑にし、P0-3 の実機 golden path 検証**。
-新機能ロードマップは P2-α (シフトパターン自動検出) / P2-β (長期連休越境) / P2-γ
-(シフト表画像 AI 解析) — `ROADMAP.md` §4 を参照。iCloud 同期と Apple Watch は
-**スコープ外（不採用）**。
-詳細フェーズは `ROADMAP.md` §1 を見ること。
+開発フェーズ・完了済み PR・既知の不安要素の**最新状況は `ROADMAP.md` §0
+「現状サマリ」が唯一の正**。作業前に必ず参照すること（重複を避けるため本ファイルに
+PR 一覧は再掲しない）。
 
-完了済みの主要 PR:
-
-- #1 初期スキャフォールド（直接マージはせず #5 で救出）
-- #2 EventKit によるシステムカレンダー祝日インポート
-- #3 `DayDetailEditorView` の状態漏れ修正
-- #5 PR #1 残差の安全救出（`CalendarDay`、singleton、deep link 等）
-- #6 Swift 6 / Xcode 26 ビルド修正、`scripts/verify.sh`、GitHub Actions CI
-- #7 P1-1 オンボーディング + P1-3 空状態 / 認可拒否 UX + P3-1 テスト拡充
-- #8 / #9 P1-2 アクセシビリティ監査（VoiceOver / Dynamic Type / コントラスト）
-- #10 P1-4 Widget マルチエントリ・タイムライン + P2-2 Sleep schedule 初版
-- #11 Sleep / HealthKit / App Intents の P1/P2 レビュー反映と CI 修正
-- #12 ROADMAP / README の P1/P2-2 進捗反映
-- #13 `DayResolverInputBuilder` 抽出、DI seam、CI / テスト拡充
-- #14 P0-2 signing readiness ワークフロー (`scripts/p0-readiness.sh` /
-  `scripts/p0-device-build.sh`)
-
-オープン PR / Issue は 0。
+概況（2026-05-21 時点）: P1 群（P1-1〜P1-4）と P2-2（Sleep / Bedtime / HealthKit /
+App Intents）完了。P2-α（シフトパターン自動検出）と P2-η（`.ics` エクスポート）も
+実装済み。次の焦点は `Config/LocalSigning.xcconfig` に実 Developer Portal 値を入れて
+`scripts/p0-readiness.sh` を緑にし、P0-3 の実機ゴールデンパス検証を行うこと。
+残る新機能ロードマップは P2-β（長期連休越境）/ P2-γ（シフト表画像 AI 解析） —
+`ROADMAP.md` §4 を参照。iCloud 同期と Apple Watch は **スコープ外（不採用）**。
 
 ---
 
@@ -78,7 +62,8 @@ DESTINATION='platform=iOS Simulator,name=iPhone 17 Pro,OS=26.5' bash scripts/ver
 
 CI は `.github/workflows/ios.yml` が `macos-26` / Xcode 26+ で
 `scripts/verify.sh` を実行する。**CI 緑 = ローカル `verify.sh` 緑** が前提。
-現状は 56 件の XCTest（うち DayCell snapshot 5 件は通常 verify で skip）を確認する。
+現状は 85 件の XCTest（16 テストクラス、うち DayCell snapshot 5 件は通常 verify で
+skip）を確認する。
 実機向け P0 確認は `bash scripts/p0-readiness.sh`、実機 build 入口は
 `bash scripts/p0-device-build.sh`。
 
