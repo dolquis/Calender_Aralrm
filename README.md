@@ -93,9 +93,9 @@ DESTINATION='platform=iOS Simulator,name=iPhone 17 Pro,OS=26.5' bash scripts/ver
 bash scripts/verify.sh test
 ```
 
-The Tests target currently runs 56 XCTest cases across domain, services, App Intents, HealthKit
-helpers, background refresh, deep links, sharing, and snapshot coverage. Five DayCell snapshot tests
-are skipped by default unless `SNAPSHOT_TESTING_ENABLED=1` is set.
+The Tests target currently runs 85 XCTest cases (16 test classes) across domain, services, App
+Intents, HealthKit helpers, background refresh, deep links, sharing, and snapshot coverage. Five
+DayCell snapshot tests are skipped by default unless `SNAPSHOT_TESTING_ENABLED=1` is set.
 
 ## Architecture notes
 
@@ -130,11 +130,18 @@ The readiness script intentionally fails while the default `com.example.*` place
 use. The device build script runs the same readiness check before building for
 `generic/platform=iOS`.
 
-## Roadmap (designed for, not yet implemented)
+## Roadmap
 
-- **Shift-pattern auto-detection** — analyze the user's existing assignments and suggest a
-  ready-to-use rotation when a periodic schedule (e.g. weekly day/night alternation, or a
-  multi-week cycle) is detected.
+Recently shipped:
+
+- **Shift-pattern auto-detection** — analyzes existing assignments and suggests a ready-to-use
+  rotation when a periodic schedule (e.g. weekly day/night alternation, or a multi-week cycle)
+  is detected.
+- **Family calendar export (`.ics`)** — export assignments as a standard `.ics` file so family
+  members can subscribe from their own calendar app.
+
+Designed, not yet implemented:
+
 - **Vacation-aware shift flip** — let users mark long holidays (お盆 / GW etc.) as a single
   vacation block, and apply a configurable policy (invert / continue / reset-to-day) to
   the shift that resumes after the break.

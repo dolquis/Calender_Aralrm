@@ -4,12 +4,12 @@
 **開発仕様兼ロードマップ**です。タスクは優先度（P0 → P3）順、各項目に
 **目的 / 対象ファイル / 完了条件 (DoD)** を明記しています。
 
-最終更新: 2026-05-19
+最終更新: 2026-05-21
 対象ブランチ運用: タスクごとに `feature/<topic>` を切り、main へ PR。
 
 ---
 
-## 0. 現状サマリ（2026-05-18 時点）
+## 0. 現状サマリ（2026-05-21 時点）
 
 - iOS 26+ / Swift 6 / SwiftUI + SwiftData / AlarmKit ベースのシフト勤務向けアラームアプリ。
 - 主要レイヤー（Domain / Services / Features / Widget / Live Activity / Sharing / Deep link / ja-en ローカライズ）は実装済み。
@@ -18,10 +18,10 @@
 - P0-1 は Xcode 26.5 / iOS 26.5 SDK でコードレベル検証に着手済み。
   `AlarmPresentation.Alert.stopButton` の iOS 26.1 deprecation を回避し、
   `AlarmManager.AlarmConfiguration.alarm(...)` に寄せた。実機確認は未完了。
-- テスト 56 件 (14 ファイル) 緑。通常の `scripts/verify.sh` では
+- テスト 85 件 (16 テストクラス) 緑。通常の `scripts/verify.sh` では
   5 件の snapshot test は `SNAPSHOT_TESTING_ENABLED=1` 未指定のため skip。
   CI は `macos-26` / Xcode 26+ で `scripts/verify.sh` を実行。
-- オープン Issue は 0。オープン PR: #19（P2-α / P2-η、draft）。
+- オープン Issue / PR は 0。
 - マージ済み主要 PR:
   - #1 初期スキャフォールド（救出は #5）/ #2 EventKit 祝日 / #3 DayEditor 状態漏れ修正
   - #5 PR #1 残差救出 / #6 Swift 6・CI 安定化
@@ -33,12 +33,9 @@
   - **#13 DayResolverInputBuilder 抽出、DI seam、CI / テスト拡充**
   - **#14 P0-2 signing readiness ワークフロー (`scripts/p0-readiness.sh` / `scripts/p0-device-build.sh`)**
   - **#18 P2-α アルゴリズム仕様・テスト計画 + P2-δ / P2-η 提案書**
-
-オープン PR:
-- **#19** (draft): P2-α `ShiftPatternDetector` + `PatternSuggestionView` + `RotationListView` 提案カード。
-  P2-η `ICSExporter` + `ICSExportView` + `SettingsView` 導線。
-  テスト: `ShiftPatternDetectorTests` (α-U1〜U12 + 指紋決定論性 + A1 drift α-U13/U14)、
-  `ICSExporterTests` (η-U1〜U9)、`ICSTestParser`。
+  - **#19 P2-α `ShiftPatternDetector` + `PatternSuggestionView` + `RotationListView`
+    提案カード / P2-η `ICSExporter` + `ICSExportView` + `SettingsView` 導線**
+  - **#20 プッシュ / PR 作成前のセルフレビュー方針を文書化**
 
 未確定 / 既知の不安要素:
 
@@ -521,7 +518,7 @@
   - `Tests/ServicesTests/SleepIntentHelperTests.swift` — App Intents 用 sleep window 取得。
   - `Tests/ServicesTests/SleepSampleWriterTests.swift` — HealthKit 書込み対象 window 抽出。
   - `Tests/DomainTests/SleepWindowResolverTests.swift` — bedtime 計算 / 端境ケース。
-- 現状: 14 ファイル / 56 テスト緑（うち 5 件 snapshot は通常 verify では skip）。
+- 現状: 16 テストクラス / 85 テスト緑（うち 5 件 snapshot は通常 verify では skip）。
 
 ### P3-2. UI / スナップショットテスト（一部着手）
 
@@ -542,6 +539,32 @@
 
 - 軽量に: `os.Logger` のサブシステム整理 + MetricKit 取り込み。
 - 外部 SDK は避ける（プライバシー / AlarmKit のバックグラウンド要件のため）。
+
+### P3-5. Swift Testing 移行（未着手 / Mac 作業）
+
+- **目的**: 既存の XCTest テストを Apple の Swift Testing（`@Test`）へ移行し、
+  `#expect` / `#require` ベースの表現力と並列実行を得る。
+- **対象**: `Tests/` 配下 18 ファイル / 16 テストクラス / 85 テストメソッド。
+  `@testable import ShiftAlarm` は維持。`project.yml` のテストターゲット定義は
+  変更不要（Swift Testing はツールチェーン同梱）。
+- **機械的変換**:
+  - `XCTestCase` サブクラス → `struct` + `@Test` 関数。
+  - `XCTAssertEqual` / `XCTAssertTrue` 等 → `#expect(...)`。
+  - `XCTUnwrap` → `#require(...)`。
+  - `@MainActor` / `async` テストはそのまま移行可。
+- **注意が必要な箇所**:
+  - `Tests/SnapshotTests/SnapshotTestSupport.swift` の `SnapshotTestGate`:
+    `XCTSkipUnless` を Swift Testing の条件付きスキップ
+    （`@Test(.enabled(if:))` 等）へ書き換える。影響は
+    `DayCellViewSnapshotTests` の 5 テスト。
+  - `Tests/ServicesTests/SleepIntentHelperTests.swift` の `tearDown`
+    （`containerFactory` リセット）→ per-test フィクスチャ / `deinit` へ。
+- **難易度**: 大半（約 13 ファイル）は easy。`tearDown` / snapshot 系が
+  medium〜hard。
+- **進め方**: 専用ブランチ・単独 PR で実施し、swift-format 一括整形 PR とは
+  混在させない。検証は macOS + Xcode 26 が必須。
+- **DoD**: `bash scripts/verify.sh` がビルド・テストとも緑。snapshot ゲートが
+  従来どおり `SNAPSHOT_TESTING_ENABLED=1` でのみ有効になる。
 
 ---
 
@@ -581,8 +604,7 @@
 
 ## 8. 「次の 1 手」
 
-**P2-α / P2-η の実装は PR #19 でレビュー待ち。**
-PR #19 のマージ後、次の優先順位:
+**P2-α / P2-η は PR #19 でマージ済み。** 次の優先順位:
 
 1. **P0-3 実機ゴールデンパス**: `Config/LocalSigning.xcconfig` に実 Developer Team /
    bundle id / App Group を入れ、`bash scripts/p0-readiness.sh` を緑にしてから
