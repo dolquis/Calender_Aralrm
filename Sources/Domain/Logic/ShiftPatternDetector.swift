@@ -212,6 +212,11 @@ public struct ShiftPatternDetector: Sendable {
         )
     }
 
+    /// Fingerprint for an already accepted rotation, using the same identity as suggestions.
+    public func fingerprint(for pattern: RotationPatternSnapshot) -> String {
+        fingerprint(cycleLength: pattern.cycleLength, slots: pattern.slots)
+    }
+
     // MARK: - Helpers
 
     private func symbol(

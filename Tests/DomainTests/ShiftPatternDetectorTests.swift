@@ -388,6 +388,32 @@ final class ShiftPatternDetectorTests: XCTestCase {
         XCTAssertFalse(r1?.fingerprint.isEmpty ?? true)
     }
 
+    func testAcceptedPatternFingerprintMatchesSameSuggestion() throws {
+        let a = dailyAlternateHistory(start: Self.windowStart, days: 90)
+        let detector = ShiftPatternDetector()
+        let suggestion = try XCTUnwrap(
+            detector.detect(
+                manualAssignments: a, presets: makePresets(), today: Self.today, calendar: calendar
+            ))
+        let pattern = RotationPatternSnapshot(
+            id: UUID(),
+            name: "Accepted",
+            anchorDate: suggestion.anchorDate,
+            cycleLength: suggestion.cycleLength,
+            slots: suggestion.slots,
+            startDate: nil,
+            endDate: nil,
+            priority: 0,
+            isActive: true
+        )
+
+        XCTAssertEqual(detector.fingerprint(for: pattern), suggestion.fingerprint)
+    }
+
+    func testAppSettingsDefaultDriftThresholdIsFifteenPercent() {
+        XCTAssertEqual(AppSettings().effectivePatternDriftThreshold, 0.15, accuracy: 0.0001)
+    }
+
     // MARK: - A1 Drift detection
 
     private func makeAllDayPattern() -> RotationPatternSnapshot {
