@@ -220,15 +220,23 @@ public struct ShiftPatternDetector: Sendable {
     /// Full rotation identity for duplicate suppression.
     ///
     /// `fingerprint` intentionally omits the anchor date so snoozes follow the same cycle shape.
-    /// Duplicate pattern suppression must include the anchor because it changes the actual day map.
+    /// Duplicate pattern suppression must compare rotation phase because equivalent anchors can be
+    /// separated by whole cycles and still produce the same day map.
     public func matchesPatternIdentity(
         _ pattern: RotationPatternSnapshot,
         suggestion: SuggestedRotation,
         calendar: Calendar
     ) -> Bool {
-        pattern.cycleLength == suggestion.cycleLength
-            && pattern.slots == suggestion.slots
-            && calendar.isDate(pattern.anchorDate, inSameDayAs: suggestion.anchorDate)
+        guard pattern.cycleLength == suggestion.cycleLength,
+            pattern.slots == suggestion.slots,
+            pattern.cycleLength > 0
+        else { return false }
+
+        let existingAnchor = calendar.startOfDay(for: pattern.anchorDate)
+        let suggestedAnchor = calendar.startOfDay(for: suggestion.anchorDate)
+        let dayDelta =
+            calendar.dateComponents([.day], from: existingAnchor, to: suggestedAnchor).day ?? 0
+        return dayDelta.isMultiple(of: pattern.cycleLength)
     }
 
     /// Returns active rotations that actually drive at least one day in the 30-day drift window.

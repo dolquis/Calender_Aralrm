@@ -410,7 +410,7 @@ final class ShiftPatternDetectorTests: XCTestCase {
         XCTAssertEqual(detector.fingerprint(for: pattern), suggestion.fingerprint)
     }
 
-    func testPatternIdentityIncludesAnchorDate() throws {
+    func testPatternIdentityComparesAnchorPhase() throws {
         let a = dailyAlternateHistory(start: Self.windowStart, days: 90)
         let detector = ShiftPatternDetector()
         let suggestion = try XCTUnwrap(
@@ -428,7 +428,19 @@ final class ShiftPatternDetectorTests: XCTestCase {
             priority: 0,
             isActive: true
         )
-        let shiftedAnchorPattern = RotationPatternSnapshot(
+        let phaseEquivalentPattern = RotationPatternSnapshot(
+            id: UUID(),
+            name: "Phase Equivalent",
+            anchorDate: calendar.date(
+                byAdding: .day, value: suggestion.cycleLength, to: suggestion.anchorDate)!,
+            cycleLength: suggestion.cycleLength,
+            slots: suggestion.slots,
+            startDate: nil,
+            endDate: nil,
+            priority: 0,
+            isActive: true
+        )
+        let phaseShiftedPattern = RotationPatternSnapshot(
             id: UUID(),
             name: "Shifted",
             anchorDate: calendar.date(byAdding: .day, value: 1, to: suggestion.anchorDate)!,
@@ -443,11 +455,15 @@ final class ShiftPatternDetectorTests: XCTestCase {
         XCTAssertTrue(
             detector.matchesPatternIdentity(samePattern, suggestion: suggestion, calendar: calendar)
         )
+        XCTAssertTrue(
+            detector.matchesPatternIdentity(
+                phaseEquivalentPattern, suggestion: suggestion, calendar: calendar
+            ))
         XCTAssertFalse(
             detector.matchesPatternIdentity(
-                shiftedAnchorPattern, suggestion: suggestion, calendar: calendar
+                phaseShiftedPattern, suggestion: suggestion, calendar: calendar
             ))
-        XCTAssertEqual(detector.fingerprint(for: shiftedAnchorPattern), suggestion.fingerprint)
+        XCTAssertEqual(detector.fingerprint(for: phaseShiftedPattern), suggestion.fingerprint)
     }
 
     func testPatternsDrivingRecentWindowIgnoresFutureExpiredAndShadowedPatterns() {
