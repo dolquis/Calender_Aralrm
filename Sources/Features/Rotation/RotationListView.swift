@@ -99,9 +99,15 @@ public struct RotationListView: View {
         let activePatterns = input.rotations
             .filter(\.isActive)
             .sorted { $0.priority > $1.priority }
+        let driftPatterns = detector.patternsDrivingRecentWindow(
+            activePatterns: activePatterns,
+            presets: input.presets,
+            today: today,
+            calendar: calendar
+        )
         let threshold = settings?.effectivePatternDriftThreshold ?? 0.15
 
-        for pattern in activePatterns {
+        for pattern in driftPatterns {
             guard
                 let drift = detector.detectDrift(
                     pattern: pattern,

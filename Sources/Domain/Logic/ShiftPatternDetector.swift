@@ -231,6 +231,29 @@ public struct ShiftPatternDetector: Sendable {
             && calendar.isDate(pattern.anchorDate, inSameDayAs: suggestion.anchorDate)
     }
 
+    /// Returns active rotations that actually drive at least one day in the 30-day drift window.
+    public func patternsDrivingRecentWindow(
+        activePatterns: [RotationPatternSnapshot],
+        presets: [UUID: ShiftPresetSnapshot],
+        today: Date,
+        calendar: Calendar
+    ) -> [RotationPatternSnapshot] {
+        let windowStart = calendar.startOfDay(
+            for: calendar.date(byAdding: .day, value: -30, to: today)!
+        )
+        var drivingPatternIDs = Set<UUID>()
+        for offset in 0..<30 {
+            let day = calendar.date(byAdding: .day, value: offset, to: windowStart)!
+            guard
+                let pattern = activePatterns.first(where: {
+                    patternDrivesDay($0, day: day, presets: presets, calendar: calendar)
+                })
+            else { continue }
+            drivingPatternIDs.insert(pattern.id)
+        }
+        return activePatterns.filter { drivingPatternIDs.contains($0.id) }
+    }
+
     // MARK: - Helpers
 
     private func symbol(
@@ -271,5 +294,35 @@ public struct ShiftPatternDetector: Sendable {
         let raw = "\(cycleLength)|\(slots.map { $0?.uuidString ?? "nil" }.joined(separator: ","))"
         let hash = SHA256.hash(data: Data(raw.utf8))
         return hash.compactMap { String(format: "%02x", $0) }.joined()
+    }
+
+    private func patternDrivesDay(
+        _ pattern: RotationPatternSnapshot,
+        day: Date,
+        presets: [UUID: ShiftPresetSnapshot],
+        calendar: Calendar
+    ) -> Bool {
+        guard patternApplies(pattern, to: day, calendar: calendar),
+            pattern.cycleLength > 0,
+            pattern.slots.count == pattern.cycleLength
+        else { return false }
+
+        guard
+            let presetID = RotationExpander.presetID(
+                for: day, pattern: pattern, calendar: calendar)
+        else {
+            return true
+        }
+        return presets[presetID] != nil
+    }
+
+    private func patternApplies(
+        _ pattern: RotationPatternSnapshot,
+        to day: Date,
+        calendar: Calendar
+    ) -> Bool {
+        if let start = pattern.startDate, day < calendar.startOfDay(for: start) { return false }
+        if let end = pattern.endDate, day > calendar.startOfDay(for: end) { return false }
+        return true
     }
 }

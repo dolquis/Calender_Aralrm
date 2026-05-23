@@ -450,6 +450,64 @@ final class ShiftPatternDetectorTests: XCTestCase {
         XCTAssertEqual(detector.fingerprint(for: shiftedAnchorPattern), suggestion.fingerprint)
     }
 
+    func testPatternsDrivingRecentWindowIgnoresFutureExpiredAndShadowedPatterns() {
+        let detector = ShiftPatternDetector()
+        let currentPatternID = UUID()
+        let current = RotationPatternSnapshot(
+            id: currentPatternID,
+            name: "Current",
+            anchorDate: Self.today,
+            cycleLength: 1,
+            slots: [Self.dayID],
+            startDate: nil,
+            endDate: nil,
+            priority: 0,
+            isActive: true
+        )
+        let future = RotationPatternSnapshot(
+            id: UUID(),
+            name: "Future",
+            anchorDate: Self.today,
+            cycleLength: 1,
+            slots: [Self.nightID],
+            startDate: date(2026, 5, 19),
+            endDate: nil,
+            priority: 10,
+            isActive: true
+        )
+        let expired = RotationPatternSnapshot(
+            id: UUID(),
+            name: "Expired",
+            anchorDate: Self.today,
+            cycleLength: 1,
+            slots: [Self.nightID],
+            startDate: nil,
+            endDate: date(2026, 4, 17),
+            priority: 20,
+            isActive: true
+        )
+        let shadowed = RotationPatternSnapshot(
+            id: UUID(),
+            name: "Shadowed",
+            anchorDate: Self.today,
+            cycleLength: 1,
+            slots: [Self.nightID],
+            startDate: nil,
+            endDate: nil,
+            priority: -1,
+            isActive: true
+        )
+
+        let result = detector.patternsDrivingRecentWindow(
+            activePatterns: [expired, future, current, shadowed],
+            presets: makePresets(),
+            today: Self.today,
+            calendar: calendar
+        )
+
+        XCTAssertEqual(result.map(\.id), [currentPatternID])
+    }
+
     func testAppSettingsDefaultDriftThresholdIsFifteenPercent() {
         XCTAssertEqual(AppSettings().effectivePatternDriftThreshold, 0.15, accuracy: 0.0001)
     }
