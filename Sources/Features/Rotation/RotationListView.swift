@@ -99,7 +99,6 @@ public struct RotationListView: View {
         let activePatterns = input.rotations
             .filter(\.isActive)
             .sorted { $0.priority > $1.priority }
-        let activeFingerprints = Set(activePatterns.map { detector.fingerprint(for: $0) })
         let threshold = settings?.effectivePatternDriftThreshold ?? 0.15
 
         for pattern in activePatterns {
@@ -114,7 +113,11 @@ public struct RotationListView: View {
                 )
             else { continue }
 
-            guard !activeFingerprints.contains(drift.fingerprint) else { continue }
+            guard
+                !activePatterns.contains(where: {
+                    detector.matchesPatternIdentity($0, suggestion: drift, calendar: calendar)
+                })
+            else { continue }
             return PatternSuggestionContext(suggestion: drift, replacingPatternID: pattern.id)
         }
 
@@ -127,7 +130,11 @@ public struct RotationListView: View {
             )
         else { return nil }
 
-        guard !activeFingerprints.contains(detected.fingerprint) else { return nil }
+        guard
+            !activePatterns.contains(where: {
+                detector.matchesPatternIdentity($0, suggestion: detected, calendar: calendar)
+            })
+        else { return nil }
         return PatternSuggestionContext(suggestion: detected, replacingPatternID: nil)
     }
 

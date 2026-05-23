@@ -410,6 +410,46 @@ final class ShiftPatternDetectorTests: XCTestCase {
         XCTAssertEqual(detector.fingerprint(for: pattern), suggestion.fingerprint)
     }
 
+    func testPatternIdentityIncludesAnchorDate() throws {
+        let a = dailyAlternateHistory(start: Self.windowStart, days: 90)
+        let detector = ShiftPatternDetector()
+        let suggestion = try XCTUnwrap(
+            detector.detect(
+                manualAssignments: a, presets: makePresets(), today: Self.today, calendar: calendar
+            ))
+        let samePattern = RotationPatternSnapshot(
+            id: UUID(),
+            name: "Same",
+            anchorDate: suggestion.anchorDate,
+            cycleLength: suggestion.cycleLength,
+            slots: suggestion.slots,
+            startDate: nil,
+            endDate: nil,
+            priority: 0,
+            isActive: true
+        )
+        let shiftedAnchorPattern = RotationPatternSnapshot(
+            id: UUID(),
+            name: "Shifted",
+            anchorDate: calendar.date(byAdding: .day, value: 1, to: suggestion.anchorDate)!,
+            cycleLength: suggestion.cycleLength,
+            slots: suggestion.slots,
+            startDate: nil,
+            endDate: nil,
+            priority: 0,
+            isActive: true
+        )
+
+        XCTAssertTrue(
+            detector.matchesPatternIdentity(samePattern, suggestion: suggestion, calendar: calendar)
+        )
+        XCTAssertFalse(
+            detector.matchesPatternIdentity(
+                shiftedAnchorPattern, suggestion: suggestion, calendar: calendar
+            ))
+        XCTAssertEqual(detector.fingerprint(for: shiftedAnchorPattern), suggestion.fingerprint)
+    }
+
     func testAppSettingsDefaultDriftThresholdIsFifteenPercent() {
         XCTAssertEqual(AppSettings().effectivePatternDriftThreshold, 0.15, accuracy: 0.0001)
     }

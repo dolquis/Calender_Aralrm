@@ -217,6 +217,20 @@ public struct ShiftPatternDetector: Sendable {
         fingerprint(cycleLength: pattern.cycleLength, slots: pattern.slots)
     }
 
+    /// Full rotation identity for duplicate suppression.
+    ///
+    /// `fingerprint` intentionally omits the anchor date so snoozes follow the same cycle shape.
+    /// Duplicate pattern suppression must include the anchor because it changes the actual day map.
+    public func matchesPatternIdentity(
+        _ pattern: RotationPatternSnapshot,
+        suggestion: SuggestedRotation,
+        calendar: Calendar
+    ) -> Bool {
+        pattern.cycleLength == suggestion.cycleLength
+            && pattern.slots == suggestion.slots
+            && calendar.isDate(pattern.anchorDate, inSameDayAs: suggestion.anchorDate)
+    }
+
     // MARK: - Helpers
 
     private func symbol(
