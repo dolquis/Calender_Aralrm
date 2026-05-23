@@ -1,8 +1,9 @@
-import XCTest
+import Foundation
+import Testing
 
 @testable import ShiftAlarm
 
-final class SleepSampleWriterTests: XCTestCase {
+struct SleepSampleWriterTests {
     private func window(
         offsetHours: Double, sleepHours: Double = 8, presetName: String = "Day"
     ) -> SleepWindow {
@@ -16,16 +17,16 @@ final class SleepSampleWriterTests: XCTestCase {
             presetName: presetName
         )
     }
-
+    @Test
     func testPastWindowsExcludesFutureWakes() {
         let now = Date()
         let past = window(offsetHours: -4)
         let future = window(offsetHours: 4)
         let result = SleepSampleWriter.pastWindows(from: [past, future], now: now)
-        XCTAssertEqual(result.count, 1)
-        XCTAssertEqual(result.first?.wakeTime, past.wakeTime)
+        #expect(result.count == 1)
+        #expect(result.first?.wakeTime == past.wakeTime)
     }
-
+    @Test
     func testPastWindowsIncludesWindowEndingExactlyNow() {
         let now = Date()
         let exact = SleepWindow(
@@ -36,15 +37,15 @@ final class SleepSampleWriterTests: XCTestCase {
             presetID: UUID(),
             presetName: "Now"
         )
-        XCTAssertEqual(SleepSampleWriter.pastWindows(from: [exact], now: now).count, 1)
+        #expect(SleepSampleWriter.pastWindows(from: [exact], now: now).count == 1)
     }
-
+    @Test
     func testPastWindowsReturnsEmptyWhenAllFuture() {
         let now = Date()
         let result = SleepSampleWriter.pastWindows(
             from: [window(offsetHours: 1), window(offsetHours: 24)],
             now: now
         )
-        XCTAssertTrue(result.isEmpty)
+        #expect(result.isEmpty)
     }
 }

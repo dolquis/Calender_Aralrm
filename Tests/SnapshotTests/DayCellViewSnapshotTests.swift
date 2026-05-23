@@ -1,11 +1,13 @@
+import Foundation
 import SnapshotTesting
 import SwiftUI
-import XCTest
+import Testing
 
 @testable import ShiftAlarm
 
 @MainActor
-final class DayCellViewSnapshotTests: XCTestCase {
+@Suite(.serialized, .snapshots(record: .missing))
+struct DayCellViewSnapshotTests {
     private func fixedDate() -> Date {
         var c = Calendar(identifier: .gregorian)
         c.timeZone = TimeZone(identifier: "Asia/Tokyo")!
@@ -24,9 +26,8 @@ final class DayCellViewSnapshotTests: XCTestCase {
         host.view.layoutIfNeeded()
         return host
     }
-
-    func testCellWithAlarm_lightMode() throws {
-        try SnapshotTestGate.skipIfDisabled()
+    @Test(.enabled { SnapshotTestGate.isEnabled })
+    func testCellWithAlarm_lightMode() {
         let view = DayCellView(
             date: fixedDate(),
             inCurrentMonth: true,
@@ -38,9 +39,8 @@ final class DayCellViewSnapshotTests: XCTestCase {
         .environment(\.colorScheme, .light)
         assertSnapshot(of: host(view), as: .image)
     }
-
-    func testCellWithAlarm_darkMode() throws {
-        try SnapshotTestGate.skipIfDisabled()
+    @Test(.enabled { SnapshotTestGate.isEnabled })
+    func testCellWithAlarm_darkMode() {
         let view = DayCellView(
             date: fixedDate(),
             inCurrentMonth: true,
@@ -52,9 +52,8 @@ final class DayCellViewSnapshotTests: XCTestCase {
         .environment(\.colorScheme, .dark)
         assertSnapshot(of: host(view), as: .image)
     }
-
-    func testCellWithHoliday() throws {
-        try SnapshotTestGate.skipIfDisabled()
+    @Test(.enabled { SnapshotTestGate.isEnabled })
+    func testCellWithHoliday() {
         let view = DayCellView(
             date: fixedDate(),
             inCurrentMonth: true,
@@ -65,9 +64,8 @@ final class DayCellViewSnapshotTests: XCTestCase {
         )
         assertSnapshot(of: host(view), as: .image)
     }
-
-    func testCellOutOfMonth_dimmed() throws {
-        try SnapshotTestGate.skipIfDisabled()
+    @Test(.enabled { SnapshotTestGate.isEnabled })
+    func testCellOutOfMonth_dimmed() {
         let view = DayCellView(
             date: fixedDate(),
             inCurrentMonth: false,
@@ -78,9 +76,8 @@ final class DayCellViewSnapshotTests: XCTestCase {
         )
         assertSnapshot(of: host(view), as: .image)
     }
-
-    func testCellDynamicType_XL() throws {
-        try SnapshotTestGate.skipIfDisabled()
+    @Test(.enabled { SnapshotTestGate.isEnabled })
+    func testCellDynamicType_XL() {
         let view = DayCellView(
             date: fixedDate(),
             inCurrentMonth: true,

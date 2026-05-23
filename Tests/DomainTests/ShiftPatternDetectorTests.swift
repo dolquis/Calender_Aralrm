@@ -1,8 +1,9 @@
-import XCTest
+import Foundation
+import Testing
 
 @testable import ShiftAlarm
 
-final class ShiftPatternDetectorTests: XCTestCase {
+struct ShiftPatternDetectorTests {
 
     // MARK: - Fixed UUIDs / dates
 
@@ -134,32 +135,32 @@ final class ShiftPatternDetectorTests: XCTestCase {
     }
 
     // MARK: - α-U1: empty input
-
+    @Test
     func testEmptyInputReturnsNil() {
         let detector = ShiftPatternDetector()
-        XCTAssertNil(
+        #expect(
             detector.detect(
                 manualAssignments: [:], presets: makePresets(),
                 today: Self.today, calendar: calendar
-            ))
+            ) == nil)
     }
 
     // MARK: - α-U2: too little data for any cycle (density fails)
-
+    @Test
     func testSevenDaysOfDataReturnsNil() {
         // 7 days => density < 0.5 for any cycle length with windowDays=90
         let start = date(2026, 5, 11)
         let a = alternateWeeksHistory(start: start, days: 7)
         let detector = ShiftPatternDetector()
-        XCTAssertNil(
+        #expect(
             detector.detect(
                 manualAssignments: a, presets: makePresets(),
                 today: Self.today, calendar: calendar
-            ))
+            ) == nil)
     }
 
     // MARK: - α-U3: 14-day alternate-week cycle wins over P=2
-
+    @Test
     func testAlternateWeeks14DayCycle() {
         // 84 days (6 complete 14-day cycles) starting at windowStart.
         // P=2 match rate ≈ 0.5 (fails threshold), P=14 match rate = 1.0.
@@ -169,13 +170,13 @@ final class ShiftPatternDetectorTests: XCTestCase {
             manualAssignments: a, presets: makePresets(),
             today: Self.today, calendar: calendar
         )
-        XCTAssertNotNil(result)
-        XCTAssertEqual(result?.cycleLength, 14)
-        XCTAssertEqual(result?.confidence ?? 0, 1.0, accuracy: 0.001)
+        #expect(result != nil)
+        #expect(result?.cycleLength == 14)
+        #expect(abs((result?.confidence ?? 0) - 1.0) <= 0.001)
     }
 
     // MARK: - α-U4: daily D/N alternation → P=2 wins (tiebreak: shorter cycle)
-
+    @Test
     func testDailyAlternateCycleLengthTwo() {
         // 60 days gives enough density for P=2 (30 obs / 45 expected slot days ≈ 0.67 > 0.5).
         // Both P=2 and P=14 would score 1.0; P=2 wins via tiebreak.
@@ -185,16 +186,16 @@ final class ShiftPatternDetectorTests: XCTestCase {
             manualAssignments: a, presets: makePresets(),
             today: Self.today, calendar: calendar
         )
-        XCTAssertNotNil(result)
-        XCTAssertEqual(result?.cycleLength, 2)
+        #expect(result != nil)
+        #expect(result?.cycleLength == 2)
         let slots = result!.slots
-        XCTAssertEqual(slots.count, 2)
-        XCTAssertTrue(slots.contains(Self.dayID))
-        XCTAssertTrue(slots.contains(Self.nightID))
+        #expect(slots.count == 2)
+        #expect(slots.contains(Self.dayID))
+        #expect(slots.contains(Self.nightID))
     }
 
     // MARK: - α-U5: 22-day complex pattern
-
+    @Test
     func testComplexPattern22DayCycle() {
         // 4 cycles × 22 days = 88 days; all slots are dense enough even with the 90-day window tail.
         let a = history22Day(start: Self.windowStart, cycles: 4)
@@ -203,40 +204,40 @@ final class ShiftPatternDetectorTests: XCTestCase {
             manualAssignments: a, presets: makePresets(),
             today: Self.today, calendar: calendar
         )
-        XCTAssertNotNil(result)
-        XCTAssertEqual(result?.cycleLength, 22)
+        #expect(result != nil)
+        #expect(result?.cycleLength == 22)
     }
 
     // MARK: - α-U6: too much noise → nil
-
+    @Test
     func testHighNoiseBelowThreshold() {
         let base = alternateWeeksHistory(start: Self.windowStart, days: 84)
         let noisy = addNoise(to: base, errorEvery: 3)  // ~33% wrong
         let detector = ShiftPatternDetector()
-        XCTAssertNil(
+        #expect(
             detector.detect(
                 manualAssignments: noisy, presets: makePresets(),
                 today: Self.today, calendar: calendar
-            ))
+            ) == nil)
     }
 
     // MARK: - α-U7: lower threshold lets noisy data through
-
+    @Test
     func testCustomLowerThresholdAllowsDetection() {
         let base = alternateWeeksHistory(start: Self.windowStart, days: 84)
         let noisy = addNoise(to: base, errorEvery: 3)
         var config = ShiftPatternDetector.Configuration()
         config.minMatchRate = 0.5
         let detector = ShiftPatternDetector(configuration: config)
-        XCTAssertNotNil(
+        #expect(
             detector.detect(
                 manualAssignments: noisy, presets: makePresets(),
                 today: Self.today, calendar: calendar
-            ))
+            ) != nil)
     }
 
     // MARK: - α-U8: slot UUIDs are not relabelled
-
+    @Test
     func testSlotUUIDsPreserved() {
         // 3-day cycle [D, N, E] × 30 = 90 entries
         var a: [Date: DayAssignmentSnapshot] = [:]
@@ -252,16 +253,16 @@ final class ShiftPatternDetectorTests: XCTestCase {
             manualAssignments: a, presets: makePresets(),
             today: Self.today, calendar: calendar
         )
-        XCTAssertNotNil(result)
-        XCTAssertEqual(result?.cycleLength, 3)
+        #expect(result != nil)
+        #expect(result?.cycleLength == 3)
         let slots = result!.slots.compactMap { $0 }
-        XCTAssertTrue(slots.contains(Self.dayID))
-        XCTAssertTrue(slots.contains(Self.nightID))
-        XCTAssertTrue(slots.contains(Self.eveningID))
+        #expect(slots.contains(Self.dayID))
+        #expect(slots.contains(Self.nightID))
+        #expect(slots.contains(Self.eveningID))
     }
 
     // MARK: - α-U9: explicit off (skipAlarm) maps to nil slot
-
+    @Test
     func testOffDayMapsToNilSlot() {
         // 4-day cycle: day / off / night / off
         var a: [Date: DayAssignmentSnapshot] = [:]
@@ -291,11 +292,11 @@ final class ShiftPatternDetectorTests: XCTestCase {
             manualAssignments: a, presets: makePresets(),
             today: Self.today, calendar: calendar
         )
-        XCTAssertNotNil(result)
-        XCTAssertEqual(result?.cycleLength, 4)
-        XCTAssertTrue(result!.slots.contains(nil), "Expected at least one nil (off) slot")
+        #expect(result != nil)
+        #expect(result?.cycleLength == 4)
+        #expect(result!.slots.contains(nil), "Expected at least one nil (off) slot")
     }
-
+    @Test
     func testMissingPresetAssignmentsAreIgnored() {
         let staleID = UUID(uuidString: "00000000-0000-0000-0000-00000000DEAD")!
         var a: [Date: DayAssignmentSnapshot] = [:]
@@ -305,15 +306,15 @@ final class ShiftPatternDetectorTests: XCTestCase {
                 presetID: staleID, overrideTime: nil, skipAlarm: false, note: "")
         }
         let detector = ShiftPatternDetector()
-        XCTAssertNil(
+        #expect(
             detector.detect(
                 manualAssignments: a,
                 presets: makePresets(),
                 today: Self.today,
                 calendar: calendar
-            ), "Deleted/stale preset IDs should not produce a rotation with dangling slots")
+            ) == nil, "Deleted/stale preset IDs should not produce a rotation with dangling slots")
     }
-
+    @Test
     func testPartialCycleUsesSlotSpecificDensity() {
         // A single 35-day block should not be accepted for P=35: slots that appear
         // three times in the 90-day window only have one observation (1/3 < 0.5).
@@ -324,17 +325,18 @@ final class ShiftPatternDetectorTests: XCTestCase {
                 presetID: Self.dayID, overrideTime: nil, skipAlarm: false, note: "")
         }
         let detector = ShiftPatternDetector()
-        XCTAssertNil(
+        #expect(
             detector.detect(
                 manualAssignments: a,
                 presets: makePresets(),
                 today: Self.today,
                 calendar: calendar
-            ), "Density must be measured against each slot's actual occurrences in the window")
+            ) == nil,
+            "Density must be measured against each slot's actual occurrences in the window")
     }
 
     // MARK: - α-U11: windowDays boundary
-
+    @Test
     func testWindowDaysBoundaryExcludes91DaysAgo() {
         // Build exactly 90 days of clean D/N alternation within the window.
         let a90 = dailyAlternateHistory(start: Self.windowStart, days: 90)
@@ -343,7 +345,7 @@ final class ShiftPatternDetectorTests: XCTestCase {
             manualAssignments: a90, presets: makePresets(),
             today: Self.today, calendar: calendar
         )
-        XCTAssertNotNil(result, "90-day window should detect the 2-day cycle")
+        #expect(result != nil, "90-day window should detect the 2-day cycle")
 
         // Adding an outlier 91 days before today (outside window) should not break detection.
         let outside = calendar.date(byAdding: .day, value: -91, to: Self.today)!
@@ -354,11 +356,11 @@ final class ShiftPatternDetectorTests: XCTestCase {
             manualAssignments: withOutlier, presets: makePresets(),
             today: Self.today, calendar: calendar
         )
-        XCTAssertNotNil(result2, "Extra day outside window should not break detection")
+        #expect(result2 != nil, "Extra day outside window should not break detection")
     }
 
     // MARK: - α-U12: anchorDate is always a Monday
-
+    @Test
     func testAnchorDateIsMonday() {
         // 84 days of 14-day alternating history; the anchor must be the first Monday
         // >= windowStart regardless of which weekday windowStart falls on.
@@ -368,15 +370,15 @@ final class ShiftPatternDetectorTests: XCTestCase {
             manualAssignments: a, presets: makePresets(),
             today: Self.today, calendar: calendar
         )
-        XCTAssertNotNil(result)
+        #expect(result != nil)
         // weekday 2 = Monday in Gregorian (Sun=1, Mon=2, ..., Sat=7)
-        XCTAssertEqual(
-            calendar.component(.weekday, from: result!.anchorDate), 2,
+        #expect(
+            calendar.component(.weekday, from: result!.anchorDate) == 2,
             "anchorDate should be a Monday")
     }
 
     // MARK: - Fingerprint determinism
-
+    @Test
     func testFingerprintIsDeterministic() {
         let a = alternateWeeksHistory(start: Self.windowStart, days: 84)
         let detector = ShiftPatternDetector()
@@ -384,8 +386,8 @@ final class ShiftPatternDetectorTests: XCTestCase {
             manualAssignments: a, presets: makePresets(), today: Self.today, calendar: calendar)
         let r2 = detector.detect(
             manualAssignments: a, presets: makePresets(), today: Self.today, calendar: calendar)
-        XCTAssertEqual(r1?.fingerprint, r2?.fingerprint)
-        XCTAssertFalse(r1?.fingerprint.isEmpty ?? true)
+        #expect(r1?.fingerprint == r2?.fingerprint)
+        #expect(r1?.fingerprint.isEmpty == false)
     }
 
     // MARK: - A1 Drift detection
@@ -405,6 +407,7 @@ final class ShiftPatternDetectorTests: XCTestCase {
     }
 
     // α-U13: mismatch rate below threshold → detectDrift returns nil
+    @Test
     func testDriftBelowThresholdReturnsNil() {
         let pattern = makeAllDayPattern()
         // Last 30 days all assign dayID — matches the all-day pattern, 0 mismatches.
@@ -423,10 +426,11 @@ final class ShiftPatternDetectorTests: XCTestCase {
             calendar: calendar,
             threshold: 0.15
         )
-        XCTAssertNil(result, "Mismatch rate 0% is below threshold; should not suggest update")
+        #expect(result == nil, "Mismatch rate 0% is below threshold; should not suggest update")
     }
 
     // α-U14: mismatch rate above threshold → detectDrift calls detect() and returns a suggestion
+    @Test
     func testDriftAboveThresholdReturnsNewSuggestion() {
         // Pattern claims every day is dayID (1-slot cycle).
         let pattern = makeAllDayPattern()
@@ -448,11 +452,12 @@ final class ShiftPatternDetectorTests: XCTestCase {
             calendar: calendar,
             threshold: 0.15
         )
-        XCTAssertNotNil(
-            result, "50% mismatch rate exceeds threshold; a new suggestion should be returned")
+        #expect(
+            result != nil,
+            "50% mismatch rate exceeds threshold; a new suggestion should be returned")
         if let r = result {
             // The new suggestion should describe a 2-day cycle, not the original 1-day cycle.
-            XCTAssertEqual(r.cycleLength, 2)
+            #expect(r.cycleLength == 2)
         }
     }
 }

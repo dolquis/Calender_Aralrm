@@ -1,10 +1,11 @@
+import Foundation
 import SwiftData
-import XCTest
+import Testing
 
 @testable import ShiftAlarm
 
 @MainActor
-final class ShareImporterTests: XCTestCase {
+struct ShareImporterTests {
 
     private func makeBundle(
         presetID: UUID = UUID(),
@@ -61,23 +62,23 @@ final class ShareImporterTests: XCTestCase {
             ]
         )
     }
-
+    @Test
     func testPreviewCounts_freshContainer() throws {
         let container = SharedPersistence.makeContainer(inMemory: true)
         let bundle = makeBundle()
         let preview = ShareImporter.preview(bundle: bundle, container: container)
 
-        XCTAssertEqual(preview.addedPresets, 1)
-        XCTAssertEqual(preview.updatedPresets, 0)
-        XCTAssertEqual(preview.addedPatterns, 1)
-        XCTAssertEqual(preview.updatedPatterns, 0)
-        XCTAssertEqual(preview.addedAssignments, 1)
-        XCTAssertEqual(preview.updatedAssignments, 0)
-        XCTAssertEqual(preview.addedOverrides, 1)
-        XCTAssertEqual(preview.updatedOverrides, 0)
-        XCTAssertTrue(preview.hasChanges)
+        #expect(preview.addedPresets == 1)
+        #expect(preview.updatedPresets == 0)
+        #expect(preview.addedPatterns == 1)
+        #expect(preview.updatedPatterns == 0)
+        #expect(preview.addedAssignments == 1)
+        #expect(preview.updatedAssignments == 0)
+        #expect(preview.addedOverrides == 1)
+        #expect(preview.updatedOverrides == 0)
+        #expect(preview.hasChanges)
     }
-
+    @Test
     func testApplyInsertsData() throws {
         let container = SharedPersistence.makeContainer(inMemory: true)
         let bundle = makeBundle()
@@ -90,16 +91,16 @@ final class ShareImporterTests: XCTestCase {
         let assignments = try context.fetch(FetchDescriptor<DayAssignment>())
         let overrides = try context.fetch(FetchDescriptor<HolidayOverride>())
 
-        XCTAssertEqual(presets.count, 1)
-        XCTAssertEqual(presets.first?.name, "Day")
-        XCTAssertEqual(patterns.count, 1)
-        XCTAssertEqual(patterns.first?.cycleLength, 7)
-        XCTAssertEqual(assignments.count, 1)
-        XCTAssertEqual(assignments.first?.overrideAlarmHour, 8)
-        XCTAssertEqual(overrides.count, 1)
-        XCTAssertEqual(overrides.first?.label, "Holiday")
+        #expect(presets.count == 1)
+        #expect(presets.first?.name == "Day")
+        #expect(patterns.count == 1)
+        #expect(patterns.first?.cycleLength == 7)
+        #expect(assignments.count == 1)
+        #expect(assignments.first?.overrideAlarmHour == 8)
+        #expect(overrides.count == 1)
+        #expect(overrides.first?.label == "Holiday")
     }
-
+    @Test
     func testApplyIdempotent() throws {
         let container = SharedPersistence.makeContainer(inMemory: true)
         let bundle = makeBundle()
@@ -113,12 +114,12 @@ final class ShareImporterTests: XCTestCase {
         let assignments = try context.fetch(FetchDescriptor<DayAssignment>())
         let overrides = try context.fetch(FetchDescriptor<HolidayOverride>())
 
-        XCTAssertEqual(presets.count, 1)
-        XCTAssertEqual(patterns.count, 1)
-        XCTAssertEqual(assignments.count, 1)
-        XCTAssertEqual(overrides.count, 1)
+        #expect(presets.count == 1)
+        #expect(patterns.count == 1)
+        #expect(assignments.count == 1)
+        #expect(overrides.count == 1)
     }
-
+    @Test
     func testPreviewAfterApply_showsUpdated() throws {
         let container = SharedPersistence.makeContainer(inMemory: true)
         let bundle = makeBundle()
@@ -126,16 +127,16 @@ final class ShareImporterTests: XCTestCase {
         try ShareImporter.apply(bundle: bundle, container: container)
 
         let preview = ShareImporter.preview(bundle: bundle, container: container)
-        XCTAssertEqual(preview.addedPresets, 0)
-        XCTAssertEqual(preview.updatedPresets, 1)
-        XCTAssertEqual(preview.addedAssignments, 0)
-        XCTAssertEqual(preview.updatedAssignments, 1)
+        #expect(preview.addedPresets == 0)
+        #expect(preview.updatedPresets == 1)
+        #expect(preview.addedAssignments == 0)
+        #expect(preview.updatedAssignments == 1)
     }
-
+    @Test
     func testEmptyBundleHasNoChanges() {
         let container = SharedPersistence.makeContainer(inMemory: true)
         let empty = ShiftBundle()
         let preview = ShareImporter.preview(bundle: empty, container: container)
-        XCTAssertFalse(preview.hasChanges)
+        #expect(!preview.hasChanges)
     }
 }

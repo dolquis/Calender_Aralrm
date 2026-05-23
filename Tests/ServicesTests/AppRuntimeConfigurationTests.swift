@@ -1,8 +1,10 @@
-import XCTest
+import Foundation
+import Testing
 
 @testable import ShiftAlarm
 
-final class AppRuntimeConfigurationTests: XCTestCase {
+struct AppRuntimeConfigurationTests {
+    @Test
     func testValueUsesInfoPlistValueWhenResolved() throws {
         let bundle = try makeBundle(info: ["ShiftAlarmAppGroupIdentifier": "group.com.example.test"]
         )
@@ -13,9 +15,9 @@ final class AppRuntimeConfigurationTests: XCTestCase {
             bundle: bundle
         )
 
-        XCTAssertEqual(value, "group.com.example.test")
+        #expect(value == "group.com.example.test")
     }
-
+    @Test
     func testValueFallsBackWhenBuildSettingIsUnresolved() throws {
         let bundle = try makeBundle(info: [
             "ShiftAlarmAppGroupIdentifier": "$(SHIFTALARM_APP_GROUP_ID)"
@@ -27,9 +29,9 @@ final class AppRuntimeConfigurationTests: XCTestCase {
             bundle: bundle
         )
 
-        XCTAssertEqual(value, "group.fallback")
+        #expect(value == "group.fallback")
     }
-
+    @Test
     func testValueFallsBackWhenKeyIsMissing() throws {
         let bundle = try makeBundle(info: [:])
 
@@ -39,7 +41,7 @@ final class AppRuntimeConfigurationTests: XCTestCase {
             bundle: bundle
         )
 
-        XCTAssertEqual(value, "group.fallback")
+        #expect(value == "group.fallback")
     }
 
     private func makeBundle(info: [String: Any]) throws -> Bundle {
@@ -50,6 +52,6 @@ final class AppRuntimeConfigurationTests: XCTestCase {
         let data = try PropertyListSerialization.data(
             fromPropertyList: info, format: .xml, options: 0)
         try data.write(to: url.appendingPathComponent("Info.plist"))
-        return try XCTUnwrap(Bundle(url: url))
+        return try #require(Bundle(url: url))
     }
 }

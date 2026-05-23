@@ -1,8 +1,9 @@
-import XCTest
+import Foundation
+import Testing
 
 @testable import ShiftAlarm
 
-final class RotationExpanderTests: XCTestCase {
+struct RotationExpanderTests {
     private var calendar: Calendar {
         var c = Calendar(identifier: .gregorian)
         c.timeZone = TimeZone(identifier: "Asia/Tokyo")!
@@ -16,7 +17,7 @@ final class RotationExpanderTests: XCTestCase {
         dc.day = d
         return calendar.date(from: dc)!
     }
-
+    @Test
     func testFourOnTwoOffCycle() {
         let dayShift = UUID()
         let nightShift = UUID()
@@ -32,21 +33,21 @@ final class RotationExpanderTests: XCTestCase {
             isActive: true
         )
 
-        XCTAssertEqual(
-            RotationExpander.presetID(for: date(2026, 1, 1), pattern: pattern, calendar: calendar),
-            dayShift)
-        XCTAssertEqual(
-            RotationExpander.presetID(for: date(2026, 1, 3), pattern: pattern, calendar: calendar),
-            nightShift)
-        XCTAssertNil(
+        #expect(
+            RotationExpander.presetID(for: date(2026, 1, 1), pattern: pattern, calendar: calendar)
+                == dayShift)
+        #expect(
+            RotationExpander.presetID(for: date(2026, 1, 3), pattern: pattern, calendar: calendar)
+                == nightShift)
+        #expect(
             RotationExpander.presetID(for: date(2026, 1, 5), pattern: pattern, calendar: calendar)
-                ?? nil)
+                == nil)
         // Wrap around the cycle
-        XCTAssertEqual(
-            RotationExpander.presetID(for: date(2026, 1, 7), pattern: pattern, calendar: calendar),
-            dayShift)
+        #expect(
+            RotationExpander.presetID(for: date(2026, 1, 7), pattern: pattern, calendar: calendar)
+                == dayShift)
     }
-
+    @Test
     func testNegativeOffsetIsHandled() {
         let preset = UUID()
         let pattern = RotationPatternSnapshot(
@@ -61,15 +62,15 @@ final class RotationExpanderTests: XCTestCase {
             isActive: true
         )
         // 2026-05-30 is anchor - 2 days, index = (-2 % 3 + 3) % 3 = 1 -> nil
-        XCTAssertNil(
+        #expect(
             RotationExpander.presetID(for: date(2026, 5, 30), pattern: pattern, calendar: calendar)
-                ?? nil)
+                == nil)
         // 2026-05-29 = anchor - 3, index 0 -> preset
-        XCTAssertEqual(
-            RotationExpander.presetID(for: date(2026, 5, 29), pattern: pattern, calendar: calendar),
-            preset)
+        #expect(
+            RotationExpander.presetID(for: date(2026, 5, 29), pattern: pattern, calendar: calendar)
+                == preset)
     }
-
+    @Test
     func testEmptyPatternReturnsNil() {
         let pattern = RotationPatternSnapshot(
             id: UUID(),
@@ -82,8 +83,8 @@ final class RotationExpanderTests: XCTestCase {
             priority: 0,
             isActive: true
         )
-        XCTAssertNil(
+        #expect(
             RotationExpander.presetID(for: date(2026, 1, 1), pattern: pattern, calendar: calendar)
-                ?? nil)
+                == nil)
     }
 }

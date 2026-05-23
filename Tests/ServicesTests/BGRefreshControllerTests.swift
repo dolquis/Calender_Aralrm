@@ -1,44 +1,44 @@
 import BackgroundTasks
-import XCTest
+import Foundation
+import Testing
 
 @testable import ShiftAlarm
 
-final class BGRefreshControllerTests: XCTestCase {
+struct BGRefreshControllerTests {
+    @Test
     func testRequestUsesDocumentedIdentifier() {
         let request = BGRefreshController.makeRequest()
-        XCTAssertEqual(request.identifier, BGRefreshController.identifier)
+        #expect(request.identifier == BGRefreshController.identifier)
     }
-
+    @Test
     func testRequestEarliestBeginDateIsRoughlyEightHoursOut() {
         let before = Date()
         let request = BGRefreshController.makeRequest()
         let after = Date()
-        let earliest = try? XCTUnwrap(request.earliestBeginDate)
-        guard let earliest else { return }
+        guard let earliest = request.earliestBeginDate else {
+            Issue.record("earliestBeginDate should be set")
+            return
+        }
         let lower = before.addingTimeInterval(BGRefreshController.earliestRefreshInterval)
         let upper = after.addingTimeInterval(BGRefreshController.earliestRefreshInterval)
-        XCTAssertGreaterThanOrEqual(
-            earliest.timeIntervalSinceReferenceDate,
-            lower.timeIntervalSinceReferenceDate - 1)
-        XCTAssertLessThanOrEqual(
-            earliest.timeIntervalSinceReferenceDate,
-            upper.timeIntervalSinceReferenceDate + 1)
+        #expect(
+            earliest.timeIntervalSinceReferenceDate >= lower.timeIntervalSinceReferenceDate - 1)
+        #expect(
+            earliest.timeIntervalSinceReferenceDate <= upper.timeIntervalSinceReferenceDate + 1)
     }
-
+    @Test
     func testScheduleNextSubmitsBuiltRequest() {
         var submitted: BGTaskRequest?
         BGRefreshController.scheduleNext { request in
             submitted = request
         }
-        XCTAssertEqual(submitted?.identifier, BGRefreshController.identifier)
+        #expect(submitted?.identifier == BGRefreshController.identifier)
     }
-
+    @Test
     func testScheduleNextSwallowsSubmitFailures() {
         struct DummyError: Error {}
         // The closure is allowed to throw; the controller must NOT propagate the error
         // because BG submission can legitimately fail in foreground / debugger contexts.
         BGRefreshController.scheduleNext { _ in throw DummyError() }
-        // Reaching this line means no exception escaped; pass.
-        XCTAssertTrue(true)
     }
 }

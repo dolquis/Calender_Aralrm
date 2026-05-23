@@ -1,8 +1,9 @@
-import XCTest
+import Foundation
+import Testing
 
 @testable import ShiftAlarm
 
-final class ICSExportDateRangeTests: XCTestCase {
+struct ICSExportDateRangeTests {
     private var tokyoTZ: TimeZone { TimeZone(identifier: "Asia/Tokyo")! }
 
     private var calendar: Calendar {
@@ -19,7 +20,7 @@ final class ICSExportDateRangeTests: XCTestCase {
         dc.timeZone = tokyoTZ
         return calendar.date(from: dc)!
     }
-
+    @Test
     func testOneMonthRangeExcludesExclusiveEndDay() {
         let startDate = date(2026, 5, 19)
         let exportRange = ICSExportDateRange.make(
@@ -28,11 +29,11 @@ final class ICSExportDateRangeTests: XCTestCase {
             calendar: calendar
         )
 
-        XCTAssertEqual(exportRange.range.lowerBound, startDate)
-        XCTAssertEqual(exportRange.range.upperBound, date(2026, 6, 18))
-        XCTAssertEqual(exportRange.dates.first, startDate)
-        XCTAssertEqual(exportRange.dates.last, date(2026, 6, 18))
-        XCTAssertEqual(exportRange.dates.count, 31)
-        XCTAssertFalse(exportRange.dates.contains(date(2026, 6, 19)))
+        #expect(exportRange.range.lowerBound == startDate)
+        #expect(exportRange.range.upperBound == date(2026, 6, 18))
+        #expect(exportRange.dates.first == startDate)
+        #expect(exportRange.dates.last == date(2026, 6, 18))
+        #expect(exportRange.dates.count == 31)
+        #expect(!exportRange.dates.contains(date(2026, 6, 19)))
     }
 }

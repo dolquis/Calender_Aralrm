@@ -1,16 +1,17 @@
+import Foundation
 import SwiftData
-import XCTest
+import Testing
 
 @testable import ShiftAlarm
 
 @MainActor
-final class DayResolverInputBuilderTests: XCTestCase {
+struct DayResolverInputBuilderTests {
     private var calendar: Calendar {
         var c = Calendar(identifier: .gregorian)
         c.timeZone = TimeZone(identifier: "Asia/Tokyo")!
         return c
     }
-
+    @Test
     func testPropagatesSleepFieldsFromPreset() throws {
         let container = SharedPersistence.makeContainer(inMemory: true)
         let context = ModelContext(container)
@@ -26,11 +27,11 @@ final class DayResolverInputBuilderTests: XCTestCase {
         try context.save()
 
         let input = DayResolverInputBuilder.make(context: context, calendar: calendar)
-        let snapshot = try XCTUnwrap(input.presets[preset.id])
-        XCTAssertEqual(snapshot.targetSleepDuration, 7 * 3600)
-        XCTAssertEqual(snapshot.bedtimeLeadMinutes, 45)
+        let snapshot = try #require(input.presets[preset.id])
+        #expect(snapshot.targetSleepDuration == 7 * 3600)
+        #expect(snapshot.bedtimeLeadMinutes == 45)
     }
-
+    @Test
     func testAssignmentsKeyedByStartOfDay() throws {
         let container = SharedPersistence.makeContainer(inMemory: true)
         let context = ModelContext(container)
@@ -46,10 +47,10 @@ final class DayResolverInputBuilderTests: XCTestCase {
         try context.save()
 
         let input = DayResolverInputBuilder.make(context: context, calendar: calendar)
-        XCTAssertEqual(input.manualAssignments.count, 1)
-        XCTAssertNotNil(input.manualAssignments[day])
+        #expect(input.manualAssignments.count == 1)
+        #expect(input.manualAssignments[day] != nil)
     }
-
+    @Test
     func testInputMirrorsModelLayer() throws {
         let container = SharedPersistence.makeContainer(inMemory: true)
         let context = ModelContext(container)
@@ -63,8 +64,8 @@ final class DayResolverInputBuilderTests: XCTestCase {
         try context.save()
 
         let input = DayResolverInputBuilder.make(context: context, calendar: calendar)
-        XCTAssertEqual(input.presets.count, 1)
-        XCTAssertEqual(input.holidays.count, 1)
-        XCTAssertEqual(input.rotations.count, 1)
+        #expect(input.presets.count == 1)
+        #expect(input.holidays.count == 1)
+        #expect(input.rotations.count == 1)
     }
 }
