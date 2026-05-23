@@ -161,7 +161,8 @@ public enum DayResolver {
 
         if let holiday = input.holidays[day] {
             if holiday.skipAlarm {
-                return .holiday(label: holiday.label, replacementPresetID: nil, alarmTime: nil, skip: true)
+                return .holiday(
+                    label: holiday.label, replacementPresetID: nil, alarmTime: nil, skip: true)
             }
             if let replacement = holiday.replacementPresetID.flatMap({ input.presets[$0] }) {
                 return .holiday(
@@ -184,12 +185,15 @@ public enum DayResolver {
             // Skip degenerate patterns (empty cycle, mismatched slot count) so they don't
             // block lower-priority rotations from being considered.
             guard rotation.cycleLength > 0,
-                  rotation.slots.count == rotation.cycleLength else { continue }
+                rotation.slots.count == rotation.cycleLength
+            else { continue }
             // A valid rotation slot decides behavior for the day:
             // - presetID resolves to a loaded preset => schedule it.
             // - presetID is stale (preset deleted) => fall through to lower priority.
             // - nil slot => explicit rest day, do not fall through.
-            if let presetID = RotationExpander.presetID(for: day, pattern: rotation, calendar: input.calendar) {
+            if let presetID = RotationExpander.presetID(
+                for: day, pattern: rotation, calendar: input.calendar)
+            {
                 if let preset = input.presets[presetID] {
                     return .rotation(presetID: presetID, alarmTime: preset.alarmTime)
                 }
@@ -203,7 +207,9 @@ public enum DayResolver {
         return .none
     }
 
-    private static func applies(_ pattern: RotationPatternSnapshot, to day: Date, calendar: Calendar) -> Bool {
+    private static func applies(
+        _ pattern: RotationPatternSnapshot, to day: Date, calendar: Calendar
+    ) -> Bool {
         if let start = pattern.startDate, day < calendar.startOfDay(for: start) { return false }
         if let end = pattern.endDate, day > calendar.startOfDay(for: end) { return false }
         return true

@@ -9,7 +9,8 @@ public struct AlarmSound: Identifiable, Hashable, Sendable {
         self.displayNameKey = displayNameKey
     }
 
-    public static let systemDefault = AlarmSound(id: "system.default", displayNameKey: "sound.system_default")
+    public static let systemDefault = AlarmSound(
+        id: "system.default", displayNameKey: "sound.system_default")
     public static let chime = AlarmSound(id: "system.chime", displayNameKey: "sound.chime")
     public static let radar = AlarmSound(id: "system.radar", displayNameKey: "sound.radar")
     public static let bell = AlarmSound(id: "system.bell", displayNameKey: "sound.bell")

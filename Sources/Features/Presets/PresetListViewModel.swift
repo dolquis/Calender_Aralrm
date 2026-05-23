@@ -4,7 +4,8 @@ import SwiftData
 @MainActor
 public enum PresetSeed {
     public static func seedDefaultsIfNeeded(modelContext: ModelContext) {
-        let existing: [ShiftPreset] = (try? modelContext.fetch(FetchDescriptor<ShiftPreset>())) ?? []
+        let existing: [ShiftPreset] =
+            (try? modelContext.fetch(FetchDescriptor<ShiftPreset>())) ?? []
         guard existing.isEmpty else { return }
         let day = ShiftPreset(
             name: String(localized: "seed.day_shift"),

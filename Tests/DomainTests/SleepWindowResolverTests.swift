@@ -1,4 +1,5 @@
 import XCTest
+
 @testable import ShiftAlarm
 
 final class SleepWindowResolverTests: XCTestCase {
@@ -11,7 +12,9 @@ final class SleepWindowResolverTests: XCTestCase {
 
     private func date(_ y: Int, _ m: Int, _ d: Int) -> Date {
         var dc = DateComponents()
-        dc.year = y; dc.month = m; dc.day = d
+        dc.year = y
+        dc.month = m
+        dc.day = d
         return calendar.date(from: dc)!
     }
 
@@ -35,8 +38,10 @@ final class SleepWindowResolverTests: XCTestCase {
         return (id, snapshot)
     }
 
-    private func makeInput(presets: [UUID: ShiftPresetSnapshot],
-                           rotation: RotationPatternSnapshot) -> DayResolverInput {
+    private func makeInput(
+        presets: [UUID: ShiftPresetSnapshot],
+        rotation: RotationPatternSnapshot
+    ) -> DayResolverInput {
         DayResolverInput(
             manualAssignments: [:],
             holidays: [:],
@@ -108,10 +113,12 @@ final class SleepWindowResolverTests: XCTestCase {
     // MARK: - Multiple days sorted by wakeTime
 
     func testWindowsSortedByWakeTime() {
-        let (idA, presetA) = makePreset(id: UUID(), name: "Early", wakeHour: 5, wakeMinute: 0, leadMinutes: 0)
-        let (idB, presetB) = makePreset(id: UUID(), name: "Late",  wakeHour: 9, wakeMinute: 0, leadMinutes: 0)
-        let day1 = date(2026, 5, 23) // will get Early
-        let day2 = date(2026, 5, 24) // will get Late
+        let (idA, presetA) = makePreset(
+            id: UUID(), name: "Early", wakeHour: 5, wakeMinute: 0, leadMinutes: 0)
+        let (idB, presetB) = makePreset(
+            id: UUID(), name: "Late", wakeHour: 9, wakeMinute: 0, leadMinutes: 0)
+        let day1 = date(2026, 5, 23)  // will get Early
+        let day2 = date(2026, 5, 24)  // will get Late
         // Two-slot rotation: Early on day1, Late on day2
         let rotation = RotationPatternSnapshot(
             id: UUID(), name: "r", anchorDate: day1,
@@ -184,7 +191,8 @@ final class SleepWindowResolverTests: XCTestCase {
     func testHolidaySkipOmitsWindowForThatDay() {
         let (id, preset) = makePreset(wakeHour: 6, wakeMinute: 0, leadMinutes: 0)
         let day = date(2026, 5, 29)
-        let holiday = HolidayOverrideSnapshot(label: "休日", skipAlarm: true, replacementPresetID: nil)
+        let holiday = HolidayOverrideSnapshot(
+            label: "休日", skipAlarm: true, replacementPresetID: nil)
         let rotation = RotationPatternSnapshot(
             id: UUID(), name: "r", anchorDate: day,
             cycleLength: 1, slots: [id],

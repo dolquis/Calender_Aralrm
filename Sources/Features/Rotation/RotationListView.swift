@@ -1,10 +1,11 @@
-import SwiftUI
 import SwiftData
+import SwiftUI
 
 public struct RotationListView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(AppDependencies.self) private var dependencies
-    @Query(sort: [SortDescriptor(\RotationPattern.priority, order: .reverse)]) private var patterns: [RotationPattern]
+    @Query(sort: [SortDescriptor(\RotationPattern.priority, order: .reverse)]) private var patterns:
+        [RotationPattern]
     @Query private var settingsList: [AppSettings]
     @State private var editing: RotationPattern?
     @State private var creating = false
@@ -84,9 +85,10 @@ public struct RotationListView: View {
     private func isSuggestionVisible(_ s: ShiftPatternDetector.SuggestedRotation) -> Bool {
         guard let settings else { return true }
         if let snoozedUntil = settings.patternSuggestionSnoozedUntil,
-           let snoozedFP = settings.patternSuggestionSnoozedFingerprint,
-           snoozedFP == s.fingerprint,
-           Date.now < snoozedUntil {
+            let snoozedFP = settings.patternSuggestionSnoozedFingerprint,
+            snoozedFP == s.fingerprint,
+            Date.now < snoozedUntil
+        {
             return false
         }
         return true
@@ -104,7 +106,8 @@ public struct RotationListView: View {
         modelContext.insert(pattern)
         // Snooze the suggestion (365 days) so it doesn't reappear after accept.
         if let settings {
-            settings.patternSuggestionSnoozedUntil = Calendar.current.date(byAdding: .day, value: 365, to: Date.now)
+            settings.patternSuggestionSnoozedUntil = Calendar.current.date(
+                byAdding: .day, value: 365, to: Date.now)
             settings.patternSuggestionSnoozedFingerprint = s.fingerprint
         }
         try? modelContext.save()
@@ -114,7 +117,8 @@ public struct RotationListView: View {
 
     private func rejectSuggestion(_ s: ShiftPatternDetector.SuggestedRotation) {
         guard let settings else { return }
-        settings.patternSuggestionSnoozedUntil = Calendar.current.date(byAdding: .day, value: 30, to: Date.now)
+        settings.patternSuggestionSnoozedUntil = Calendar.current.date(
+            byAdding: .day, value: 30, to: Date.now)
         settings.patternSuggestionSnoozedFingerprint = s.fingerprint
         try? modelContext.save()
         suggestion = nil

@@ -1,9 +1,11 @@
 import XCTest
+
 @testable import ShiftAlarm
 
 final class AppRuntimeConfigurationTests: XCTestCase {
     func testValueUsesInfoPlistValueWhenResolved() throws {
-        let bundle = try makeBundle(info: ["ShiftAlarmAppGroupIdentifier": "group.com.example.test"])
+        let bundle = try makeBundle(info: ["ShiftAlarmAppGroupIdentifier": "group.com.example.test"]
+        )
 
         let value = AppRuntimeConfiguration.value(
             forInfoKey: "ShiftAlarmAppGroupIdentifier",
@@ -15,7 +17,9 @@ final class AppRuntimeConfigurationTests: XCTestCase {
     }
 
     func testValueFallsBackWhenBuildSettingIsUnresolved() throws {
-        let bundle = try makeBundle(info: ["ShiftAlarmAppGroupIdentifier": "$(SHIFTALARM_APP_GROUP_ID)"])
+        let bundle = try makeBundle(info: [
+            "ShiftAlarmAppGroupIdentifier": "$(SHIFTALARM_APP_GROUP_ID)"
+        ])
 
         let value = AppRuntimeConfiguration.value(
             forInfoKey: "ShiftAlarmAppGroupIdentifier",
@@ -43,7 +47,8 @@ final class AppRuntimeConfigurationTests: XCTestCase {
             .appendingPathComponent(UUID().uuidString)
             .appendingPathExtension("bundle")
         try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
-        let data = try PropertyListSerialization.data(fromPropertyList: info, format: .xml, options: 0)
+        let data = try PropertyListSerialization.data(
+            fromPropertyList: info, format: .xml, options: 0)
         try data.write(to: url.appendingPathComponent("Info.plist"))
         return try XCTUnwrap(Bundle(url: url))
     }

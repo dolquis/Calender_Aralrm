@@ -1,7 +1,7 @@
-import SwiftUI
-import SwiftData
-import BackgroundTasks
 import AppIntents
+import BackgroundTasks
+import SwiftData
+import SwiftUI
 
 @main
 struct ShiftAlarmApp: App {

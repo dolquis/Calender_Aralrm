@@ -15,7 +15,8 @@ public enum DayResolverInputBuilder {
         rotations: [RotationPattern],
         calendar: Calendar
     ) -> DayResolverInput {
-        let presetSnapshots: [UUID: ShiftPresetSnapshot] = presets.reduce(into: [:]) { acc, preset in
+        let presetSnapshots: [UUID: ShiftPresetSnapshot] = presets.reduce(into: [:]) {
+            acc, preset in
             acc[preset.id] = ShiftPresetSnapshot(
                 id: preset.id,
                 name: preset.name,
@@ -27,7 +28,8 @@ public enum DayResolverInputBuilder {
             )
         }
 
-        let assignmentSnapshots: [Date: DayAssignmentSnapshot] = assignments.reduce(into: [:]) { acc, assignment in
+        let assignmentSnapshots: [Date: DayAssignmentSnapshot] = assignments.reduce(into: [:]) {
+            acc, assignment in
             acc[calendar.startOfDay(for: assignment.date)] = DayAssignmentSnapshot(
                 presetID: assignment.preset?.id,
                 overrideTime: assignment.overrideAlarmTime,
@@ -36,7 +38,8 @@ public enum DayResolverInputBuilder {
             )
         }
 
-        let holidaySnapshots: [Date: HolidayOverrideSnapshot] = holidays.reduce(into: [:]) { acc, holiday in
+        let holidaySnapshots: [Date: HolidayOverrideSnapshot] = holidays.reduce(into: [:]) {
+            acc, holiday in
             acc[calendar.startOfDay(for: holiday.date)] = HolidayOverrideSnapshot(
                 label: holiday.label,
                 skipAlarm: holiday.skipAlarm,
@@ -70,9 +73,12 @@ public enum DayResolverInputBuilder {
     @MainActor
     public static func make(context: ModelContext, calendar: Calendar) -> DayResolverInput {
         let presets: [ShiftPreset] = (try? context.fetch(FetchDescriptor<ShiftPreset>())) ?? []
-        let assignments: [DayAssignment] = (try? context.fetch(FetchDescriptor<DayAssignment>())) ?? []
-        let holidays: [HolidayOverride] = (try? context.fetch(FetchDescriptor<HolidayOverride>())) ?? []
-        let rotations: [RotationPattern] = (try? context.fetch(FetchDescriptor<RotationPattern>())) ?? []
+        let assignments: [DayAssignment] =
+            (try? context.fetch(FetchDescriptor<DayAssignment>())) ?? []
+        let holidays: [HolidayOverride] =
+            (try? context.fetch(FetchDescriptor<HolidayOverride>())) ?? []
+        let rotations: [RotationPattern] =
+            (try? context.fetch(FetchDescriptor<RotationPattern>())) ?? []
         return make(
             presets: presets,
             assignments: assignments,

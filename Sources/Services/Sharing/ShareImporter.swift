@@ -12,24 +12,28 @@ public struct ImportPreview: Sendable {
     public var updatedOverrides: Int
 
     public var hasChanges: Bool {
-        addedPresets + updatedPresets +
-        addedPatterns + updatedPatterns +
-        addedAssignments + updatedAssignments +
-        addedOverrides + updatedOverrides > 0
+        addedPresets + updatedPresets + addedPatterns + updatedPatterns + addedAssignments
+            + updatedAssignments + addedOverrides + updatedOverrides > 0
     }
 }
 
 @MainActor
 public enum ShareImporter {
-    public static func preview(bundle: ShiftBundle, container: ModelContainer, calendar: Calendar = .current) -> ImportPreview {
+    public static func preview(
+        bundle: ShiftBundle, container: ModelContainer, calendar: Calendar = .current
+    ) -> ImportPreview {
         let context = ModelContext(container)
-        let existingPresets: [UUID: ShiftPreset] = ((try? context.fetch(FetchDescriptor<ShiftPreset>())) ?? [])
+        let existingPresets: [UUID: ShiftPreset] =
+            ((try? context.fetch(FetchDescriptor<ShiftPreset>())) ?? [])
             .reduce(into: [:]) { $0[$1.id] = $1 }
-        let existingPatterns: [UUID: RotationPattern] = ((try? context.fetch(FetchDescriptor<RotationPattern>())) ?? [])
+        let existingPatterns: [UUID: RotationPattern] =
+            ((try? context.fetch(FetchDescriptor<RotationPattern>())) ?? [])
             .reduce(into: [:]) { $0[$1.id] = $1 }
-        let existingAssignments: [Date: DayAssignment] = ((try? context.fetch(FetchDescriptor<DayAssignment>())) ?? [])
+        let existingAssignments: [Date: DayAssignment] =
+            ((try? context.fetch(FetchDescriptor<DayAssignment>())) ?? [])
             .reduce(into: [:]) { $0[calendar.startOfDay(for: $1.date)] = $1 }
-        let existingOverrides: [Date: HolidayOverride] = ((try? context.fetch(FetchDescriptor<HolidayOverride>())) ?? [])
+        let existingOverrides: [Date: HolidayOverride] =
+            ((try? context.fetch(FetchDescriptor<HolidayOverride>())) ?? [])
             .reduce(into: [:]) { $0[calendar.startOfDay(for: $1.date)] = $1 }
 
         var p = ImportPreview(
@@ -39,23 +43,41 @@ public enum ShareImporter {
             addedOverrides: 0, updatedOverrides: 0
         )
         for preset in bundle.presets {
-            if existingPresets[preset.id] == nil { p.addedPresets += 1 } else { p.updatedPresets += 1 }
+            if existingPresets[preset.id] == nil {
+                p.addedPresets += 1
+            } else {
+                p.updatedPresets += 1
+            }
         }
         for pattern in bundle.patterns {
-            if existingPatterns[pattern.id] == nil { p.addedPatterns += 1 } else { p.updatedPatterns += 1 }
+            if existingPatterns[pattern.id] == nil {
+                p.addedPatterns += 1
+            } else {
+                p.updatedPatterns += 1
+            }
         }
         for assignment in bundle.assignments {
             guard let day = assignment.date.date(in: calendar) else { continue }
-            if existingAssignments[day] == nil { p.addedAssignments += 1 } else { p.updatedAssignments += 1 }
+            if existingAssignments[day] == nil {
+                p.addedAssignments += 1
+            } else {
+                p.updatedAssignments += 1
+            }
         }
         for override in bundle.overrides {
             guard let day = override.date.date(in: calendar) else { continue }
-            if existingOverrides[day] == nil { p.addedOverrides += 1 } else { p.updatedOverrides += 1 }
+            if existingOverrides[day] == nil {
+                p.addedOverrides += 1
+            } else {
+                p.updatedOverrides += 1
+            }
         }
         return p
     }
 
-    public static func apply(bundle: ShiftBundle, container: ModelContainer, calendar: Calendar = .current) throws {
+    public static func apply(
+        bundle: ShiftBundle, container: ModelContainer, calendar: Calendar = .current
+    ) throws {
         let context = ModelContext(container)
         let presets = applyPresets(bundle.presets, context: context)
         applyPatterns(bundle.patterns, context: context, calendar: calendar)
@@ -66,7 +88,9 @@ public enum ShareImporter {
 
     // MARK: - Apply helpers
 
-    private static func applyPresets(_ presets: [ShiftBundle.PresetDTO], context: ModelContext) -> [UUID: ShiftPreset] {
+    private static func applyPresets(
+        _ presets: [ShiftBundle.PresetDTO], context: ModelContext
+    ) -> [UUID: ShiftPreset] {
         var byID: [UUID: ShiftPreset] = ((try? context.fetch(FetchDescriptor<ShiftPreset>())) ?? [])
             .reduce(into: [:]) { $0[$1.id] = $1 }
         for p in presets {
@@ -94,8 +118,11 @@ public enum ShareImporter {
         return byID
     }
 
-    private static func applyPatterns(_ patterns: [ShiftBundle.RotationDTO], context: ModelContext, calendar: Calendar) {
-        var byID: [UUID: RotationPattern] = ((try? context.fetch(FetchDescriptor<RotationPattern>())) ?? [])
+    private static func applyPatterns(
+        _ patterns: [ShiftBundle.RotationDTO], context: ModelContext, calendar: Calendar
+    ) {
+        var byID: [UUID: RotationPattern] =
+            ((try? context.fetch(FetchDescriptor<RotationPattern>())) ?? [])
             .reduce(into: [:]) { $0[$1.id] = $1 }
         for r in patterns {
             guard let anchor = r.anchorDate.date(in: calendar) else { continue }
@@ -134,7 +161,8 @@ public enum ShareImporter {
         context: ModelContext,
         calendar: Calendar
     ) {
-        var byDay: [Date: DayAssignment] = ((try? context.fetch(FetchDescriptor<DayAssignment>())) ?? [])
+        var byDay: [Date: DayAssignment] =
+            ((try? context.fetch(FetchDescriptor<DayAssignment>())) ?? [])
             .reduce(into: [:]) { $0[calendar.startOfDay(for: $1.date)] = $1 }
         var seen = Set(byDay.keys)
         for a in assignments {
@@ -168,7 +196,8 @@ public enum ShareImporter {
         context: ModelContext,
         calendar: Calendar
     ) {
-        var byDay: [Date: HolidayOverride] = ((try? context.fetch(FetchDescriptor<HolidayOverride>())) ?? [])
+        var byDay: [Date: HolidayOverride] =
+            ((try? context.fetch(FetchDescriptor<HolidayOverride>())) ?? [])
             .reduce(into: [:]) { $0[calendar.startOfDay(for: $1.date)] = $1 }
         var seen = Set(byDay.keys)
         for o in overrides {

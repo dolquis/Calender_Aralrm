@@ -1,5 +1,6 @@
-import XCTest
 import BackgroundTasks
+import XCTest
+
 @testable import ShiftAlarm
 
 final class BGRefreshControllerTests: XCTestCase {
@@ -16,10 +17,12 @@ final class BGRefreshControllerTests: XCTestCase {
         guard let earliest else { return }
         let lower = before.addingTimeInterval(BGRefreshController.earliestRefreshInterval)
         let upper = after.addingTimeInterval(BGRefreshController.earliestRefreshInterval)
-        XCTAssertGreaterThanOrEqual(earliest.timeIntervalSinceReferenceDate,
-                                    lower.timeIntervalSinceReferenceDate - 1)
-        XCTAssertLessThanOrEqual(earliest.timeIntervalSinceReferenceDate,
-                                 upper.timeIntervalSinceReferenceDate + 1)
+        XCTAssertGreaterThanOrEqual(
+            earliest.timeIntervalSinceReferenceDate,
+            lower.timeIntervalSinceReferenceDate - 1)
+        XCTAssertLessThanOrEqual(
+            earliest.timeIntervalSinceReferenceDate,
+            upper.timeIntervalSinceReferenceDate + 1)
     }
 
     func testScheduleNextSubmitsBuiltRequest() {

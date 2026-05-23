@@ -1,5 +1,5 @@
-import SwiftUI
 import SwiftData
+import SwiftUI
 
 public struct PresetEditorView: View {
     @Environment(\.dismiss) private var dismiss
@@ -11,7 +11,8 @@ public struct PresetEditorView: View {
     @State private var name: String = ""
     @State private var colorHex: String = Color.presetPalette.first ?? "#1E88E5"
     @State private var alarmEnabled: Bool = true
-    @State private var alarmTime: Date = Calendar.current.date(bySettingHour: 6, minute: 30, second: 0, of: .now) ?? .now
+    @State private var alarmTime: Date =
+        Calendar.current.date(bySettingHour: 6, minute: 30, second: 0, of: .now) ?? .now
     @State private var soundID: String = AlarmSound.systemDefault.id
     @State private var note: String = ""
     @State private var targetSleepHours: Double = 8
@@ -29,7 +30,8 @@ public struct PresetEditorView: View {
                     TextField("preset.name_placeholder", text: $name)
                 }
                 Section("preset.color") {
-                    LazyVGrid(columns: Array(repeating: GridItem(.adaptive(minimum: 36)), count: 8)) {
+                    LazyVGrid(columns: Array(repeating: GridItem(.adaptive(minimum: 36)), count: 8))
+                    {
                         ForEach(Color.presetPalette, id: \.self) { hex in
                             let isSelected = hex == colorHex
                             let nameKey = Color.presetPaletteNames[hex] ?? "color.unknown"
@@ -41,7 +43,8 @@ public struct PresetEditorView: View {
                                 )
                                 .onTapGesture { colorHex = hex }
                                 .accessibilityLabel(Text(LocalizedStringKey(nameKey)))
-                                .accessibilityAddTraits(isSelected ? [.isSelected, .isButton] : .isButton)
+                                .accessibilityAddTraits(
+                                    isSelected ? [.isSelected, .isButton] : .isButton)
                         }
                     }
                     .padding(.vertical, 4)

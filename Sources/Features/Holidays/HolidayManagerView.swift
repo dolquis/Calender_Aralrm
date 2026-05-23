@@ -1,5 +1,5 @@
-import SwiftUI
 import SwiftData
+import SwiftUI
 import UIKit
 
 public struct HolidayManagerView: View {
@@ -80,9 +80,12 @@ public struct HolidayManagerView: View {
                                     .font(.caption)
                                     .foregroundStyle(.secondary)
                             } else if let replacement = override.replacementPreset {
-                                Text(String(localized: "holiday.row_replacement") + ": \(replacement.name)")
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
+                                Text(
+                                    String(localized: "holiday.row_replacement")
+                                        + ": \(replacement.name)"
+                                )
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
                             }
                         }
                     }
@@ -119,19 +122,21 @@ public struct HolidayManagerView: View {
             let calendar = Calendar.current
             let now = Date.now
             let start = calendar.date(byAdding: .year, value: -1, to: now) ?? now
-            let end   = calendar.date(byAdding: .year, value:  1, to: now) ?? now
+            let end = calendar.date(byAdding: .year, value: 1, to: now) ?? now
 
-            let entries = await EventKitHolidayProvider.shared.fetchHolidayEntries(from: start, to: end)
+            let entries = await EventKitHolidayProvider.shared.fetchHolidayEntries(
+                from: start, to: end)
 
             var seenDates = Set(overrides.map { calendar.startOfDay(for: $0.date) })
             for entry in entries where !seenDates.contains(entry.date) {
                 seenDates.insert(entry.date)
-                modelContext.insert(HolidayOverride(
-                    date: entry.date,
-                    kind: .publicHoliday,
-                    label: entry.name,
-                    skipAlarm: true
-                ))
+                modelContext.insert(
+                    HolidayOverride(
+                        date: entry.date,
+                        kind: .publicHoliday,
+                        label: entry.name,
+                        skipAlarm: true
+                    ))
             }
             try? modelContext.save()
             await dependencies.alarmScheduler.refreshScheduledAlarms()
@@ -143,7 +148,8 @@ public struct HolidayManagerView: View {
         let calendar = Calendar.current
         let formatter = ISO8601DateFormatter()
         formatter.formatOptions = [.withFullDate]
-        formatter.timeZone = .current  // parse date-only strings in local timezone to avoid UTC midnight day shift
+        // Parse date-only strings locally to avoid a UTC midnight day shift.
+        formatter.timeZone = .current
         let existingDates: Set<Date> = Set(overrides.map { calendar.startOfDay(for: $0.date) })
         for entry in entries {
             guard let date = formatter.date(from: entry.date) else { continue }

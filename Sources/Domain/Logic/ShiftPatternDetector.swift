@@ -1,5 +1,5 @@
-import Foundation
 import CryptoKit
+import Foundation
 
 /// Detects repeating shift cycles from manual-assignment history and proposes a RotationPattern.
 public struct ShiftPatternDetector: Sendable {
@@ -76,7 +76,8 @@ public struct ShiftPatternDetector: Sendable {
         let windowStart = calendar.startOfDay(
             for: calendar.date(byAdding: .day, value: -configuration.windowDays, to: today)!
         )
-        let normalizedAssignments = manualAssignments
+        let normalizedAssignments =
+            manualAssignments
             .sorted { $0.key < $1.key }
             .reduce(into: [Date: DayAssignmentSnapshot]()) { result, entry in
                 result[calendar.startOfDay(for: entry.key)] = entry.value
@@ -98,9 +99,12 @@ public struct ShiftPatternDetector: Sendable {
 
         for cycleLength in configuration.minCycleLength...configuration.maxCycleLength {
             let possibleOccurrencesBySlot = (0..<cycleLength).map { slot in
-                possibleOccurrences(slot: slot, cycleLength: cycleLength, windowDays: configuration.windowDays)
+                possibleOccurrences(
+                    slot: slot, cycleLength: cycleLength, windowDays: configuration.windowDays)
             }
-            guard possibleOccurrencesBySlot.allSatisfy({ $0 >= configuration.minCycles }) else { continue }
+            guard possibleOccurrencesBySlot.allSatisfy({ $0 >= configuration.minCycles }) else {
+                continue
+            }
 
             var slotObs: [[Symbol]] = Array(repeating: [], count: cycleLength)
             for i in 0..<configuration.windowDays {
@@ -116,7 +120,10 @@ public struct ShiftPatternDetector: Sendable {
             for s in 0..<cycleLength {
                 let obs = slotObs[s]
                 let density = Double(obs.count) / Double(possibleOccurrencesBySlot[s])
-                guard density >= configuration.minDensityPerSlot else { densityOk = false; break }
+                guard density >= configuration.minDensityPerSlot else {
+                    densityOk = false
+                    break
+                }
 
                 // Find mode; tiebreak = first occurrence wins (lower series index = earlier)
                 var counts: [Symbol: Int] = [:]
@@ -126,7 +133,8 @@ public struct ShiftPatternDetector: Sendable {
                     if firstIdx[sym] == nil { firstIdx[sym] = idx }
                 }
                 let mode = counts.max { a, b in
-                    a.value != b.value ? a.value < b.value : (firstIdx[a.key] ?? 0) > (firstIdx[b.key] ?? 0)
+                    a.value != b.value
+                        ? a.value < b.value : (firstIdx[a.key] ?? 0) > (firstIdx[b.key] ?? 0)
                 }?.key
                 modeSymbols[s] = mode
                 let matchCount = mode.map { m in obs.filter { $0 == m }.count } ?? 0
@@ -135,17 +143,21 @@ public struct ShiftPatternDetector: Sendable {
             }
 
             guard densityOk else { continue }
-            let overallMatchRate = totalObserved > 0 ? Double(totalMatches) / Double(totalObserved) : 0
+            let overallMatchRate =
+                totalObserved > 0 ? Double(totalMatches) / Double(totalObserved) : 0
             guard overallMatchRate >= configuration.minMatchRate else { continue }
 
             // Prefer higher match rate; tiebreak = shorter cycle (simpler)
-            guard overallMatchRate > bestMatchRate
-                || (overallMatchRate == bestMatchRate && cycleLength < (bestRotation?.cycleLength ?? Int.max))
+            guard
+                overallMatchRate > bestMatchRate
+                    || (overallMatchRate == bestMatchRate
+                        && cycleLength < (bestRotation?.cycleLength ?? Int.max))
             else { continue }
 
             // Normalize anchor to the first Monday on or after windowStart (α-U12)
             let anchorDate = firstMonday(onOrAfter: windowStart, calendar: calendar)
-            let phaseShift = calendar.dateComponents([.day], from: windowStart, to: anchorDate).day ?? 0
+            let phaseShift =
+                calendar.dateComponents([.day], from: windowStart, to: anchorDate).day ?? 0
             let rotatedModes = rotate(modeSymbols, by: phaseShift % cycleLength)
 
             let slots: [UUID?] = rotatedModes.map {
@@ -202,7 +214,9 @@ public struct ShiftPatternDetector: Sendable {
 
     // MARK: - Helpers
 
-    private func symbol(for assignment: DayAssignmentSnapshot, presets: [UUID: ShiftPresetSnapshot]) -> Symbol? {
+    private func symbol(
+        for assignment: DayAssignmentSnapshot, presets: [UUID: ShiftPresetSnapshot]
+    ) -> Symbol? {
         guard !assignment.skipAlarm else { return .off }
         guard let presetID = assignment.presetID else { return .off }
         guard presets[presetID] != nil else { return nil }

@@ -1,5 +1,6 @@
-import XCTest
 import SwiftData
+import XCTest
+
 @testable import ShiftAlarm
 
 @MainActor
@@ -9,7 +10,8 @@ final class AlarmSchedulerTests: XCTestCase {
         let context = ModelContext(container)
         let calendar = Calendar.current
 
-        let preset = ShiftPreset(name: "Night", colorHex: "#1E88E5", defaultAlarmHour: 20, defaultAlarmMinute: 0)
+        let preset = ShiftPreset(
+            name: "Night", colorHex: "#1E88E5", defaultAlarmHour: 20, defaultAlarmMinute: 0)
         context.insert(preset)
 
         let day = calendar.startOfDay(for: .now)

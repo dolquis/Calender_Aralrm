@@ -24,7 +24,9 @@ public actor EventKitHolidayProvider {
 
     /// Returns (date, name) pairs for all-day events in holiday-like calendars
     /// within the given date range. Dates are normalized to start-of-day.
-    public func fetchHolidayEntries(from start: Date, to end: Date) async -> [(date: Date, name: String)] {
+    public func fetchHolidayEntries(
+        from start: Date, to end: Date
+    ) async -> [(date: Date, name: String)] {
         let calendars = holidayCalendars()
         guard !calendars.isEmpty else { return [] }
 
@@ -35,7 +37,8 @@ public actor EventKitHolidayProvider {
             .filter { $0.isAllDay }
             .compactMap { event -> (date: Date, name: String)? in
                 guard let startDate = event.startDate,
-                      let title = event.title, !title.isEmpty else { return nil }
+                    let title = event.title, !title.isEmpty
+                else { return nil }
                 return (date: cal.startOfDay(for: startDate), name: title)
             }
     }

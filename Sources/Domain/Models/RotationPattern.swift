@@ -30,7 +30,8 @@ public final class RotationPattern {
         self.name = name
         self.anchorDate = anchorDate
         self.cycleLength = cycleLength
-        self.slotsData = (try? JSONEncoder().encode(slots.map { $0?.uuidString })) ?? Data("[]".utf8)
+        self.slotsData =
+            (try? JSONEncoder().encode(slots.map { $0?.uuidString })) ?? Data("[]".utf8)
         self.startDate = startDate
         self.endDate = endDate
         self.priority = priority
@@ -39,11 +40,14 @@ public final class RotationPattern {
 
     public var slots: [UUID?] {
         get {
-            guard let strings = try? JSONDecoder().decode([String?].self, from: slotsData) else { return [] }
+            guard let strings = try? JSONDecoder().decode([String?].self, from: slotsData) else {
+                return []
+            }
             return strings.map { $0.flatMap(UUID.init(uuidString:)) }
         }
         set {
-            slotsData = (try? JSONEncoder().encode(newValue.map { $0?.uuidString })) ?? Data("[]".utf8)
+            slotsData =
+                (try? JSONEncoder().encode(newValue.map { $0?.uuidString })) ?? Data("[]".utf8)
         }
     }
 }

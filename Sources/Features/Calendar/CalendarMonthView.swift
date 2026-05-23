@@ -1,5 +1,5 @@
-import SwiftUI
 import SwiftData
+import SwiftUI
 
 public struct CalendarMonthView: View {
     @Environment(AppDependencies.self) private var dependencies
@@ -44,10 +44,12 @@ public struct CalendarMonthView: View {
         }
         .padding()
         .navigationTitle("tab.calendar")
-        .sheet(item: Binding(
-            get: { editingDate.map(IdentifiableDate.init) },
-            set: { editingDate = $0?.date }
-        )) { wrapper in
+        .sheet(
+            item: Binding(
+                get: { editingDate.map(IdentifiableDate.init) },
+                set: { editingDate = $0?.date }
+            )
+        ) { wrapper in
             DayDetailEditorView(date: wrapper.date)
         }
     }

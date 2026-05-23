@@ -1,4 +1,5 @@
 import Foundation
+
 #if canImport(AlarmKit)
 import AlarmKit
 import ActivityKit
@@ -51,12 +52,12 @@ public enum AlarmConfigurationBuilder {
 }
 
 #if canImport(AlarmKit)
-private extension AlarmButton {
-    static var stopButton: AlarmButton {
+extension AlarmButton {
+    fileprivate static var stopButton: AlarmButton {
         AlarmButton(text: "alarm.stop", textColor: .white, systemImageName: "stop.circle.fill")
     }
 
-    static var openAppButton: AlarmButton {
+    fileprivate static var openAppButton: AlarmButton {
         AlarmButton(text: "alarm.open", textColor: .white, systemImageName: "app.fill")
     }
 }

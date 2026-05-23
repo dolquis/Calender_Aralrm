@@ -48,7 +48,8 @@ public struct ShortcutsOnboardingView: View {
                 Text("sleep.step1_intents")
                     .font(.subheadline.monospaced())
                     .padding(6)
-                    .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 6))
+                    .background(
+                        Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 6))
             }
             .padding(.vertical, 4)
         } header: {

@@ -1,4 +1,5 @@
 import XCTest
+
 @testable import ShiftAlarm
 
 final class ShiftBundleCodecTests: XCTestCase {
@@ -60,11 +61,15 @@ final class ShiftBundleCodecTests: XCTestCase {
     func testCalendarDayIsStableAcrossTimeZones() throws {
         let exportTZ = TimeZone(identifier: "Asia/Tokyo")!
         let importTZ = TimeZone(identifier: "America/Los_Angeles")!
-        var exportCal = Calendar(identifier: .gregorian); exportCal.timeZone = exportTZ
-        var importCal = Calendar(identifier: .gregorian); importCal.timeZone = importTZ
+        var exportCal = Calendar(identifier: .gregorian)
+        exportCal.timeZone = exportTZ
+        var importCal = Calendar(identifier: .gregorian)
+        importCal.timeZone = importTZ
 
         var dc = DateComponents()
-        dc.year = 2026; dc.month = 1; dc.day = 1
+        dc.year = 2026
+        dc.month = 1
+        dc.day = 1
         let tokyoNewYear = exportCal.date(from: dc)!
         let encoded = CalendarDay(date: tokyoNewYear, calendar: exportCal)!
 
@@ -86,7 +91,9 @@ final class ShiftBundleCodecTests: XCTestCase {
         var japanese = Calendar(identifier: .japanese)
         japanese.timeZone = TimeZone(identifier: "Asia/Tokyo")!
         var dc = DateComponents()
-        dc.year = 2026; dc.month = 5; dc.day = 12
+        dc.year = 2026
+        dc.month = 5
+        dc.day = 12
         var gregorian = Calendar(identifier: .gregorian)
         gregorian.timeZone = TimeZone(identifier: "Asia/Tokyo")!
         let date = gregorian.date(from: dc)!
@@ -96,9 +103,12 @@ final class ShiftBundleCodecTests: XCTestCase {
 
     func testCalendarDayDecoderRejectsImpossibleDates() {
         let decoder = JSONDecoder()
-        XCTAssertThrowsError(try decoder.decode(CalendarDay.self, from: Data("\"2026-13-40\"".utf8)))
-        XCTAssertThrowsError(try decoder.decode(CalendarDay.self, from: Data("\"2026-02-30\"".utf8)))
-        XCTAssertThrowsError(try decoder.decode(CalendarDay.self, from: Data("\"2026-00-10\"".utf8)))
+        XCTAssertThrowsError(
+            try decoder.decode(CalendarDay.self, from: Data("\"2026-13-40\"".utf8)))
+        XCTAssertThrowsError(
+            try decoder.decode(CalendarDay.self, from: Data("\"2026-02-30\"".utf8)))
+        XCTAssertThrowsError(
+            try decoder.decode(CalendarDay.self, from: Data("\"2026-00-10\"".utf8)))
         XCTAssertNoThrow(try decoder.decode(CalendarDay.self, from: Data("\"2026-02-28\"".utf8)))
     }
 }

@@ -1,8 +1,11 @@
 import XCTest
+
 @testable import ShiftAlarm
 
 final class SleepSampleWriterTests: XCTestCase {
-    private func window(offsetHours: Double, sleepHours: Double = 8, presetName: String = "Day") -> SleepWindow {
+    private func window(
+        offsetHours: Double, sleepHours: Double = 8, presetName: String = "Day"
+    ) -> SleepWindow {
         let wake = Date().addingTimeInterval(offsetHours * 3600)
         return SleepWindow(
             date: Calendar.current.startOfDay(for: wake),

@@ -1,8 +1,9 @@
 import SwiftUI
+import WidgetKit
+
 #if canImport(ActivityKit)
 import ActivityKit
 #endif
-import WidgetKit
 
 #if canImport(ActivityKit)
 public struct ShiftAlarmLiveActivity: Widget {

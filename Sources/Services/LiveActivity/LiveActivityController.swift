@@ -1,5 +1,6 @@
 import Foundation
 import SwiftData
+
 #if canImport(ActivityKit)
 import ActivityKit
 #endif
@@ -21,7 +22,8 @@ public final class LiveActivityController {
         let settings = (try? context.fetch(FetchDescriptor<AppSettings>()).first) ?? AppSettings()
         let lead = TimeInterval(settings.liveActivityLeadHours) * 3600
         let alarms: [ShiftAlarm] = (try? context.fetch(FetchDescriptor<ShiftAlarm>())) ?? []
-        let upcoming = alarms
+        let upcoming =
+            alarms
             .filter { $0.isEnabled && !$0.isBedtimeReminder && $0.fireDate > Date() }
             .sorted { $0.fireDate < $1.fireDate }
             .first
@@ -46,7 +48,8 @@ public final class LiveActivityController {
         let content = ActivityContent(state: state, staleDate: next.fireDate)
 
         if currentAlarmID == next.id, let id = currentActivityID,
-           await Self.updateActivity(id: id, content: content) {
+            await Self.updateActivity(id: id, content: content)
+        {
             return
         }
         await endAll()
@@ -72,7 +75,8 @@ public final class LiveActivityController {
         id: String,
         content: ActivityContent<ShiftAlarmAttributes.ContentState>
     ) async -> Bool {
-        guard let activity = Activity<ShiftAlarmAttributes>.activities.first(where: { $0.id == id }) else {
+        guard let activity = Activity<ShiftAlarmAttributes>.activities.first(where: { $0.id == id })
+        else {
             return false
         }
         await activity.update(content)

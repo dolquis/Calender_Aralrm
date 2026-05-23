@@ -257,6 +257,7 @@
 		D9709221F4F457301B18B5F9 /* SleepWindowEntity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SleepWindowEntity.swift; sourceTree = "<group>"; };
 		E0CCEBE3E8C96F8D3D39213C /* AlarmSound.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlarmSound.swift; sourceTree = "<group>"; };
 		E6966462FDD7CC0A26D6C5CF /* HolidaysJP.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = HolidaysJP.json; sourceTree = "<group>"; };
+		E7752C183FAC43230B13F687 /* lint.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = lint.sh; sourceTree = "<group>"; };
 		E79E459829FCB649F8B069DF /* DayResolverInputBuilder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DayResolverInputBuilder.swift; sourceTree = "<group>"; };
 		EBB1ECB93A0D683208D123C6 /* AlarmService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlarmService.swift; sourceTree = "<group>"; };
 		EC87F1DFCE568D6F82190C34 /* HolidayManagerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HolidayManagerView.swift; sourceTree = "<group>"; };
@@ -491,6 +492,7 @@
 			isa = PBXGroup;
 			children = (
 				38A9A64D424E2652211F06CD /* bootstrap.sh */,
+				E7752C183FAC43230B13F687 /* lint.sh */,
 				AFBCDB115B2369CE5B59FB61 /* p0-device-build.sh */,
 				94376553203919F2B3B29262 /* p0-readiness.sh */,
 				75776467D4B5146AC2590CA0 /* regen.sh */,

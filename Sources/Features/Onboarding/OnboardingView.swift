@@ -1,5 +1,5 @@
-import SwiftUI
 import SwiftData
+import SwiftUI
 
 public struct OnboardingView: View {
     @Environment(AppDependencies.self) private var dependencies

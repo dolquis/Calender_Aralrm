@@ -1,5 +1,5 @@
-import SwiftUI
 import SwiftData
+import SwiftUI
 
 public struct RotationEditorView: View {
     @Environment(\.dismiss) private var dismiss
@@ -16,7 +16,8 @@ public struct RotationEditorView: View {
     @State private var hasStartDate = false
     @State private var startDate: Date = .now
     @State private var hasEndDate = false
-    @State private var endDate: Date = Calendar.current.date(byAdding: .year, value: 1, to: .now) ?? .now
+    @State private var endDate: Date =
+        Calendar.current.date(byAdding: .year, value: 1, to: .now) ?? .now
     @State private var priority: Int = 0
     @State private var isActive: Bool = true
 
@@ -51,10 +52,12 @@ public struct RotationEditorView: View {
                     }
                 }
                 Section("rotation.range_section") {
-                    DatePicker("rotation.anchor", selection: $anchorDate, displayedComponents: .date)
+                    DatePicker(
+                        "rotation.anchor", selection: $anchorDate, displayedComponents: .date)
                     Toggle("rotation.has_start", isOn: $hasStartDate)
                     if hasStartDate {
-                        DatePicker("rotation.start", selection: $startDate, displayedComponents: .date)
+                        DatePicker(
+                            "rotation.start", selection: $startDate, displayedComponents: .date)
                     }
                     Toggle("rotation.has_end", isOn: $hasEndDate)
                     if hasEndDate {

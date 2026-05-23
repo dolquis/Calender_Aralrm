@@ -1,5 +1,5 @@
-import Foundation
 import CryptoKit
+import Foundation
 
 // MARK: - Protocol
 
@@ -52,11 +52,11 @@ public struct ICSExporter: ICalendarExporting, Sendable {
 
             // Must have a preset, a fire time, and not skip the alarm
             guard !resolved.skipsAlarm,
-                  let presetID = resolved.presetID,
-                  let preset = presets[presetID],
-                  let alarmTime = resolved.fireTime,
-                  let alarmHour = alarmTime.hour,
-                  let alarmMinute = alarmTime.minute
+                let presetID = resolved.presetID,
+                let preset = presets[presetID],
+                let alarmTime = resolved.fireTime,
+                let alarmHour = alarmTime.hour,
+                let alarmMinute = alarmTime.minute
             else { continue }
 
             // Build local Date for the alarm moment then convert to UTC

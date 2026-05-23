@@ -42,9 +42,10 @@ public struct CalendarDay: Codable, Equatable, Sendable, Hashable {
         let raw = try container.decode(String.self)
         let parts = raw.split(separator: "-")
         guard parts.count == 3,
-              let y = Int(parts[0]),
-              let m = Int(parts[1]),
-              let d = Int(parts[2]) else {
+            let y = Int(parts[0]),
+            let m = Int(parts[1]),
+            let d = Int(parts[2])
+        else {
             throw DecodingError.dataCorruptedError(
                 in: container,
                 debugDescription: "Expected YYYY-MM-DD calendar day, got \(raw)"
