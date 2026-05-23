@@ -124,7 +124,10 @@ public struct RotationListView: View {
                     detector.matchesPatternIdentity($0, suggestion: drift, calendar: calendar)
                 })
             else { continue }
-            return PatternSuggestionContext(suggestion: drift, replacingPatternID: pattern.id)
+            let context = PatternSuggestionContext(
+                suggestion: drift, replacingPatternID: pattern.id)
+            guard isSuggestionVisible(context.suggestion, now: today) else { continue }
+            return context
         }
 
         guard
@@ -141,15 +144,20 @@ public struct RotationListView: View {
                 detector.matchesPatternIdentity($0, suggestion: detected, calendar: calendar)
             })
         else { return nil }
-        return PatternSuggestionContext(suggestion: detected, replacingPatternID: nil)
+        let context = PatternSuggestionContext(suggestion: detected, replacingPatternID: nil)
+        guard isSuggestionVisible(context.suggestion, now: today) else { return nil }
+        return context
     }
 
-    private func isSuggestionVisible(_ s: ShiftPatternDetector.SuggestedRotation) -> Bool {
+    private func isSuggestionVisible(
+        _ s: ShiftPatternDetector.SuggestedRotation,
+        now: Date = Date.now
+    ) -> Bool {
         guard let settings else { return true }
         if let snoozedUntil = settings.patternSuggestionSnoozedUntil,
             let snoozedFP = settings.patternSuggestionSnoozedFingerprint,
             snoozedFP == s.fingerprint,
-            Date.now < snoozedUntil
+            now < snoozedUntil
         {
             return false
         }
@@ -158,9 +166,12 @@ public struct RotationListView: View {
 
     private func acceptSuggestion(_ context: PatternSuggestionContext) {
         let s = context.suggestion
-        if let replacingID = context.replacingPatternID,
-            let replacingPattern = patterns.first(where: { $0.id == replacingID })
-        {
+        let replacingPattern = context.replacingPatternID
+            .flatMap { replacingID in patterns.first(where: { $0.id == replacingID }) }
+        let replacementDateBounds =
+            replacingPattern
+            .map { (startDate: $0.startDate, endDate: $0.endDate) }
+        if let replacingPattern {
             replacingPattern.isActive = false
         }
         let nextPriority = (patterns.map(\.priority).max() ?? -1) + 1
@@ -173,6 +184,8 @@ public struct RotationListView: View {
             anchorDate: s.anchorDate,
             cycleLength: s.cycleLength,
             slots: s.slots,
+            startDate: replacementDateBounds?.startDate,
+            endDate: replacementDateBounds?.endDate,
             priority: nextPriority,
             isActive: true
         )
