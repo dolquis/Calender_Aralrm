@@ -17,7 +17,8 @@ public struct SleepWindowEntity: AppEntity, Sendable {
     public var displayRepresentation: DisplayRepresentation {
         DisplayRepresentation(
             title: "\(presetName)",
-            subtitle: "\(bedtime.formatted(date: .omitted, time: .shortened)) → \(wakeTime.formatted(date: .omitted, time: .shortened))"
+            subtitle:
+                "\(bedtime.formatted(date: .omitted, time: .shortened)) → \(wakeTime.formatted(date: .omitted, time: .shortened))"
         )
     }
 

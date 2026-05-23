@@ -1,5 +1,6 @@
-import XCTest
 import SwiftData
+import XCTest
+
 @testable import ShiftAlarm
 
 @MainActor
@@ -24,7 +25,8 @@ final class SleepIntentHelperTests: XCTestCase {
         // Cover the next 14 days so the helper has something to return regardless of "today".
         let calendar = Calendar.current
         let anchor = calendar.startOfDay(for: .now)
-        context.insert(RotationPattern(name: "r", anchorDate: anchor, cycleLength: 1, slots: [preset.id]))
+        context.insert(
+            RotationPattern(name: "r", anchorDate: anchor, cycleLength: 1, slots: [preset.id]))
         try? context.save()
         return container
     }

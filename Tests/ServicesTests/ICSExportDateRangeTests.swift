@@ -1,4 +1,5 @@
 import XCTest
+
 @testable import ShiftAlarm
 
 final class ICSExportDateRangeTests: XCTestCase {

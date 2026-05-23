@@ -1,6 +1,7 @@
-import XCTest
-import SwiftUI
 import SnapshotTesting
+import SwiftUI
+import XCTest
+
 @testable import ShiftAlarm
 
 @MainActor
@@ -9,11 +10,15 @@ final class DayCellViewSnapshotTests: XCTestCase {
         var c = Calendar(identifier: .gregorian)
         c.timeZone = TimeZone(identifier: "Asia/Tokyo")!
         var dc = DateComponents()
-        dc.year = 2026; dc.month = 5; dc.day = 14
+        dc.year = 2026
+        dc.month = 5
+        dc.day = 14
         return c.date(from: dc)!
     }
 
-    private func host(_ view: some View, size: CGSize = CGSize(width: 56, height: 80)) -> UIViewController {
+    private func host(
+        _ view: some View, size: CGSize = CGSize(width: 56, height: 80)
+    ) -> UIViewController {
         let host = UIHostingController(rootView: view)
         host.view.frame = CGRect(origin: .zero, size: size)
         host.view.layoutIfNeeded()

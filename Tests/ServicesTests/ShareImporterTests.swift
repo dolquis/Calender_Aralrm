@@ -1,5 +1,6 @@
-import XCTest
 import SwiftData
+import XCTest
+
 @testable import ShiftAlarm
 
 @MainActor

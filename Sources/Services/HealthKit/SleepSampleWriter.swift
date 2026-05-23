@@ -1,4 +1,5 @@
 import Foundation
+
 #if canImport(HealthKit)
 import HealthKit
 #endif

@@ -8,7 +8,8 @@ public struct HolidayEntry: Codable, Sendable, Hashable {
 public enum HolidayProvider {
     public static func loadJapaneseHolidays(in bundle: Bundle = .main) -> [HolidayEntry] {
         guard let url = bundle.url(forResource: "HolidaysJP", withExtension: "json"),
-              let data = try? Data(contentsOf: url) else {
+            let data = try? Data(contentsOf: url)
+        else {
             return []
         }
         return (try? JSONDecoder().decode([HolidayEntry].self, from: data)) ?? []
@@ -20,9 +21,10 @@ public enum HolidayProvider {
     public static func parseLocalDay(_ raw: String, calendar: Calendar = .current) -> Date? {
         let parts = raw.split(separator: "-")
         guard parts.count == 3,
-              let year = Int(parts[0]),
-              let month = Int(parts[1]),
-              let day = Int(parts[2]) else { return nil }
+            let year = Int(parts[0]),
+            let month = Int(parts[1]),
+            let day = Int(parts[2])
+        else { return nil }
         var gregorian = Calendar(identifier: .gregorian)
         gregorian.timeZone = calendar.timeZone
         var components = DateComponents()
@@ -32,7 +34,9 @@ public enum HolidayProvider {
         return gregorian.date(from: components).map { gregorian.startOfDay(for: $0) }
     }
 
-    public static func entries(in range: ClosedRange<Date>, calendar: Calendar = .current, bundle: Bundle = .main) -> [(Date, String)] {
+    public static func entries(
+        in range: ClosedRange<Date>, calendar: Calendar = .current, bundle: Bundle = .main
+    ) -> [(Date, String)] {
         loadJapaneseHolidays(in: bundle).compactMap { entry in
             guard let date = parseLocalDay(entry.date, calendar: calendar) else { return nil }
             guard range.contains(date) else { return nil }

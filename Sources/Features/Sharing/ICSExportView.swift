@@ -1,5 +1,5 @@
-import SwiftUI
 import SwiftData
+import SwiftUI
 
 public struct ICSExportView: View {
     @Environment(\.modelContext) private var modelContext

@@ -8,7 +8,7 @@ public struct ShiftAlarmShortcutsProvider: AppShortcutsProvider {
             intent: GetSleepWindowIntent(),
             phrases: [
                 "\(.applicationName) の次の睡眠ウィンドウを取得",
-                "Get next sleep window from \(.applicationName)"
+                "Get next sleep window from \(.applicationName)",
             ],
             shortTitle: "次の睡眠ウィンドウ",
             systemImageName: "moon.zzz.fill"
@@ -17,7 +17,7 @@ public struct ShiftAlarmShortcutsProvider: AppShortcutsProvider {
             intent: GetNextWakeTimeIntent(),
             phrases: [
                 "\(.applicationName) の次の起床時刻を教えて",
-                "Get next wake time from \(.applicationName)"
+                "Get next wake time from \(.applicationName)",
             ],
             shortTitle: "次の起床時刻",
             systemImageName: "alarm.fill"
@@ -26,7 +26,7 @@ public struct ShiftAlarmShortcutsProvider: AppShortcutsProvider {
             intent: GetNextBedtimeIntent(),
             phrases: [
                 "\(.applicationName) の就寝時刻を教えて",
-                "Get next bedtime from \(.applicationName)"
+                "Get next bedtime from \(.applicationName)",
             ],
             shortTitle: "次の就寝時刻",
             systemImageName: "bed.double.fill"

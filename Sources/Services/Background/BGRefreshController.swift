@@ -1,5 +1,5 @@
-import Foundation
 import BackgroundTasks
+import Foundation
 
 public enum BGRefreshController {
     public static var identifier: String { AppRuntimeConfiguration.bgRefreshTaskIdentifier }
@@ -15,7 +15,9 @@ public enum BGRefreshController {
 
     /// `submit` is injectable so unit tests can verify the request without touching the system
     /// scheduler (which raises in non-app contexts).
-    public static func scheduleNext(submit: (BGTaskRequest) throws -> Void = { try BGTaskScheduler.shared.submit($0) }) {
+    public static func scheduleNext(
+        submit: (BGTaskRequest) throws -> Void = { try BGTaskScheduler.shared.submit($0) }
+    ) {
         do {
             try submit(makeRequest())
         } catch {

@@ -1,11 +1,12 @@
 import XCTest
+
 @testable import ShiftAlarm
 
 final class ICSExporterTests: XCTestCase {
 
     // MARK: - Fixtures
 
-    private static let dayID   = UUID(uuidString: "00000000-0000-0000-0000-000000000010")!
+    private static let dayID = UUID(uuidString: "00000000-0000-0000-0000-000000000010")!
     private static let nightID = UUID(uuidString: "00000000-0000-0000-0000-000000000011")!
 
     private var tokyoTZ: TimeZone { TimeZone(identifier: "Asia/Tokyo")! }
@@ -17,7 +18,9 @@ final class ICSExporterTests: XCTestCase {
 
     private func date(_ y: Int, _ m: Int, _ d: Int) -> Date {
         var dc = DateComponents()
-        dc.year = y; dc.month = m; dc.day = d
+        dc.year = y
+        dc.month = m
+        dc.day = d
         var c = Calendar(identifier: .gregorian)
         c.timeZone = tokyoTZ
         return c.date(from: dc)!
@@ -61,7 +64,8 @@ final class ICSExporterTests: XCTestCase {
 
     func testRequiredPropertiesPresent() throws {
         let today = date(2026, 5, 19)
-        let resolved = ResolvedDay.rotation(presetID: Self.dayID, alarmTime: DateComponents(hour: 6, minute: 0))
+        let resolved = ResolvedDay.rotation(
+            presetID: Self.dayID, alarmTime: DateComponents(hour: 6, minute: 0))
         let result = exporter.export(
             range: today...today,
             resolvedDays: [resolved],
@@ -90,7 +94,9 @@ final class ICSExporterTests: XCTestCase {
         let today = date(2026, 5, 19)
         let result = exporter.export(
             range: today...today,
-            resolvedDays: [.rotation(presetID: presetID, alarmTime: DateComponents(hour: 6, minute: 0))],
+            resolvedDays: [
+                .rotation(presetID: presetID, alarmTime: DateComponents(hour: 6, minute: 0))
+            ],
             presets: [presetID: special],
             calendar: calendar,
             timeZone: tokyoTZ,
@@ -109,14 +115,17 @@ final class ICSExporterTests: XCTestCase {
         let today = date(2026, 5, 19)
         let result = exporter.export(
             range: today...today,
-            resolvedDays: [.rotation(presetID: presetID, alarmTime: DateComponents(hour: 6, minute: 0))],
+            resolvedDays: [
+                .rotation(presetID: presetID, alarmTime: DateComponents(hour: 6, minute: 0))
+            ],
             presets: [presetID: special],
             calendar: calendar,
             timeZone: tokyoTZ,
             now: today
         )
         XCTAssertTrue(result.contains("SUMMARY:A\\nB\\nC\r\n"))
-        XCTAssertFalse(result.contains("SUMMARY:A\r\\nB"), "Escaped SUMMARY must not leave a bare CR")
+        XCTAssertFalse(
+            result.contains("SUMMARY:A\r\\nB"), "Escaped SUMMARY must not leave a bare CR")
     }
 
     func testLongSummaryIsFoldedAt75OctetsAndRoundTrips() throws {
@@ -130,7 +139,9 @@ final class ICSExporterTests: XCTestCase {
         let today = date(2026, 5, 19)
         let result = exporter.export(
             range: today...today,
-            resolvedDays: [.rotation(presetID: presetID, alarmTime: DateComponents(hour: 6, minute: 0))],
+            resolvedDays: [
+                .rotation(presetID: presetID, alarmTime: DateComponents(hour: 6, minute: 0))
+            ],
             presets: [presetID: special],
             calendar: calendar,
             timeZone: tokyoTZ,
@@ -138,10 +149,12 @@ final class ICSExporterTests: XCTestCase {
         )
 
         let physicalLines = result.components(separatedBy: "\r\n").filter { !$0.isEmpty }
-        XCTAssertTrue(physicalLines.allSatisfy { $0.utf8.count <= 75 },
-                      "Every physical content line must be folded to 75 octets or fewer")
-        XCTAssertTrue(physicalLines.contains { $0.hasPrefix(" ") },
-                      "A long SUMMARY should produce at least one continuation line")
+        XCTAssertTrue(
+            physicalLines.allSatisfy { $0.utf8.count <= 75 },
+            "Every physical content line must be folded to 75 octets or fewer")
+        XCTAssertTrue(
+            physicalLines.contains { $0.hasPrefix(" ") },
+            "A long SUMMARY should produce at least one continuation line")
 
         let events = try ICSTestParser.parse(result)
         XCTAssertEqual(events.first?.summary, longName)
@@ -172,7 +185,8 @@ final class ICSExporterTests: XCTestCase {
 
     func testUIDIsDeterministic() throws {
         let today = date(2026, 5, 19)
-        let resolved = ResolvedDay.rotation(presetID: Self.dayID, alarmTime: DateComponents(hour: 6, minute: 0))
+        let resolved = ResolvedDay.rotation(
+            presetID: Self.dayID, alarmTime: DateComponents(hour: 6, minute: 0))
         let r1 = exporter.export(
             range: today...today,
             resolvedDays: [resolved],
@@ -187,7 +201,7 @@ final class ICSExporterTests: XCTestCase {
             presets: makePresets(),
             calendar: calendar,
             timeZone: tokyoTZ,
-            now: today.addingTimeInterval(3600) // different 'now' should not affect UID
+            now: today.addingTimeInterval(3600)  // different 'now' should not affect UID
         )
         let e1 = try ICSTestParser.parse(r1)
         let e2 = try ICSTestParser.parse(r2)
@@ -197,8 +211,9 @@ final class ICSExporterTests: XCTestCase {
     // MARK: - η-U7: UTC conversion (Asia/Tokyo 06:00 → previous day 21:00Z)
 
     func testUTCConversionTokyoSixAM() throws {
-        let today = date(2026, 5, 19) // 2026-05-19 in Asia/Tokyo
-        let resolved = ResolvedDay.rotation(presetID: Self.dayID, alarmTime: DateComponents(hour: 6, minute: 0))
+        let today = date(2026, 5, 19)  // 2026-05-19 in Asia/Tokyo
+        let resolved = ResolvedDay.rotation(
+            presetID: Self.dayID, alarmTime: DateComponents(hour: 6, minute: 0))
         let result = exporter.export(
             range: today...today,
             resolvedDays: [resolved],
@@ -208,18 +223,21 @@ final class ICSExporterTests: XCTestCase {
             now: today
         )
         // Asia/Tokyo UTC+9: 06:00 JST = previous day 21:00 UTC
-        XCTAssertTrue(result.contains("DTSTART:20260518T210000Z"),
-                      "Expected DTSTART:20260518T210000Z in:\n\(result)")
-        XCTAssertTrue(result.contains("DTEND:20260518T213000Z"),
-                      "Expected DTEND:20260518T213000Z in:\n\(result)")
+        XCTAssertTrue(
+            result.contains("DTSTART:20260518T210000Z"),
+            "Expected DTSTART:20260518T210000Z in:\n\(result)")
+        XCTAssertTrue(
+            result.contains("DTEND:20260518T213000Z"),
+            "Expected DTEND:20260518T213000Z in:\n\(result)")
         XCTAssertTrue(result.contains("X-WR-TIMEZONE:Asia/Tokyo"))
     }
 
     func testExportUsesProvidedTimeZoneForLocalDayBoundaries() throws {
         var utcCalendar = Calendar(identifier: .gregorian)
         utcCalendar.timeZone = TimeZone(identifier: "UTC")!
-        let today = date(2026, 5, 19) // 2026-05-19 in Asia/Tokyo
-        let resolved = ResolvedDay.rotation(presetID: Self.dayID, alarmTime: DateComponents(hour: 6, minute: 0))
+        let today = date(2026, 5, 19)  // 2026-05-19 in Asia/Tokyo
+        let resolved = ResolvedDay.rotation(
+            presetID: Self.dayID, alarmTime: DateComponents(hour: 6, minute: 0))
         let result = exporter.export(
             range: today...today,
             resolvedDays: [resolved],
@@ -228,8 +246,9 @@ final class ICSExporterTests: XCTestCase {
             timeZone: tokyoTZ,
             now: today
         )
-        XCTAssertTrue(result.contains("DTSTART:20260518T210000Z"),
-                      "The exported local day should be interpreted in the provided time zone")
+        XCTAssertTrue(
+            result.contains("DTSTART:20260518T210000Z"),
+            "The exported local day should be interpreted in the provided time zone")
     }
 
     // MARK: - η-U9: ascending date order
@@ -237,8 +256,10 @@ final class ICSExporterTests: XCTestCase {
     func testEventsInAscendingOrder() throws {
         let start = date(2026, 5, 19)
         let end = date(2026, 5, 20)
-        let resolved1 = ResolvedDay.rotation(presetID: Self.dayID, alarmTime: DateComponents(hour: 6, minute: 0))
-        let resolved2 = ResolvedDay.rotation(presetID: Self.nightID, alarmTime: DateComponents(hour: 22, minute: 0))
+        let resolved1 = ResolvedDay.rotation(
+            presetID: Self.dayID, alarmTime: DateComponents(hour: 6, minute: 0))
+        let resolved2 = ResolvedDay.rotation(
+            presetID: Self.nightID, alarmTime: DateComponents(hour: 22, minute: 0))
         let result = exporter.export(
             range: start...end,
             resolvedDays: [resolved1, resolved2],
@@ -271,7 +292,8 @@ final class ICSExporterTests: XCTestCase {
 
     func testUIDHasCorrectSuffix() throws {
         let today = date(2026, 5, 19)
-        let resolved = ResolvedDay.rotation(presetID: Self.dayID, alarmTime: DateComponents(hour: 6, minute: 0))
+        let resolved = ResolvedDay.rotation(
+            presetID: Self.dayID, alarmTime: DateComponents(hour: 6, minute: 0))
         let result = exporter.export(
             range: today...today,
             resolvedDays: [resolved],

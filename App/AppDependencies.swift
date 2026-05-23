@@ -1,6 +1,6 @@
 import Foundation
-import SwiftData
 import Observation
+import SwiftData
 
 /// Top-level container injected via the environment so feature views can reach services.
 @Observable

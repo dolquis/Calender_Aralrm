@@ -28,7 +28,10 @@ enum ICSTestParser {
         for line in lines {
             if line == "BEGIN:VEVENT" {
                 inEvent = true
-                uid = ""; summary = ""; dtstart = nil; dtend = nil
+                uid = ""
+                summary = ""
+                dtstart = nil
+                dtend = nil
             } else if line == "END:VEVENT", inEvent {
                 guard !uid.isEmpty else { throw ParseError.missingField("UID") }
                 guard !summary.isEmpty else { throw ParseError.missingField("SUMMARY") }

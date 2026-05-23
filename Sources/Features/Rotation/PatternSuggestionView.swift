@@ -1,5 +1,5 @@
-import SwiftUI
 import SwiftData
+import SwiftUI
 
 /// Card shown at the top of RotationListView when a repeating shift pattern is detected.
 public struct PatternSuggestionView: View {
@@ -29,9 +29,11 @@ public struct PatternSuggestionView: View {
                 Text("pattern.suggestion.title")
                     .font(.headline)
             }
-            Text(String(format: String(localized: "pattern.suggestion.body"), suggestion.cycleLength))
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
+            Text(
+                String(format: String(localized: "pattern.suggestion.body"), suggestion.cycleLength)
+            )
+            .font(.subheadline)
+            .foregroundStyle(.secondary)
 
             slotPreview
 

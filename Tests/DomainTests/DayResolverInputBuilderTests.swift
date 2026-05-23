@@ -1,5 +1,6 @@
-import XCTest
 import SwiftData
+import XCTest
+
 @testable import ShiftAlarm
 
 @MainActor
@@ -55,8 +56,10 @@ final class DayResolverInputBuilderTests: XCTestCase {
         let preset = ShiftPreset(name: "P", colorHex: "#1E88E5")
         context.insert(preset)
         let day = calendar.startOfDay(for: .now)
-        context.insert(HolidayOverride(date: day, kind: .publicHoliday, label: "Holiday", skipAlarm: true))
-        context.insert(RotationPattern(name: "r", anchorDate: day, cycleLength: 1, slots: [preset.id]))
+        context.insert(
+            HolidayOverride(date: day, kind: .publicHoliday, label: "Holiday", skipAlarm: true))
+        context.insert(
+            RotationPattern(name: "r", anchorDate: day, cycleLength: 1, slots: [preset.id]))
         try context.save()
 
         let input = DayResolverInputBuilder.make(context: context, calendar: calendar)

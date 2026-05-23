@@ -1,5 +1,6 @@
 import Foundation
 import SwiftData
+
 #if canImport(WidgetKit)
 import WidgetKit
 #endif
@@ -33,8 +34,10 @@ public final class AlarmScheduler {
         let days = Array(DayRange(start: .now, dayCount: lookahead, calendar: calendar))
 
         let input = await Self.buildResolverInput(context: context, calendar: calendar)
-        let expectedWake = Self.buildExpectedWake(days: days, input: input, settings: settings, calendar: calendar)
-        let expectedBedtime = Self.buildExpectedBedtime(days: days, input: input, settings: settings)
+        let expectedWake = Self.buildExpectedWake(
+            days: days, input: input, settings: settings, calendar: calendar)
+        let expectedBedtime = Self.buildExpectedBedtime(
+            days: days, input: input, settings: settings)
 
         let (existingWakeByDay, existingBedtimeByFireDate) = Self.partitionExisting(
             (try? context.fetch(FetchDescriptor<ShiftAlarm>())) ?? [],
@@ -72,11 +75,11 @@ public final class AlarmScheduler {
         days.compactMap { day in
             let resolved = DayResolver.resolve(date: day, input: input)
             guard !resolved.skipsAlarm,
-                  let fireTime = resolved.fireTime,
-                  let hour = fireTime.hour,
-                  let minute = fireTime.minute,
-                  let fireDate = day.combining(hour: hour, minute: minute, in: calendar),
-                  fireDate > .now
+                let fireTime = resolved.fireTime,
+                let hour = fireTime.hour,
+                let minute = fireTime.minute,
+                let fireDate = day.combining(hour: hour, minute: minute, in: calendar),
+                fireDate > .now
             else { return nil }
             let preset = resolved.presetID.flatMap { input.presets[$0] }
             return ExpectedAlarm(
@@ -98,7 +101,9 @@ public final class AlarmScheduler {
         SleepWindowResolver.resolve(dates: days, input: input)
             .filter { $0.wakeTime > .now }
             .compactMap { window in
-                guard let reminderDate = window.reminderFireDate, reminderDate > .now else { return nil }
+                guard let reminderDate = window.reminderFireDate, reminderDate > .now else {
+                    return nil
+                }
                 // Key by the exact fire date so two reminders that fall on the same calendar day
                 // (e.g., afternoon-wake + next-day early-wake) never collide.
                 return ExpectedAlarm(
@@ -148,9 +153,11 @@ public final class AlarmScheduler {
     }
 
     private func reschedule(_ existing: ShiftAlarm, to entry: ExpectedAlarm) async {
-        guard existing.fireDate != entry.fireDate
-            || existing.label != entry.label
-            || existing.soundID != entry.soundID else { return }
+        guard
+            existing.fireDate != entry.fireDate
+                || existing.label != entry.label
+                || existing.soundID != entry.soundID
+        else { return }
         let newID = UUID()
         do {
             try await service.schedule(
@@ -173,7 +180,9 @@ public final class AlarmScheduler {
         }
     }
 
-    private func scheduleNew(_ entry: ExpectedAlarm, isBedtimeReminder: Bool, context: ModelContext) async {
+    private func scheduleNew(
+        _ entry: ExpectedAlarm, isBedtimeReminder: Bool, context: ModelContext
+    ) async {
         let newID = UUID()
         do {
             try await service.schedule(
@@ -182,14 +191,15 @@ public final class AlarmScheduler {
                 label: entry.label,
                 soundID: entry.soundID
             )
-            context.insert(ShiftAlarm(
-                fireDate: entry.fireDate,
-                label: entry.label,
-                soundID: entry.soundID,
-                isEnabled: true,
-                alarmKitID: newID,
-                isBedtimeReminder: isBedtimeReminder
-            ))
+            context.insert(
+                ShiftAlarm(
+                    fireDate: entry.fireDate,
+                    label: entry.label,
+                    soundID: entry.soundID,
+                    isEnabled: true,
+                    alarmKitID: newID,
+                    isBedtimeReminder: isBedtimeReminder
+                ))
         } catch {
             // Schedule failed: skip persisting; the next refresh will retry.
         }
@@ -207,7 +217,9 @@ public final class AlarmScheduler {
         context.delete(alarm)
     }
 
-    static func buildResolverInput(context: ModelContext, calendar: Calendar) async -> DayResolverInput {
+    static func buildResolverInput(
+        context: ModelContext, calendar: Calendar
+    ) async -> DayResolverInput {
         DayResolverInputBuilder.make(context: context, calendar: calendar)
     }
 }

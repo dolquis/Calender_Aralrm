@@ -39,11 +39,14 @@ public struct NextAlarmTimelineProvider: TimelineProvider {
     /// - A T-2h checkpoint entry is inserted for alarms more than 2 h away,
     ///   so WidgetKit can pick up any last-minute changes the user made.
     /// - Policy: reload after the last covered alarm plus a small buffer.
-    public func getTimeline(in context: Context, completion: @escaping (Timeline<NextAlarmEntry>) -> Void) {
+    public func getTimeline(
+        in context: Context, completion: @escaping (Timeline<NextAlarmEntry>) -> Void
+    ) {
         let now = Date.now
         let (alarms, presets) = Self.fetchData()
 
-        let upcoming = alarms
+        let upcoming =
+            alarms
             .filter { $0.isEnabled && !$0.isBedtimeReminder && $0.fireDate > now }
             .sorted { $0.fireDate < $1.fireDate }
 
@@ -82,7 +85,8 @@ public struct NextAlarmTimelineProvider: TimelineProvider {
             let preset = presets.first { $0.id == nextAlarm.assignment?.preset?.id }
             entries.append(makeEntry(date: windowStart, alarm: nextAlarm, preset: preset))
         } else {
-            entries.append(NextAlarmEntry(date: windowStart, fireDate: nil, presetName: nil, colorHex: nil))
+            entries.append(
+                NextAlarmEntry(date: windowStart, fireDate: nil, presetName: nil, colorHex: nil))
         }
 
         // Reload policy: 5 min after the last covered alarm fires.
@@ -96,7 +100,8 @@ public struct NextAlarmTimelineProvider: TimelineProvider {
     private static func currentEntry() -> NextAlarmEntry {
         let now = Date.now
         let (alarms, presets) = fetchData()
-        let next = alarms
+        let next =
+            alarms
             .filter { $0.isEnabled && !$0.isBedtimeReminder && $0.fireDate > now }
             .sorted { $0.fireDate < $1.fireDate }
             .first

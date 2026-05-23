@@ -1,5 +1,5 @@
-import SwiftUI
 import SwiftData
+import SwiftUI
 
 public struct DayDetailEditorView: View {
     @Environment(\.dismiss) private var dismiss
@@ -67,8 +67,11 @@ public struct DayDetailEditorView: View {
         }
     }
 
-    private func isNonEmpty(preset: ShiftPreset?, timeComponents: (Int, Int)?, skipAlarm: Bool, note: String) -> Bool {
-        preset != nil || timeComponents != nil || skipAlarm || !note.trimmingCharacters(in: .whitespaces).isEmpty
+    private func isNonEmpty(
+        preset: ShiftPreset?, timeComponents: (Int, Int)?, skipAlarm: Bool, note: String
+    ) -> Bool {
+        preset != nil || timeComponents != nil || skipAlarm
+            || !note.trimmingCharacters(in: .whitespaces).isEmpty
     }
 
     private var formattedDate: String {
@@ -95,10 +98,12 @@ public struct DayDetailEditorView: View {
     private func save() {
         let day = Calendar.current.startOfDay(for: date)
         let preset = selectedPresetID.flatMap { id in presets.first { $0.id == id } }
-        let timeComponents: (Int, Int)? = customTimeEnabled ? {
-            let dc = Calendar.current.dateComponents([.hour, .minute], from: customTime)
-            return (dc.hour ?? 0, dc.minute ?? 0)
-        }() : nil
+        let timeComponents: (Int, Int)? =
+            customTimeEnabled
+            ? {
+                let dc = Calendar.current.dateComponents([.hour, .minute], from: customTime)
+                return (dc.hour ?? 0, dc.minute ?? 0)
+            }() : nil
 
         if let assignment = existingAssignment {
             assignment.preset = preset
@@ -106,7 +111,9 @@ public struct DayDetailEditorView: View {
             assignment.note = note
             assignment.overrideAlarmHour = timeComponents?.0
             assignment.overrideAlarmMinute = timeComponents?.1
-        } else if isNonEmpty(preset: preset, timeComponents: timeComponents, skipAlarm: skipAlarm, note: note) {
+        } else if isNonEmpty(
+            preset: preset, timeComponents: timeComponents, skipAlarm: skipAlarm, note: note)
+        {
             // Only create a new manual assignment when the user actually specified something.
             // A blank record would take precedence over rotation/holiday rules in DayResolver
             // and suppress the alarm for that day.

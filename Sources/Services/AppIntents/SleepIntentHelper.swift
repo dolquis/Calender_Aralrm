@@ -12,7 +12,9 @@ enum SleepIntentHelper {
 
     /// `lookahead` overrides the configured horizon when > 0; pass 0 (the default) to use the
     /// app's configured `lookaheadDays` so sparse schedules never return a false "no window".
-    static func fetchUpcomingWindows(lookahead: Int = 0, now: Date = .now) async -> [SleepWindowEntity] {
+    static func fetchUpcomingWindows(
+        lookahead: Int = 0, now: Date = .now
+    ) async -> [SleepWindowEntity] {
         let container = containerFactory()
         let context = ModelContext(container)
         let calendar = Calendar.current

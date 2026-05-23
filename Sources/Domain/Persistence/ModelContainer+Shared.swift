@@ -6,7 +6,9 @@ public enum SharedPersistence {
     public static let storeFileName = "ShiftAlarm.store"
 
     public static func storeURL() -> URL {
-        if let groupURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: appGroupID) {
+        if let groupURL = FileManager.default.containerURL(
+            forSecurityApplicationGroupIdentifier: appGroupID)
+        {
             return groupURL.appendingPathComponent(storeFileName)
         }
         let docs = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
@@ -29,7 +31,8 @@ public enum SharedPersistence {
             return try ModelContainer(for: schema, configurations: [configuration])
         } catch {
             assertionFailure("Failed to create ModelContainer: \(error)")
-            return try! ModelContainer(for: schema, configurations: [ModelConfiguration(isStoredInMemoryOnly: true)])
+            return try! ModelContainer(
+                for: schema, configurations: [ModelConfiguration(isStoredInMemoryOnly: true)])
         }
     }
 }

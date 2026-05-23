@@ -17,8 +17,8 @@ public enum AppRuntimeConfiguration {
 
     static func value(forInfoKey key: String, fallback: String, bundle: Bundle = .main) -> String {
         guard let value = bundle.object(forInfoDictionaryKey: key) as? String,
-              !value.isEmpty,
-              !value.hasPrefix("$(")
+            !value.isEmpty,
+            !value.hasPrefix("$(")
         else {
             return fallback
         }

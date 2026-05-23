@@ -47,7 +47,9 @@ public struct RotationPreviewView: View {
     public var body: some View {
         let calendar = Calendar.current
         let start = calendar.startOfDay(for: .now)
-        let dates = (0..<previewDays).compactMap { calendar.date(byAdding: .day, value: $0, to: start) }
+        let dates = (0..<previewDays).compactMap {
+            calendar.date(byAdding: .day, value: $0, to: start)
+        }
         VStack(alignment: .leading, spacing: 4) {
             ForEach(dates, id: \.self) { date in
                 let id = RotationExpander.presetID(for: date, pattern: snapshot, calendar: calendar)

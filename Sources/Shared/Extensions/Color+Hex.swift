@@ -1,15 +1,19 @@
 import SwiftUI
+
 #if canImport(UIKit)
 import UIKit
 #endif
 
-public extension Color {
-    init(hex: String) {
+extension Color {
+    public init(hex: String) {
         var trimmed = hex.trimmingCharacters(in: .whitespacesAndNewlines)
         if trimmed.hasPrefix("#") { trimmed.removeFirst() }
         var rgb: UInt64 = 0
         Scanner(string: trimmed).scanHexInt64(&rgb)
-        let r, g, b, a: Double
+        let r: Double
+        let g: Double
+        let b: Double
+        let a: Double
         switch trimmed.count {
         case 6:
             r = Double((rgb >> 16) & 0xFF) / 255
@@ -22,20 +26,26 @@ public extension Color {
             b = Double((rgb >> 8) & 0xFF) / 255
             a = Double(rgb & 0xFF) / 255
         default:
-            r = 0.12; g = 0.53; b = 0.95; a = 1
+            r = 0.12
+            g = 0.53
+            b = 0.95
+            a = 1
         }
         self.init(.sRGB, red: r, green: g, blue: b, opacity: a)
     }
 
-    static let presetPalette: [String] = [
+    public static let presetPalette: [String] = [
         "#1E88E5", "#43A047", "#FB8C00", "#E53935",
         "#8E24AA", "#00ACC1", "#6D4C41", "#3949AB",
     ]
 
     // WCAG 2.1 relative luminance (IEC 61966-2-1 sRGB).
-    var relativeLuminance: Double {
+    public var relativeLuminance: Double {
         #if canImport(UIKit)
-        var r: CGFloat = 0, g: CGFloat = 0, b: CGFloat = 0, a: CGFloat = 0
+        var r: CGFloat = 0
+        var g: CGFloat = 0
+        var b: CGFloat = 0
+        var a: CGFloat = 0
         guard UIColor(self).getRed(&r, green: &g, blue: &b, alpha: &a) else { return 0 }
         func lin(_ c: CGFloat) -> Double {
             let v = Double(c)
@@ -48,24 +58,24 @@ public extension Color {
     }
 
     // WCAG 2.1 contrast ratio between two colours (always ≥ 1).
-    func contrastRatio(with other: Color) -> Double {
+    public func contrastRatio(with other: Color) -> Double {
         let l1 = max(relativeLuminance, other.relativeLuminance)
         let l2 = min(relativeLuminance, other.relativeLuminance)
         return (l1 + 0.05) / (l2 + 0.05)
     }
 
     // Returns .white or .black, whichever gives the higher contrast on self as a background.
-    var accessibleForeground: Color {
+    public var accessibleForeground: Color {
         relativeLuminance > 0.179 ? .black : .white
     }
 
     // Returns true when this foreground colour meets WCAG AA (4.5:1) against the given background.
-    func wcagAACompliant(against background: Color) -> Bool {
+    public func wcagAACompliant(against background: Color) -> Bool {
         contrastRatio(with: background) >= 4.5
     }
 
     // Human-readable names for the preset palette colours (localisation key form).
-    static let presetPaletteNames: [String: String] = [
+    public static let presetPaletteNames: [String: String] = [
         "#1E88E5": "color.blue",
         "#43A047": "color.green",
         "#FB8C00": "color.orange",

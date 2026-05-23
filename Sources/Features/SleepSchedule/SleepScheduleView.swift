@@ -1,5 +1,5 @@
-import SwiftUI
 import SwiftData
+import SwiftUI
 
 public struct SleepScheduleView: View {
     @Environment(AppDependencies.self) private var dependencies
@@ -65,7 +65,8 @@ public struct SleepScheduleView: View {
                 } else {
                     Button {
                         Task {
-                            healthKitGranted = await dependencies.sleepSampleWriter.requestAuthorization()
+                            healthKitGranted = await dependencies.sleepSampleWriter
+                                .requestAuthorization()
                             if healthKitGranted {
                                 await dependencies.sleepSampleWriter.writePastSamples(from: windows)
                             }
@@ -124,13 +125,19 @@ private struct SleepWindowRow: View {
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
             HStack {
-                Label(window.bedtime.formatted(date: .omitted, time: .shortened), systemImage: "moon.fill")
-                    .foregroundStyle(.indigo)
+                Label(
+                    window.bedtime.formatted(date: .omitted, time: .shortened),
+                    systemImage: "moon.fill"
+                )
+                .foregroundStyle(.indigo)
                 Image(systemName: "arrow.right")
                     .foregroundStyle(.secondary)
                     .font(.caption)
-                Label(window.wakeTime.formatted(date: .omitted, time: .shortened), systemImage: "sun.max.fill")
-                    .foregroundStyle(.orange)
+                Label(
+                    window.wakeTime.formatted(date: .omitted, time: .shortened),
+                    systemImage: "sun.max.fill"
+                )
+                .foregroundStyle(.orange)
             }
             .font(.body.monospacedDigit())
             if let reminder = window.reminderFireDate {

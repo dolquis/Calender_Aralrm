@@ -13,27 +13,29 @@ public enum SleepWindowResolver {
         for day in dates {
             let resolved = DayResolver.resolve(date: day, input: input)
             guard !resolved.skipsAlarm,
-                  let fireTime = resolved.fireTime,
-                  let hour = fireTime.hour,
-                  let minute = fireTime.minute,
-                  let wakeTime = day.combining(hour: hour, minute: minute, in: calendar),
-                  let presetID = resolved.presetID,
-                  let preset = input.presets[presetID]
+                let fireTime = resolved.fireTime,
+                let hour = fireTime.hour,
+                let minute = fireTime.minute,
+                let wakeTime = day.combining(hour: hour, minute: minute, in: calendar),
+                let presetID = resolved.presetID,
+                let preset = input.presets[presetID]
             else { continue }
 
             let bedtime = wakeTime.addingTimeInterval(-preset.targetSleepDuration)
-            let reminderFireDate: Date? = preset.bedtimeLeadMinutes > 0
+            let reminderFireDate: Date? =
+                preset.bedtimeLeadMinutes > 0
                 ? bedtime.addingTimeInterval(-Double(preset.bedtimeLeadMinutes) * 60)
                 : nil
 
-            windows.append(SleepWindow(
-                date: calendar.startOfDay(for: day),
-                wakeTime: wakeTime,
-                bedtime: bedtime,
-                reminderFireDate: reminderFireDate,
-                presetID: presetID,
-                presetName: preset.name
-            ))
+            windows.append(
+                SleepWindow(
+                    date: calendar.startOfDay(for: day),
+                    wakeTime: wakeTime,
+                    bedtime: bedtime,
+                    reminderFireDate: reminderFireDate,
+                    presetID: presetID,
+                    presetName: preset.name
+                ))
         }
 
         return windows.sorted { $0.wakeTime < $1.wakeTime }

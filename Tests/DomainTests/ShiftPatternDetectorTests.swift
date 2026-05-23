@@ -1,11 +1,12 @@
 import XCTest
+
 @testable import ShiftAlarm
 
 final class ShiftPatternDetectorTests: XCTestCase {
 
     // MARK: - Fixed UUIDs / dates
 
-    static let dayID   = UUID(uuidString: "00000000-0000-0000-0000-000000000001")!
+    static let dayID = UUID(uuidString: "00000000-0000-0000-0000-000000000001")!
     static let nightID = UUID(uuidString: "00000000-0000-0000-0000-000000000002")!
     static let eveningID = UUID(uuidString: "00000000-0000-0000-0000-000000000003")!
 
@@ -28,7 +29,9 @@ final class ShiftPatternDetectorTests: XCTestCase {
 
     static func makeDate(_ y: Int, _ m: Int, _ d: Int) -> Date {
         var dc = DateComponents()
-        dc.year = y; dc.month = m; dc.day = d
+        dc.year = y
+        dc.month = m
+        dc.day = d
         return gregorianTokyo.date(from: dc)!
     }
 
@@ -45,7 +48,8 @@ final class ShiftPatternDetectorTests: XCTestCase {
             let day = calendar.date(byAdding: .day, value: i, to: start)!
             let weekIndex = i / 7
             let pid: UUID = weekIndex % 2 == 0 ? Self.dayID : Self.nightID
-            result[day] = DayAssignmentSnapshot(presetID: pid, overrideTime: nil, skipAlarm: false, note: "")
+            result[day] = DayAssignmentSnapshot(
+                presetID: pid, overrideTime: nil, skipAlarm: false, note: "")
         }
         return result
     }
@@ -56,7 +60,8 @@ final class ShiftPatternDetectorTests: XCTestCase {
         for i in 0..<days {
             let day = calendar.date(byAdding: .day, value: i, to: start)!
             let pid: UUID = i % 2 == 0 ? Self.dayID : Self.nightID
-            result[day] = DayAssignmentSnapshot(presetID: pid, overrideTime: nil, skipAlarm: false, note: "")
+            result[day] = DayAssignmentSnapshot(
+                presetID: pid, overrideTime: nil, skipAlarm: false, note: "")
         }
         return result
     }
@@ -73,9 +78,11 @@ final class ShiftPatternDetectorTests: XCTestCase {
             for (i, pid) in pattern.enumerated() {
                 let day = calendar.date(byAdding: .day, value: cycle * 22 + i, to: start)!
                 if let pid {
-                    result[day] = DayAssignmentSnapshot(presetID: pid, overrideTime: nil, skipAlarm: false, note: "")
+                    result[day] = DayAssignmentSnapshot(
+                        presetID: pid, overrideTime: nil, skipAlarm: false, note: "")
                 } else {
-                    result[day] = DayAssignmentSnapshot(presetID: nil, overrideTime: nil, skipAlarm: true, note: "")
+                    result[day] = DayAssignmentSnapshot(
+                        presetID: nil, overrideTime: nil, skipAlarm: true, note: "")
                 }
             }
         }
@@ -83,7 +90,9 @@ final class ShiftPatternDetectorTests: XCTestCase {
     }
 
     /// Replaces roughly 1/`errorEvery` entries with an alternate preset UUID.
-    func addNoise(to base: [Date: DayAssignmentSnapshot], errorEvery: Int) -> [Date: DayAssignmentSnapshot] {
+    func addNoise(
+        to base: [Date: DayAssignmentSnapshot], errorEvery: Int
+    ) -> [Date: DayAssignmentSnapshot] {
         let noiseOffsets = [
             3, 8, 10, 11, 13, 17, 18, 23, 26, 27, 29, 30, 32, 34,
             37, 40, 41, 43, 48, 51, 57, 65, 69, 70, 71, 75, 80, 83,
@@ -92,7 +101,8 @@ final class ShiftPatternDetectorTests: XCTestCase {
         let keys = base.keys.sorted()
         let noiseCount = keys.count / errorEvery
         for offset in noiseOffsets.prefix(noiseCount) where offset < keys.count {
-            result[keys[offset]] = DayAssignmentSnapshot(presetID: Self.eveningID, overrideTime: nil, skipAlarm: false, note: "")
+            result[keys[offset]] = DayAssignmentSnapshot(
+                presetID: Self.eveningID, overrideTime: nil, skipAlarm: false, note: "")
         }
         return result
     }
@@ -127,10 +137,11 @@ final class ShiftPatternDetectorTests: XCTestCase {
 
     func testEmptyInputReturnsNil() {
         let detector = ShiftPatternDetector()
-        XCTAssertNil(detector.detect(
-            manualAssignments: [:], presets: makePresets(),
-            today: Self.today, calendar: calendar
-        ))
+        XCTAssertNil(
+            detector.detect(
+                manualAssignments: [:], presets: makePresets(),
+                today: Self.today, calendar: calendar
+            ))
     }
 
     // MARK: - α-U2: too little data for any cycle (density fails)
@@ -140,10 +151,11 @@ final class ShiftPatternDetectorTests: XCTestCase {
         let start = date(2026, 5, 11)
         let a = alternateWeeksHistory(start: start, days: 7)
         let detector = ShiftPatternDetector()
-        XCTAssertNil(detector.detect(
-            manualAssignments: a, presets: makePresets(),
-            today: Self.today, calendar: calendar
-        ))
+        XCTAssertNil(
+            detector.detect(
+                manualAssignments: a, presets: makePresets(),
+                today: Self.today, calendar: calendar
+            ))
     }
 
     // MARK: - α-U3: 14-day alternate-week cycle wins over P=2
@@ -199,12 +211,13 @@ final class ShiftPatternDetectorTests: XCTestCase {
 
     func testHighNoiseBelowThreshold() {
         let base = alternateWeeksHistory(start: Self.windowStart, days: 84)
-        let noisy = addNoise(to: base, errorEvery: 3) // ~33% wrong
+        let noisy = addNoise(to: base, errorEvery: 3)  // ~33% wrong
         let detector = ShiftPatternDetector()
-        XCTAssertNil(detector.detect(
-            manualAssignments: noisy, presets: makePresets(),
-            today: Self.today, calendar: calendar
-        ))
+        XCTAssertNil(
+            detector.detect(
+                manualAssignments: noisy, presets: makePresets(),
+                today: Self.today, calendar: calendar
+            ))
     }
 
     // MARK: - α-U7: lower threshold lets noisy data through
@@ -215,10 +228,11 @@ final class ShiftPatternDetectorTests: XCTestCase {
         var config = ShiftPatternDetector.Configuration()
         config.minMatchRate = 0.5
         let detector = ShiftPatternDetector(configuration: config)
-        XCTAssertNotNil(detector.detect(
-            manualAssignments: noisy, presets: makePresets(),
-            today: Self.today, calendar: calendar
-        ))
+        XCTAssertNotNil(
+            detector.detect(
+                manualAssignments: noisy, presets: makePresets(),
+                today: Self.today, calendar: calendar
+            ))
     }
 
     // MARK: - α-U8: slot UUIDs are not relabelled
@@ -230,7 +244,8 @@ final class ShiftPatternDetectorTests: XCTestCase {
         for i in 0..<90 {
             let day = calendar.date(byAdding: .day, value: i, to: Self.windowStart)!
             let pid = cycle[i % 3]
-            a[day] = DayAssignmentSnapshot(presetID: pid, overrideTime: nil, skipAlarm: false, note: "")
+            a[day] = DayAssignmentSnapshot(
+                presetID: pid, overrideTime: nil, skipAlarm: false, note: "")
         }
         let detector = ShiftPatternDetector()
         let result = detector.detect(
@@ -256,13 +271,17 @@ final class ShiftPatternDetectorTests: XCTestCase {
             let day = calendar.date(byAdding: .day, value: i, to: Self.windowStart)!
             switch i % patternSize {
             case 0:
-                a[day] = DayAssignmentSnapshot(presetID: Self.dayID, overrideTime: nil, skipAlarm: false, note: "")
+                a[day] = DayAssignmentSnapshot(
+                    presetID: Self.dayID, overrideTime: nil, skipAlarm: false, note: "")
             case 1:
-                a[day] = DayAssignmentSnapshot(presetID: nil, overrideTime: nil, skipAlarm: true, note: "")
+                a[day] = DayAssignmentSnapshot(
+                    presetID: nil, overrideTime: nil, skipAlarm: true, note: "")
             case 2:
-                a[day] = DayAssignmentSnapshot(presetID: Self.nightID, overrideTime: nil, skipAlarm: false, note: "")
+                a[day] = DayAssignmentSnapshot(
+                    presetID: Self.nightID, overrideTime: nil, skipAlarm: false, note: "")
             case 3:
-                a[day] = DayAssignmentSnapshot(presetID: nil, overrideTime: nil, skipAlarm: true, note: "")
+                a[day] = DayAssignmentSnapshot(
+                    presetID: nil, overrideTime: nil, skipAlarm: true, note: "")
             default:
                 break
             }
@@ -282,15 +301,17 @@ final class ShiftPatternDetectorTests: XCTestCase {
         var a: [Date: DayAssignmentSnapshot] = [:]
         for i in 0..<90 {
             let day = calendar.date(byAdding: .day, value: i, to: Self.windowStart)!
-            a[day] = DayAssignmentSnapshot(presetID: staleID, overrideTime: nil, skipAlarm: false, note: "")
+            a[day] = DayAssignmentSnapshot(
+                presetID: staleID, overrideTime: nil, skipAlarm: false, note: "")
         }
         let detector = ShiftPatternDetector()
-        XCTAssertNil(detector.detect(
-            manualAssignments: a,
-            presets: makePresets(),
-            today: Self.today,
-            calendar: calendar
-        ), "Deleted/stale preset IDs should not produce a rotation with dangling slots")
+        XCTAssertNil(
+            detector.detect(
+                manualAssignments: a,
+                presets: makePresets(),
+                today: Self.today,
+                calendar: calendar
+            ), "Deleted/stale preset IDs should not produce a rotation with dangling slots")
     }
 
     func testPartialCycleUsesSlotSpecificDensity() {
@@ -299,15 +320,17 @@ final class ShiftPatternDetectorTests: XCTestCase {
         var a: [Date: DayAssignmentSnapshot] = [:]
         for i in 0..<35 {
             let day = calendar.date(byAdding: .day, value: i, to: Self.windowStart)!
-            a[day] = DayAssignmentSnapshot(presetID: Self.dayID, overrideTime: nil, skipAlarm: false, note: "")
+            a[day] = DayAssignmentSnapshot(
+                presetID: Self.dayID, overrideTime: nil, skipAlarm: false, note: "")
         }
         let detector = ShiftPatternDetector()
-        XCTAssertNil(detector.detect(
-            manualAssignments: a,
-            presets: makePresets(),
-            today: Self.today,
-            calendar: calendar
-        ), "Density must be measured against each slot's actual occurrences in the window")
+        XCTAssertNil(
+            detector.detect(
+                manualAssignments: a,
+                presets: makePresets(),
+                today: Self.today,
+                calendar: calendar
+            ), "Density must be measured against each slot's actual occurrences in the window")
     }
 
     // MARK: - α-U11: windowDays boundary
@@ -325,7 +348,8 @@ final class ShiftPatternDetectorTests: XCTestCase {
         // Adding an outlier 91 days before today (outside window) should not break detection.
         let outside = calendar.date(byAdding: .day, value: -91, to: Self.today)!
         var withOutlier = a90
-        withOutlier[outside] = DayAssignmentSnapshot(presetID: Self.dayID, overrideTime: nil, skipAlarm: false, note: "")
+        withOutlier[outside] = DayAssignmentSnapshot(
+            presetID: Self.dayID, overrideTime: nil, skipAlarm: false, note: "")
         let result2 = detector.detect(
             manualAssignments: withOutlier, presets: makePresets(),
             today: Self.today, calendar: calendar
@@ -346,8 +370,9 @@ final class ShiftPatternDetectorTests: XCTestCase {
         )
         XCTAssertNotNil(result)
         // weekday 2 = Monday in Gregorian (Sun=1, Mon=2, ..., Sat=7)
-        XCTAssertEqual(calendar.component(.weekday, from: result!.anchorDate), 2,
-                       "anchorDate should be a Monday")
+        XCTAssertEqual(
+            calendar.component(.weekday, from: result!.anchorDate), 2,
+            "anchorDate should be a Monday")
     }
 
     // MARK: - Fingerprint determinism
@@ -355,8 +380,10 @@ final class ShiftPatternDetectorTests: XCTestCase {
     func testFingerprintIsDeterministic() {
         let a = alternateWeeksHistory(start: Self.windowStart, days: 84)
         let detector = ShiftPatternDetector()
-        let r1 = detector.detect(manualAssignments: a, presets: makePresets(), today: Self.today, calendar: calendar)
-        let r2 = detector.detect(manualAssignments: a, presets: makePresets(), today: Self.today, calendar: calendar)
+        let r1 = detector.detect(
+            manualAssignments: a, presets: makePresets(), today: Self.today, calendar: calendar)
+        let r2 = detector.detect(
+            manualAssignments: a, presets: makePresets(), today: Self.today, calendar: calendar)
         XCTAssertEqual(r1?.fingerprint, r2?.fingerprint)
         XCTAssertFalse(r1?.fingerprint.isEmpty ?? true)
     }
@@ -421,7 +448,8 @@ final class ShiftPatternDetectorTests: XCTestCase {
             calendar: calendar,
             threshold: 0.15
         )
-        XCTAssertNotNil(result, "50% mismatch rate exceeds threshold; a new suggestion should be returned")
+        XCTAssertNotNil(
+            result, "50% mismatch rate exceeds threshold; a new suggestion should be returned")
         if let r = result {
             // The new suggestion should describe a 2-day cycle, not the original 1-day cycle.
             XCTAssertEqual(r.cycleLength, 2)

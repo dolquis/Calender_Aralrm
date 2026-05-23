@@ -3,12 +3,17 @@ import SwiftData
 
 @MainActor
 public enum ShareExporter {
-    public static func snapshot(from container: ModelContainer, calendar: Calendar = .current) -> ShiftBundle {
+    public static func snapshot(
+        from container: ModelContainer, calendar: Calendar = .current
+    ) -> ShiftBundle {
         let context = ModelContext(container)
         let presets: [ShiftPreset] = (try? context.fetch(FetchDescriptor<ShiftPreset>())) ?? []
-        let patterns: [RotationPattern] = (try? context.fetch(FetchDescriptor<RotationPattern>())) ?? []
-        let assignments: [DayAssignment] = (try? context.fetch(FetchDescriptor<DayAssignment>())) ?? []
-        let overrides: [HolidayOverride] = (try? context.fetch(FetchDescriptor<HolidayOverride>())) ?? []
+        let patterns: [RotationPattern] =
+            (try? context.fetch(FetchDescriptor<RotationPattern>())) ?? []
+        let assignments: [DayAssignment] =
+            (try? context.fetch(FetchDescriptor<DayAssignment>())) ?? []
+        let overrides: [HolidayOverride] =
+            (try? context.fetch(FetchDescriptor<HolidayOverride>())) ?? []
 
         let presetDTOs = presets.map { p in
             ShiftBundle.PresetDTO(
@@ -22,7 +27,9 @@ public enum ShareExporter {
             )
         }
         let rotationDTOs: [ShiftBundle.RotationDTO] = patterns.compactMap { r in
-            guard let anchor = CalendarDay(date: r.anchorDate, calendar: calendar) else { return nil }
+            guard let anchor = CalendarDay(date: r.anchorDate, calendar: calendar) else {
+                return nil
+            }
             return ShiftBundle.RotationDTO(
                 id: r.id,
                 name: r.name,
