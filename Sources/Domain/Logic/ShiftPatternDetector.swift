@@ -195,6 +195,7 @@ public struct ShiftPatternDetector: Sendable {
         var observed = 0
         for i in 0..<30 {
             let day = calendar.date(byAdding: .day, value: i, to: windowStart)!
+            guard patternApplies(pattern, to: day, calendar: calendar) else { continue }
             guard let manual = recentManualAssignments[day] else { continue }
             let expected = RotationExpander.presetID(for: day, pattern: pattern, calendar: calendar)
             let manualPresetID = manual.skipAlarm ? nil : manual.presetID

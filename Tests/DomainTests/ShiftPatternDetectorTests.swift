@@ -566,6 +566,45 @@ final class ShiftPatternDetectorTests: XCTestCase {
         XCTAssertNil(result, "Mismatch rate 0% is below threshold; should not suggest update")
     }
 
+    func testDriftIgnoresAssignmentsOutsidePatternDateSpan() {
+        let pattern = RotationPatternSnapshot(
+            id: UUID(),
+            name: "Recent All Day",
+            anchorDate: Self.today,
+            cycleLength: 1,
+            slots: [Self.dayID],
+            startDate: date(2026, 5, 9),
+            endDate: nil,
+            priority: 0,
+            isActive: true
+        )
+        var assignments: [Date: DayAssignmentSnapshot] = [:]
+        for i in 0..<30 {
+            let day = calendar.date(byAdding: .day, value: i - 30, to: Self.today)!
+            let isBeforePatternStart = day < calendar.startOfDay(for: pattern.startDate!)
+            assignments[day] = DayAssignmentSnapshot(
+                presetID: isBeforePatternStart ? Self.nightID : Self.dayID,
+                overrideTime: nil,
+                skipAlarm: false,
+                note: ""
+            )
+        }
+
+        let detector = ShiftPatternDetector()
+        let result = detector.detectDrift(
+            pattern: pattern,
+            recentManualAssignments: assignments,
+            presets: makePresets(),
+            today: Self.today,
+            calendar: calendar,
+            threshold: 0.15
+        )
+
+        XCTAssertNil(
+            result,
+            "Assignments before startDate should not inflate mismatch rate for a recent pattern")
+    }
+
     // α-U14: mismatch rate above threshold → detectDrift calls detect() and returns a suggestion
     func testDriftAboveThresholdReturnsNewSuggestion() {
         // Pattern claims every day is dayID (1-slot cycle).
