@@ -4,12 +4,12 @@
 **開発仕様兼ロードマップ**です。タスクは優先度（P0 → P3）順、各項目に
 **目的 / 対象ファイル / 完了条件 (DoD)** を明記しています。
 
-最終更新: 2026-05-21
+最終更新: 2026-05-23
 対象ブランチ運用: タスクごとに `feature/<topic>` を切り、main へ PR。
 
 ---
 
-## 0. 現状サマリ（2026-05-21 時点）
+## 0. 現状サマリ（2026-05-23 時点）
 
 - iOS 26+ / Swift 6 / SwiftUI + SwiftData / AlarmKit ベースのシフト勤務向けアラームアプリ。
 - 主要レイヤー（Domain / Services / Features / Widget / Live Activity / Sharing / Deep link / ja-en ローカライズ）は実装済み。
@@ -36,6 +36,8 @@
   - **#19 P2-α `ShiftPatternDetector` + `PatternSuggestionView` + `RotationListView`
     提案カード / P2-η `ICSExporter` + `ICSExportView` + `SettingsView` 導線**
   - **#20 プッシュ / PR 作成前のセルフレビュー方針を文書化**
+  - **#21 ドキュメント整理（CLAUDE.md / AGENTS.md / ROADMAP / README の重複削除と SSoT 整理）**
+  - **#22 swift-format 導入 + `scripts/lint.sh` + CI lint job**
 
 未確定 / 既知の不安要素:
 
@@ -49,6 +51,9 @@
 - P2 拡張案 A2 / A3 / A4 + P2-β / P2-γ / P2-δ は未着手。
 - A1 ドリフト検出アルゴリズム (`ShiftPatternDetector.detectDrift`) は実装済み、
   `RotationListView` への UI 統合は未着手。
+- 第三者レビュー(2026-05-22)で挙がった開発環境ハードニング項目（依存固定 /
+  AlarmScheduler テスト容易性 / `.shiftalarm` import バリデーション / 構造化
+  ログ / CI ガードレール 等）は **§5 P3 配下 (P3-6 〜 P3-14) で追跡**する。
 
 ---
 
@@ -141,6 +146,8 @@
   - 祝日インポート（JSON / EventKit 両方）で日付が 1 日もズレないか
     （PR #5 で対応した `CalendarDay` 安定化の回帰テスト）。
   - Deep link `shiftalarm://import?payload=...` で ImportView が開き、差分プレビューが出るか。
+- **将来検討**: 上記手順を `docs/release-golden-path.md` としてテンプレ化する案
+  （レビュー#2 §3.1）。当面は本セクションを実機検証時に Issue に貼る運用を継続。
 - **DoD**: 上記すべて OK のチェックリストを Issue に貼り closed。
 
 ---
@@ -295,6 +302,25 @@
     - 第 1・第 3 金曜のみ夜勤の履歴で 2 つの `SuggestedDOWRule` が返る。
     - 観測 1 件など低密度パターンは検出されない。
     - α 周期検出と DOW 検出が同入力で並走し、両ヒット時は両カードが出る。
+
+- **A5. 提案 UX フィードバック計測（派生 / 未着手）**
+
+  - **目的**: 提案カードの受諾率 / 却下（スヌーズ）率 / 受諾後ドリフト到達率を
+    ローカル匿名集計し、しきい値（`minMatchRatio` / `minOccupancyRatio` /
+    `patternDriftThreshold`）の調整サイクルを回す。レビュー#2 §4.3 が出典。
+  - **対象ファイル**:
+    - 既存 `Sources/Domain/Models/AppSettings.swift` に集計カウンタ
+      （`patternAccepted: Int`, `patternRejected: Int`,
+      `patternDriftAccepted: Int`, `lastResetAt: Date?`）を追加
+    - 既存 `Sources/Features/Rotation/RotationListView.swift` の提案カード
+      ハンドラから受諾 / 却下時にカウンタ更新
+    - 既存 `Sources/Features/Settings/` 配下に閲覧・リセット UI を追加
+  - **明示制約**: クラウド送信なし。analytics SDK は追加しない（プライバシー /
+    AlarmKit バックグラウンド要件のため）。
+  - **DoD**:
+    - 受諾 / 却下 / ドリフト受諾の各イベントが永続化される。
+    - Settings から現在値を閲覧でき、ワンタップでリセットできる。
+    - リセット操作は `lastResetAt` を更新する。
 
 ### P2-β. 長期連休を挟んだ昼夜シフト切替（未着手）
 
@@ -566,6 +592,176 @@
 - **DoD**: `bash scripts/verify.sh` がビルド・テストとも緑。snapshot ゲートが
   従来どおり `SNAPSHOT_TESTING_ENABLED=1` でのみ有効になる。
 
+### P3-6. 依存バージョン固定（`Package.resolved` 追跡）（未着手）
+
+> 根拠: 第三者レビュー#1 §4.1
+
+- **目的**: `swift-snapshot-testing` 等 SPM 依存の解決バージョンを git に固定
+  し、新規 clone / CI / 将来 Xcode 更新でも同一バージョンを保証する。snapshot
+  test は微差分に敏感なため特に有効。
+- **対象**:
+  - `.gitignore`: `Package.resolved` の除外を解除
+  - 追跡対象（実装時に `xcodebuild -resolvePackageDependencies -project
+    ShiftAlarm.xcodeproj -scheme ShiftAlarm` で生成位置を確認）:
+    `ShiftAlarm.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved`
+- **DoD**:
+  - 新規 clone 直後の CI / ローカル `verify.sh` で同一バージョンが解決される。
+  - snapshot test の差分が依存解決揺らぎで増えない。
+
+### P3-7. AlarmScheduler を protocol / fake 注入可能にする（未着手）
+
+> 根拠: 第三者レビュー#1 §4.4
+
+- **目的**: `AlarmScheduler` の diff-sync 副作用（schedule / cancel の順序、失敗
+  時の DB 整合性）をユニットテストで検証可能にする。現状は actor `AlarmService`
+  が `AlarmManager.shared` を直叩きするため fake 化できない。
+- **設計方針**:
+  - 新規 protocol を導入:
+    ```swift
+    public protocol AlarmSchedulingClient: Sendable {
+        func schedule(id: UUID, fireDate: Date, label: String, soundID: String)
+            async throws -> UUID
+        func cancel(id: UUID) async throws
+    }
+    ```
+  - `AlarmService` actor をこの protocol に準拠させ、`AlarmScheduler` は具体型
+    ではなく protocol を受け取る形へ変更。
+  - `App/AppDependencies.swift` での組み立てを更新。
+- **追加テスト案** (`Tests/ServicesTests/AlarmSchedulerTests.swift`):
+  - 新規アラームのみ schedule される
+  - 時刻変更時に **new schedule → old cancel** の順になる
+  - schedule 失敗時に旧 AlarmKit ID と DB row を維持する
+  - cancel 失敗時に DB row を delete しない
+  - bedtime reminder と wake alarm が同一 calendar day でも key collision しない
+- **注意**: Swift 6 strict concurrency 下で actor → protocol 化する際の
+  `Sendable` 制約、`@MainActor` な `AlarmScheduler` と fake client の相性。
+- **DoD**: 上記 5 系統が `scripts/verify.sh test` で緑、`AlarmService` の既存
+  公開 API は破壊しない。
+
+### P3-8. AlarmScheduler 構造化ログ（未着手）
+
+> 根拠: 第三者レビュー#2 §3.2
+
+- **目的**: 「鳴らなかった」系の障害解析を Console.app から行えるようにする。
+  P0-3 実機検証時の切り分け速度も上がる。
+- **方針**:
+  - `os.Logger`（サブシステム = bundle id、カテゴリ = `AlarmScheduler` /
+    `AlarmService`）で次を出力:
+    - スケジュール対象件数 / 追加・更新・削除件数
+    - 失敗理由（権限 / API 失敗 / validation エラーの分類）
+  - **個人情報を含めない**: preset 名・時刻はマスク or hash で出す。
+  - Debug は詳細、Release は集約のみ。
+- **対象**:
+  - `Sources/Services/AlarmKit/AlarmScheduler.swift`
+  - `Sources/Services/AlarmKit/AlarmService.swift`
+- **DoD**: Console.app でフィルタリングして diff-sync 1 回ぶんの結果を把握
+  できる。
+
+### P3-9. `.shiftalarm` import バリデーション層（未着手）
+
+> 根拠: 第三者レビュー#1 §4.5
+
+- **目的**: 外部から渡ってくる `.shiftalarm` JSON について、Codable で構造が
+  読めるだけでは検出できない「意味的に壊れた値」を弾く層を追加する。
+- **対象ファイル**:
+  - 新規 `Sources/Services/Sharing/ShiftBundleValidator.swift`
+  - 既存 `Sources/Services/Sharing/ShareImporter.swift` の preview / apply の
+    前段で呼ぶ
+  - テスト: 新規 `Tests/ServicesTests/ShiftBundleValidatorTests.swift`
+- **検査項目**:
+  - `version` が対応範囲内
+  - preset 名 / note の最大長
+  - `defaultAlarmHour ∈ 0...23`、`defaultAlarmMinute ∈ 0...59`
+  - `cycleLength > 0`、`slots.count == cycleLength`
+  - import 件数上限
+  - 参照 presetID の存在
+  - duplicate UUID / duplicate date の扱い
+- **仕様判断（実装 PR でユーザに確認）**:
+  - invalid bundle を全体 reject するか、一部だけ skip + warning か
+  - unknown version は reject か、future version は read-only preview を許すか
+  - 参照先 preset が無い assignment は `preset = nil` で受け入れるか、reject か
+- **DoD**: 上記検査がテストで網羅され、既存の正常系 `ShareImporterTests` が
+  壊れない。
+
+### P3-10. `.shiftalarm` / `.ics` ラウンドトリップ & 境界プロパティテスト（未着手）
+
+> 根拠: 第三者レビュー#2 §3.3
+
+- **目的**: 共有フォーマットの破壊的変更を早期検出し、locale / timezone を跨ぐ
+  日付境界での 1 日ズレを防ぐ。
+- **追加テスト**:
+  - `ShiftBundleCodec` の encode → decode 不変条件
+  - locale / timezone 差異を跨ぐ日付境界ケース（年末年始、夏時間境界）
+  - 既知の legacy フィールド欠落 / 追加耐性
+  - `ICSExporter` の TZ 境界網羅（既存 `η-U7` の拡張）
+- **対象**:
+  - 既存 `Tests/ServicesTests/ShareImporterTests.swift` を拡張
+  - 既存 `Tests/ServicesTests/ICSExporterTests.swift` を拡張
+  - 新規 `Tests/Support/MinimalCounterExample.swift`（失敗時に最小反例を吐く
+    helper）
+- **DoD**: 上記境界ケースで日付が 1 日ズレないことが確認できる。
+
+### P3-11. SwiftData スキーマ変更ガード（CI 軽量チェック）（未着手）
+
+> 根拠: 第三者レビュー#2 §4.1
+
+- **目的**: `SchemaV*.swift` への non-optional 追加・rename を PR 前に検知し、
+  migration 対応忘れを防ぐ。
+- **対象**:
+  - 新規 `scripts/check-schema.sh`（`git diff` ベースの軽量 grep）
+  - 既存 `.github/workflows/ios.yml` の verify job 後段に組み込み
+- **DoD**: 意図しない破壊的変更を含む PR で CI が警告 / fail する。
+
+### P3-12. Localizable.xcstrings ja / en 整合チェック（未着手）
+
+> 根拠: 第三者レビュー#2 §4.2
+
+- **目的**: 片言語のみへの key 追加を CI で防ぐ。
+- **対象**:
+  - 新規 `scripts/check-l10n.sh`（`Resources/Localizable.xcstrings` の JSON を
+    パースし ja / en の key 集合差分を出す）
+  - `scripts/verify.sh` から `VERIFY_L10N=1` 指定時のみ走らせる任意フック
+- **DoD**: ja 側のみ更新した PR で CI が片落ち key を列挙する。
+
+### P3-13. Release ビルドでの設定 fallback 厳格化（未着手）
+
+> 根拠: 第三者レビュー#1 §4.7
+
+- **目的**: Release ビルドで `AppRuntimeConfiguration` が Info.plist の
+  プレースホルダ (`$(...)`) や空値に落ちた状態をユーザが気づかずに配布する事故
+  を防ぐ。`p0-readiness.sh` と二重チェックになることを許容する。
+- **方針**: Debug は現状の fallback を継続。Release はプレースホルダ検出時に
+  **OSLog で重大ログ + 非破壊**（即 crash の `preconditionFailure` は採用
+  しない）。
+- **対象**:
+  - 既存 `Sources/Shared/Extensions/AppRuntimeConfiguration.swift`
+  - テスト: 既存 `Tests/ServicesTests/AppRuntimeConfigurationTests.swift` に
+    Release fallback の検証を追加（compile flag で経路を切替）
+- **DoD**: Release ビルドでプレースホルダが残った場合に Console.app の重大
+  ログから確認できる。
+
+### P3-14. CI / 開発環境衛生（未着手 / サブ項目あり）
+
+> 根拠: 第三者レビュー#1 §4.6 / §4.8 / §4.9 / §4.10、第三者レビュー#2 §5
+
+- **a) `UIBackgroundModes.processing` 要否再確認**: `BGProcessingTaskRequest`
+  が未使用なら `App/Info.plist` から `processing` を削除し `fetch` のみ残す。
+  App Review 説明コスト削減。実装時にコードベース全体を再 grep して確認。
+- **b) `workflow_dispatch` 追加**: `.github/workflows/ios.yml` の `on:` に
+  `workflow_dispatch` を足し、手動 CI 再実行を可能に。
+- **c) `.xcode-version` 追記**: 期待 Xcode 26.x を明文化（CI 探索順 26.5 →
+  26.4 → 26.0 と AGENTS.md の既存記述に整合）。`mise.toml` は導入しない。
+- **d) Debug / Release xcconfig 分割**: 当面保留。現行 `SigningDefaults.xcconfig`
+  一本で運用継続。将来 Release で `SWIFT_COMPILATION_MODE = wholemodule` /
+  `VALIDATE_PRODUCT = YES` / `ENABLE_TESTABILITY = NO` を切る価値が出てから
+  着手する。
+- **e) `docs/architecture.md` 起票**: 依存方向と責務境界を図示するドキュメント
+  を別途追加。AGENTS.md からリンクする想定。
+- **f) `scripts/verify.sh` 要約モード**: `--summary` フラグで失敗箇所ジャンプ
+  をしやすくする。
+- **g) Widget / Live Activity の snapshot 拡張**: P3-2 の追補として
+  `NextAlarmWidgetView` / `DynamicIslandViews` のケースを追加。
+
 ---
 
 ## 6. ファイル別「触るときの注意」（エージェント向け索引）
@@ -576,6 +772,7 @@
 | `Sources/Domain/Logic/DayResolver.swift` | 優先度: 手動 > 祝日 > ローテ > なし | PR #5 で削除済み preset のフォールバックを復元済み |
 | `Sources/Domain/Logic/RotationExpander.swift` | アンカー基準の周期展開（負オフセット可） | 不正な cycle/slot 数はスキップ |
 | `Sources/Services/Sharing/ShiftBundleCodec.swift` | `.shiftalarm` JSON | 日付は `CalendarDay`（PR #5）。legacy `exportedAt` 文字列受け入れ済み |
+| `Sources/Services/Sharing/ShiftBundleValidator.swift` (新規予定 / P3-9) | `.shiftalarm` 入力の意味検査 | `ShiftBundleCodec` decode 後、`ShareImporter.preview` / `apply` の前に挟む |
 | `Sources/Services/Holidays/EventKitHolidayProvider.swift` | actor、終日イベント取得 | `NSCalendarsFullAccessUsageDescription` 必須 |
 | `App/AppDependencies.swift` | DI ハブ / pendingImport / settings singleton | PR #5 で `ensureSettingsSingleton()` 復元 |
 | `Sources/Shared/URLScheme/DeepLinkRouter.swift` | `shiftalarm://import?payload=…` | `AppDependencies.pendingImport` 経由で ImportView を表示 |
@@ -616,6 +813,12 @@
 
 3. **P2-β 連休越境ローテーション**: `RotationExpander` の vacation-aware 拡張（最大規模の
    次タスク）。SwiftData V2 マイグレーションが必要。
+
+**直近の開発環境ハードニング（P3 配下 / 機能追加と並行で進める想定）**:
+P3-6 (`Package.resolved` 固定) → P3-9 (`ShiftBundle` validator) →
+P3-7 / P3-8 (`AlarmScheduler` テスト容易性 / 構造化ログ) →
+P3-14a (`UIBackgroundModes` 整理) → P3-14b (`workflow_dispatch`) の順で、
+小さな PR を継続的に出す。
 
 ---
 
