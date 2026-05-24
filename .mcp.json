@@ -7,7 +7,7 @@
     "xcodebuild": {
       "type": "stdio",
       "command": "npx",
-      "args": ["-y", "xcodebuildmcp"]
+      "args": ["-y", "xcodebuildmcp@latest", "mcp"]
     }
   }
 }

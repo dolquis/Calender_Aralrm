@@ -43,5 +43,7 @@ startup_timeout_sec = 15
 # macOS + Xcode 26 前提。Linux / Windows では起動失敗するが想定動作（required = false のまま）。
 [mcp_servers.xcodebuild]
 command = "npx"
-args = ["-y", "xcodebuildmcp"]
+# `mcp` サブコマンドが必須。これが無いと npx は即座に終了して MCP サーバーが起動しない。
+# 上流: https://github.com/cameroncooke/XcodeBuildMCP（"mcp subcommand starts the MCP server"）
+args = ["-y", "xcodebuildmcp@latest", "mcp"]
 startup_timeout_sec = 30
