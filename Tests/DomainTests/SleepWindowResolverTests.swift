@@ -1,8 +1,9 @@
-import XCTest
+import Foundation
+import Testing
 
 @testable import ShiftAlarm
 
-final class SleepWindowResolverTests: XCTestCase {
+struct SleepWindowResolverTests {
     // Fixed Asia/Tokyo calendar so test dates are deterministic.
     private var calendar: Calendar {
         var c = Calendar(identifier: .gregorian)
@@ -52,7 +53,7 @@ final class SleepWindowResolverTests: XCTestCase {
     }
 
     // MARK: - Basic bedtime calculation
-
+    @Test
     func testBedtimeIsWakeTimeMinusSleepDuration() {
         let (id, preset) = makePreset(wakeHour: 6, wakeMinute: 0, sleepHours: 8, leadMinutes: 0)
         let day = date(2026, 5, 20)
@@ -64,13 +65,13 @@ final class SleepWindowResolverTests: XCTestCase {
         let input = makeInput(presets: [id: preset], rotation: rotation)
         let windows = SleepWindowResolver.resolve(dates: [day], input: input)
 
-        XCTAssertEqual(windows.count, 1)
+        #expect(windows.count == 1)
         let w = windows[0]
         // Wake = 06:00, sleep 8h → bedtime = 22:00 previous night
         let expectedBedtime = calendar.date(byAdding: .hour, value: -8, to: w.wakeTime)!
-        XCTAssertEqual(w.bedtime, expectedBedtime)
+        #expect(w.bedtime == expectedBedtime)
     }
-
+    @Test
     func testWakeTimeMatchesPresetAlarmTime() {
         let (id, preset) = makePreset(wakeHour: 5, wakeMinute: 30)
         let day = date(2026, 5, 21)
@@ -82,14 +83,14 @@ final class SleepWindowResolverTests: XCTestCase {
         let input = makeInput(presets: [id: preset], rotation: rotation)
         let windows = SleepWindowResolver.resolve(dates: [day], input: input)
 
-        XCTAssertEqual(windows.count, 1)
+        #expect(windows.count == 1)
         let components = calendar.dateComponents([.hour, .minute], from: windows[0].wakeTime)
-        XCTAssertEqual(components.hour, 5)
-        XCTAssertEqual(components.minute, 30)
+        #expect(components.hour == 5)
+        #expect(components.minute == 30)
     }
 
     // MARK: - Night-shift crossover (wake next calendar day)
-
+    @Test
     func testNightShiftBedtimeIsBeforeWake() {
         // Night shift: wake at 08:00 the following morning.
         // With 9h sleep target the bedtime should be 23:00 the night before.
@@ -103,15 +104,15 @@ final class SleepWindowResolverTests: XCTestCase {
         let input = makeInput(presets: [id: preset], rotation: rotation)
         let windows = SleepWindowResolver.resolve(dates: [day], input: input)
 
-        XCTAssertEqual(windows.count, 1)
+        #expect(windows.count == 1)
         let w = windows[0]
-        XCTAssertLessThan(w.bedtime, w.wakeTime, "bedtime must precede wakeTime")
+        #expect(w.bedtime < w.wakeTime, "bedtime must precede wakeTime")
         let gap = w.wakeTime.timeIntervalSince(w.bedtime)
-        XCTAssertEqual(gap, 9 * 3600, accuracy: 1)
+        #expect(abs(gap - 9 * 3600) <= 1)
     }
 
     // MARK: - Multiple days sorted by wakeTime
-
+    @Test
     func testWindowsSortedByWakeTime() {
         let (idA, presetA) = makePreset(
             id: UUID(), name: "Early", wakeHour: 5, wakeMinute: 0, leadMinutes: 0)
@@ -128,12 +129,12 @@ final class SleepWindowResolverTests: XCTestCase {
         let input = makeInput(presets: [idA: presetA, idB: presetB], rotation: rotation)
         let windows = SleepWindowResolver.resolve(dates: [day1, day2], input: input)
 
-        XCTAssertEqual(windows.count, 2)
-        XCTAssertLessThanOrEqual(windows[0].wakeTime, windows[1].wakeTime)
+        #expect(windows.count == 2)
+        #expect(windows[0].wakeTime <= windows[1].wakeTime)
     }
 
     // MARK: - Days without an alarm are omitted
-
+    @Test
     func testDayWithNoAlarmIsOmitted() {
         // Rotation has a nil slot on day2 (rest day).
         let (id, preset) = makePreset(wakeHour: 6, wakeMinute: 0, leadMinutes: 0)
@@ -147,12 +148,12 @@ final class SleepWindowResolverTests: XCTestCase {
         let input = makeInput(presets: [id: preset], rotation: rotation)
         let windows = SleepWindowResolver.resolve(dates: [day1, day2], input: input)
 
-        XCTAssertEqual(windows.count, 1)
-        XCTAssertEqual(calendar.startOfDay(for: windows[0].date), calendar.startOfDay(for: day1))
+        #expect(windows.count == 1)
+        #expect(calendar.startOfDay(for: windows[0].date) == calendar.startOfDay(for: day1))
     }
 
     // MARK: - Bedtime reminder fire date
-
+    @Test
     func testReminderFireDateIsLeadMinutesBeforeBedtime() {
         let (id, preset) = makePreset(wakeHour: 6, wakeMinute: 0, sleepHours: 8, leadMinutes: 30)
         let day = date(2026, 5, 27)
@@ -164,13 +165,13 @@ final class SleepWindowResolverTests: XCTestCase {
         let input = makeInput(presets: [id: preset], rotation: rotation)
         let windows = SleepWindowResolver.resolve(dates: [day], input: input)
 
-        XCTAssertEqual(windows.count, 1)
+        #expect(windows.count == 1)
         let w = windows[0]
-        XCTAssertNotNil(w.reminderFireDate)
+        #expect(w.reminderFireDate != nil)
         let leadInterval = w.bedtime.timeIntervalSince(w.reminderFireDate!)
-        XCTAssertEqual(leadInterval, 30 * 60, accuracy: 1)
+        #expect(abs(leadInterval - 30 * 60) <= 1)
     }
-
+    @Test
     func testNoReminderWhenLeadIsZero() {
         let (id, preset) = makePreset(wakeHour: 6, wakeMinute: 0, sleepHours: 8, leadMinutes: 0)
         let day = date(2026, 5, 28)
@@ -182,12 +183,12 @@ final class SleepWindowResolverTests: XCTestCase {
         let input = makeInput(presets: [id: preset], rotation: rotation)
         let windows = SleepWindowResolver.resolve(dates: [day], input: input)
 
-        XCTAssertEqual(windows.count, 1)
-        XCTAssertNil(windows[0].reminderFireDate)
+        #expect(windows.count == 1)
+        #expect(windows[0].reminderFireDate == nil)
     }
 
     // MARK: - Holiday skip
-
+    @Test
     func testHolidaySkipOmitsWindowForThatDay() {
         let (id, preset) = makePreset(wakeHour: 6, wakeMinute: 0, leadMinutes: 0)
         let day = date(2026, 5, 29)
@@ -206,11 +207,11 @@ final class SleepWindowResolverTests: XCTestCase {
             calendar: calendar
         )
         let windows = SleepWindowResolver.resolve(dates: [day], input: input)
-        XCTAssertTrue(windows.isEmpty)
+        #expect(windows.isEmpty)
     }
 
     // MARK: - Short sleep preset
-
+    @Test
     func testShortSleepPreset() {
         // Paramedic nap: 4h sleep, wake at 14:00 → bedtime 10:00
         let (id, preset) = makePreset(wakeHour: 14, wakeMinute: 0, sleepHours: 4, leadMinutes: 0)
@@ -223,14 +224,14 @@ final class SleepWindowResolverTests: XCTestCase {
         let input = makeInput(presets: [id: preset], rotation: rotation)
         let windows = SleepWindowResolver.resolve(dates: [day], input: input)
 
-        XCTAssertEqual(windows.count, 1)
+        #expect(windows.count == 1)
         let components = calendar.dateComponents([.hour, .minute], from: windows[0].bedtime)
-        XCTAssertEqual(components.hour, 10)
-        XCTAssertEqual(components.minute, 0)
+        #expect(components.hour == 10)
+        #expect(components.minute == 0)
     }
 
     // MARK: - Empty input
-
+    @Test
     func testEmptyDatesReturnsEmptyWindows() {
         let (id, preset) = makePreset(wakeHour: 6, wakeMinute: 0)
         let rotation = RotationPatternSnapshot(
@@ -240,6 +241,6 @@ final class SleepWindowResolverTests: XCTestCase {
         )
         let input = makeInput(presets: [id: preset], rotation: rotation)
         let windows = SleepWindowResolver.resolve(dates: [], input: input)
-        XCTAssertTrue(windows.isEmpty)
+        #expect(windows.isEmpty)
     }
 }

@@ -1,8 +1,9 @@
-import XCTest
+import Foundation
+import Testing
 
 @testable import ShiftAlarm
 
-final class ICSExporterTests: XCTestCase {
+struct ICSExporterTests {
 
     // MARK: - Fixtures
 
@@ -44,7 +45,7 @@ final class ICSExporterTests: XCTestCase {
     private let exporter = ICSExporter()
 
     // MARK: - η-U1: zero events → header and footer only
-
+    @Test
     func testEmptyRangeProducesNoEvents() {
         let today = date(2026, 5, 19)
         let result = exporter.export(
@@ -55,13 +56,13 @@ final class ICSExporterTests: XCTestCase {
             timeZone: tokyoTZ,
             now: today
         )
-        XCTAssertTrue(result.contains("BEGIN:VCALENDAR"))
-        XCTAssertTrue(result.contains("END:VCALENDAR"))
-        XCTAssertFalse(result.contains("BEGIN:VEVENT"), "No events expected for all-none days")
+        #expect(result.contains("BEGIN:VCALENDAR"))
+        #expect(result.contains("END:VCALENDAR"))
+        #expect(!result.contains("BEGIN:VEVENT"), "No events expected for all-none days")
     }
 
     // MARK: - η-U2: required properties present
-
+    @Test
     func testRequiredPropertiesPresent() throws {
         let today = date(2026, 5, 19)
         let resolved = ResolvedDay.rotation(
@@ -74,16 +75,16 @@ final class ICSExporterTests: XCTestCase {
             timeZone: tokyoTZ,
             now: today
         )
-        XCTAssertTrue(result.contains("PRODID:-//ShiftAlarm//ja//EN"))
-        XCTAssertTrue(result.contains("VERSION:2.0"))
-        XCTAssertTrue(result.contains("BEGIN:VEVENT"))
-        XCTAssertTrue(result.contains("SUMMARY:昼勤"))
+        #expect(result.contains("PRODID:-//ShiftAlarm//ja//EN"))
+        #expect(result.contains("VERSION:2.0"))
+        #expect(result.contains("BEGIN:VEVENT"))
+        #expect(result.contains("SUMMARY:昼勤"))
         let events = try ICSTestParser.parse(result)
-        XCTAssertEqual(events.count, 1)
+        #expect(events.count == 1)
     }
 
     // MARK: - η-U3: SUMMARY escaping
-
+    @Test
     func testSummaryEscaping() throws {
         let presetID = UUID()
         let special = ShiftPresetSnapshot(
@@ -102,9 +103,9 @@ final class ICSExporterTests: XCTestCase {
             timeZone: tokyoTZ,
             now: today
         )
-        XCTAssertTrue(result.contains("SUMMARY:昼\\,夜\\;A\\\\B\\nC"))
+        #expect(result.contains("SUMMARY:昼\\,夜\\;A\\\\B\\nC"))
     }
-
+    @Test
     func testSummaryEscapesCRLFWithoutBareCarriageReturn() throws {
         let presetID = UUID()
         let special = ShiftPresetSnapshot(
@@ -123,11 +124,11 @@ final class ICSExporterTests: XCTestCase {
             timeZone: tokyoTZ,
             now: today
         )
-        XCTAssertTrue(result.contains("SUMMARY:A\\nB\\nC\r\n"))
-        XCTAssertFalse(
-            result.contains("SUMMARY:A\r\\nB"), "Escaped SUMMARY must not leave a bare CR")
+        #expect(result.contains("SUMMARY:A\\nB\\nC\r\n"))
+        #expect(
+            !result.contains("SUMMARY:A\r\\nB"), "Escaped SUMMARY must not leave a bare CR")
     }
-
+    @Test
     func testLongSummaryIsFoldedAt75OctetsAndRoundTrips() throws {
         let presetID = UUID()
         let longName = String(repeating: "長いシフト名", count: 8)
@@ -149,19 +150,19 @@ final class ICSExporterTests: XCTestCase {
         )
 
         let physicalLines = result.components(separatedBy: "\r\n").filter { !$0.isEmpty }
-        XCTAssertTrue(
+        #expect(
             physicalLines.allSatisfy { $0.utf8.count <= 75 },
             "Every physical content line must be folded to 75 octets or fewer")
-        XCTAssertTrue(
+        #expect(
             physicalLines.contains { $0.hasPrefix(" ") },
             "A long SUMMARY should produce at least one continuation line")
 
         let events = try ICSTestParser.parse(result)
-        XCTAssertEqual(events.first?.summary, longName)
+        #expect(events.first?.summary == longName)
     }
 
     // MARK: - η-U4: skipAlarm day produces no event
-
+    @Test
     func testSkipAlarmExcluded() throws {
         let today = date(2026, 5, 19)
         let resolved = ResolvedDay.manual(
@@ -178,11 +179,11 @@ final class ICSExporterTests: XCTestCase {
             timeZone: tokyoTZ,
             now: today
         )
-        XCTAssertFalse(result.contains("BEGIN:VEVENT"))
+        #expect(!result.contains("BEGIN:VEVENT"))
     }
 
     // MARK: - η-U6: UID is deterministic
-
+    @Test
     func testUIDIsDeterministic() throws {
         let today = date(2026, 5, 19)
         let resolved = ResolvedDay.rotation(
@@ -205,11 +206,11 @@ final class ICSExporterTests: XCTestCase {
         )
         let e1 = try ICSTestParser.parse(r1)
         let e2 = try ICSTestParser.parse(r2)
-        XCTAssertEqual(e1.first?.uid, e2.first?.uid)
+        #expect(e1.first?.uid == e2.first?.uid)
     }
 
     // MARK: - η-U7: UTC conversion (Asia/Tokyo 06:00 → previous day 21:00Z)
-
+    @Test
     func testUTCConversionTokyoSixAM() throws {
         let today = date(2026, 5, 19)  // 2026-05-19 in Asia/Tokyo
         let resolved = ResolvedDay.rotation(
@@ -223,15 +224,15 @@ final class ICSExporterTests: XCTestCase {
             now: today
         )
         // Asia/Tokyo UTC+9: 06:00 JST = previous day 21:00 UTC
-        XCTAssertTrue(
+        #expect(
             result.contains("DTSTART:20260518T210000Z"),
             "Expected DTSTART:20260518T210000Z in:\n\(result)")
-        XCTAssertTrue(
+        #expect(
             result.contains("DTEND:20260518T213000Z"),
             "Expected DTEND:20260518T213000Z in:\n\(result)")
-        XCTAssertTrue(result.contains("X-WR-TIMEZONE:Asia/Tokyo"))
+        #expect(result.contains("X-WR-TIMEZONE:Asia/Tokyo"))
     }
-
+    @Test
     func testExportUsesProvidedTimeZoneForLocalDayBoundaries() throws {
         var utcCalendar = Calendar(identifier: .gregorian)
         utcCalendar.timeZone = TimeZone(identifier: "UTC")!
@@ -246,13 +247,13 @@ final class ICSExporterTests: XCTestCase {
             timeZone: tokyoTZ,
             now: today
         )
-        XCTAssertTrue(
+        #expect(
             result.contains("DTSTART:20260518T210000Z"),
             "The exported local day should be interpreted in the provided time zone")
     }
 
     // MARK: - η-U9: ascending date order
-
+    @Test
     func testEventsInAscendingOrder() throws {
         let start = date(2026, 5, 19)
         let end = date(2026, 5, 20)
@@ -269,12 +270,12 @@ final class ICSExporterTests: XCTestCase {
             now: start
         )
         let events = try ICSTestParser.parse(result)
-        XCTAssertEqual(events.count, 2)
-        XCTAssertLessThan(events[0].dtstart, events[1].dtstart)
+        #expect(events.count == 2)
+        #expect(events[0].dtstart < events[1].dtstart)
     }
 
     // MARK: - CRLF line endings
-
+    @Test
     func testCRLFLineEndings() {
         let today = date(2026, 5, 19)
         let result = exporter.export(
@@ -285,11 +286,11 @@ final class ICSExporterTests: XCTestCase {
             timeZone: tokyoTZ,
             now: today
         )
-        XCTAssertTrue(result.contains("\r\n"), "Output must use CRLF line endings")
+        #expect(result.contains("\r\n"), "Output must use CRLF line endings")
     }
 
     // MARK: - UID suffix
-
+    @Test
     func testUIDHasCorrectSuffix() throws {
         let today = date(2026, 5, 19)
         let resolved = ResolvedDay.rotation(
@@ -303,6 +304,6 @@ final class ICSExporterTests: XCTestCase {
             now: today
         )
         let events = try ICSTestParser.parse(result)
-        XCTAssertTrue(events.first?.uid.hasSuffix("@shiftalarm.local") == true)
+        #expect(events.first?.uid.hasSuffix("@shiftalarm.local") == true)
     }
 }

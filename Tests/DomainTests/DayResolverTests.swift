@@ -1,8 +1,9 @@
-import XCTest
+import Foundation
+import Testing
 
 @testable import ShiftAlarm
 
-final class DayResolverTests: XCTestCase {
+struct DayResolverTests {
     private var calendar: Calendar {
         var c = Calendar(identifier: .gregorian)
         c.timeZone = TimeZone(identifier: "Asia/Tokyo")!
@@ -16,7 +17,7 @@ final class DayResolverTests: XCTestCase {
         dc.day = d
         return calendar.date(from: dc)!
     }
-
+    @Test
     func testManualAssignmentTakesPrecedenceOverRotation() {
         let presetID = UUID()
         let preset = ShiftPresetSnapshot(
@@ -51,13 +52,13 @@ final class DayResolverTests: XCTestCase {
         )
         let resolved = DayResolver.resolve(date: day, input: input)
         if case .manual(let id, let t, _, _) = resolved {
-            XCTAssertEqual(id, manualID)
-            XCTAssertEqual(t?.hour, 9)
+            #expect(id == manualID)
+            #expect(t?.hour == 9)
         } else {
-            XCTFail("Expected manual")
+            Issue.record("Expected manual")
         }
     }
-
+    @Test
     func testHolidaySkipsAlarm() {
         let presetID = UUID()
         let preset = ShiftPresetSnapshot(
@@ -81,10 +82,10 @@ final class DayResolverTests: XCTestCase {
             calendar: calendar
         )
         let resolved = DayResolver.resolve(date: day, input: input)
-        XCTAssertTrue(resolved.skipsAlarm)
-        XCTAssertNil(resolved.fireTime)
+        #expect(resolved.skipsAlarm)
+        #expect(resolved.fireTime == nil)
     }
-
+    @Test
     func testRotationAppliesWhenNoManualOrHoliday() {
         let presetID = UUID()
         let preset = ShiftPresetSnapshot(
@@ -107,14 +108,14 @@ final class DayResolverTests: XCTestCase {
         )
         let resolved = DayResolver.resolve(date: day, input: input)
         if case .rotation(let id, let t) = resolved {
-            XCTAssertEqual(id, presetID)
-            XCTAssertEqual(t?.hour, 6)
-            XCTAssertEqual(t?.minute, 30)
+            #expect(id == presetID)
+            #expect(t?.hour == 6)
+            #expect(t?.minute == 30)
         } else {
-            XCTFail("Expected rotation")
+            Issue.record("Expected rotation")
         }
     }
-
+    @Test
     func testHigherPriorityRotationWins() {
         let lowID = UUID()
         let highID = UUID()
@@ -138,9 +139,9 @@ final class DayResolverTests: XCTestCase {
             calendar: calendar)
         let resolved = DayResolver.resolve(date: day, input: input)
         if case .rotation(let id, _) = resolved {
-            XCTAssertEqual(id, highID)
+            #expect(id == highID)
         } else {
-            XCTFail("Expected rotation")
+            Issue.record("Expected rotation")
         }
     }
 }

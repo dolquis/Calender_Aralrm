@@ -1,10 +1,12 @@
+import Foundation
 import SwiftData
-import XCTest
+import Testing
 
 @testable import ShiftAlarm
 
 @MainActor
-final class AlarmSchedulerTests: XCTestCase {
+struct AlarmSchedulerTests {
+    @Test
     func testResolverInputCapturesAllSources() async throws {
         let container = SharedPersistence.makeContainer(inMemory: true)
         let context = ModelContext(container)
@@ -36,10 +38,10 @@ final class AlarmSchedulerTests: XCTestCase {
         try context.save()
 
         let input = await AlarmScheduler.buildResolverInput(context: context, calendar: calendar)
-        XCTAssertEqual(input.presets.count, 1)
-        XCTAssertEqual(input.manualAssignments.count, 1)
-        XCTAssertEqual(input.holidays.count, 1)
-        XCTAssertEqual(input.rotations.count, 1)
-        XCTAssertEqual(input.rotations.first?.slots.first ?? nil, preset.id)
+        #expect(input.presets.count == 1)
+        #expect(input.manualAssignments.count == 1)
+        #expect(input.holidays.count == 1)
+        #expect(input.rotations.count == 1)
+        #expect((input.rotations.first?.slots.first ?? nil) == preset.id)
     }
 }

@@ -1,8 +1,10 @@
-import XCTest
+import Foundation
+import Testing
 
 @testable import ShiftAlarm
 
-final class ShiftBundleCodecTests: XCTestCase {
+struct ShiftBundleCodecTests {
+    @Test
     func testRoundTrip() throws {
         let presetID = UUID()
         let day = CalendarDay(year: 2026, month: 5, day: 12)
@@ -55,9 +57,9 @@ final class ShiftBundleCodecTests: XCTestCase {
         )
         let data = try ShiftBundleCodec.encode(bundle)
         let decoded = try ShiftBundleCodec.decode(data)
-        XCTAssertEqual(decoded, bundle)
+        #expect(decoded == bundle)
     }
-
+    @Test
     func testCalendarDayIsStableAcrossTimeZones() throws {
         let exportTZ = TimeZone(identifier: "Asia/Tokyo")!
         let importTZ = TimeZone(identifier: "America/Los_Angeles")!
@@ -73,18 +75,20 @@ final class ShiftBundleCodecTests: XCTestCase {
         let tokyoNewYear = exportCal.date(from: dc)!
         let encoded = CalendarDay(date: tokyoNewYear, calendar: exportCal)!
 
-        XCTAssertEqual(encoded, CalendarDay(year: 2026, month: 1, day: 1))
+        #expect(encoded == CalendarDay(year: 2026, month: 1, day: 1))
         let decodedInLA = encoded.date(in: importCal)!
         let parts = importCal.dateComponents([.year, .month, .day], from: decodedInLA)
-        XCTAssertEqual(parts.year, 2026)
-        XCTAssertEqual(parts.month, 1)
-        XCTAssertEqual(parts.day, 1)
+        #expect(parts.year == 2026)
+        #expect(parts.month == 1)
+        #expect(parts.day == 1)
     }
-
+    @Test
     func testInvalidPayloadThrows() {
-        XCTAssertThrowsError(try ShiftBundleCodec.decode(Data("{not json}".utf8)))
+        #expect(throws: (any Error).self) {
+            try ShiftBundleCodec.decode(Data("{not json}".utf8))
+        }
     }
-
+    @Test
     func testCalendarDayIsGregorianAcrossNonGregorianPreferences() {
         // Caller uses Japanese imperial calendar. CalendarDay should still encode Gregorian
         // year (e.g. 2026), not the Japanese era year, so bundles stay interoperable.
@@ -98,17 +102,20 @@ final class ShiftBundleCodecTests: XCTestCase {
         gregorian.timeZone = TimeZone(identifier: "Asia/Tokyo")!
         let date = gregorian.date(from: dc)!
         let encoded = CalendarDay(date: date, calendar: japanese)!
-        XCTAssertEqual(encoded, CalendarDay(year: 2026, month: 5, day: 12))
+        #expect(encoded == CalendarDay(year: 2026, month: 5, day: 12))
     }
-
-    func testCalendarDayDecoderRejectsImpossibleDates() {
+    @Test
+    func testCalendarDayDecoderRejectsImpossibleDates() throws {
         let decoder = JSONDecoder()
-        XCTAssertThrowsError(
-            try decoder.decode(CalendarDay.self, from: Data("\"2026-13-40\"".utf8)))
-        XCTAssertThrowsError(
-            try decoder.decode(CalendarDay.self, from: Data("\"2026-02-30\"".utf8)))
-        XCTAssertThrowsError(
-            try decoder.decode(CalendarDay.self, from: Data("\"2026-00-10\"".utf8)))
-        XCTAssertNoThrow(try decoder.decode(CalendarDay.self, from: Data("\"2026-02-28\"".utf8)))
+        #expect(throws: (any Error).self) {
+            try decoder.decode(CalendarDay.self, from: Data("\"2026-13-40\"".utf8))
+        }
+        #expect(throws: (any Error).self) {
+            try decoder.decode(CalendarDay.self, from: Data("\"2026-02-30\"".utf8))
+        }
+        #expect(throws: (any Error).self) {
+            try decoder.decode(CalendarDay.self, from: Data("\"2026-00-10\"".utf8))
+        }
+        _ = try decoder.decode(CalendarDay.self, from: Data("\"2026-02-28\"".utf8))
     }
 }

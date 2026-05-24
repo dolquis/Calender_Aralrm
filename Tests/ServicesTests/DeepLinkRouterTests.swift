@@ -1,15 +1,16 @@
-import XCTest
+import Foundation
+import Testing
 
 @testable import ShiftAlarm
 
 @MainActor
-final class DeepLinkRouterTests: XCTestCase {
+struct DeepLinkRouterTests {
 
     private func encodeBundle(_ bundle: ShiftBundle) throws -> String {
         let data = try ShiftBundleCodec.encode(bundle)
         return data.base64EncodedString()
     }
-
+    @Test
     func testParseValidImportURL() throws {
         let presetID = UUID()
         let bundle = ShiftBundle(
@@ -30,40 +31,40 @@ final class DeepLinkRouterTests: XCTestCase {
         let action = DeepLinkRouter.parse(url)
 
         if case .importPayload(let parsed) = action {
-            XCTAssertEqual(parsed.presets.count, 1)
-            XCTAssertEqual(parsed.presets.first?.id, presetID)
-            XCTAssertEqual(parsed.presets.first?.name, "Night")
+            #expect(parsed.presets.count == 1)
+            #expect(parsed.presets.first?.id == presetID)
+            #expect(parsed.presets.first?.name == "Night")
         } else {
-            XCTFail("Expected importPayload, got \(action)")
+            Issue.record("Expected importPayload, got \(action)")
         }
     }
-
+    @Test
     func testParseUnknownScheme() {
         let url = URL(string: "https://example.com/import?payload=abc")!
-        XCTAssertEqual(DeepLinkRouter.parse(url), .unknown)
+        #expect(DeepLinkRouter.parse(url) == .unknown)
     }
-
+    @Test
     func testParseUnknownHost() {
         let url = URL(string: "shiftalarm://export?payload=abc")!
-        XCTAssertEqual(DeepLinkRouter.parse(url), .unknown)
+        #expect(DeepLinkRouter.parse(url) == .unknown)
     }
-
+    @Test
     func testParseMissingPayload() {
         let url = URL(string: "shiftalarm://import")!
-        XCTAssertEqual(DeepLinkRouter.parse(url), .unknown)
+        #expect(DeepLinkRouter.parse(url) == .unknown)
     }
-
+    @Test
     func testParseInvalidBase64Payload() {
         let url = URL(string: "shiftalarm://import?payload=!!!notbase64!!!")!
-        XCTAssertEqual(DeepLinkRouter.parse(url), .unknown)
+        #expect(DeepLinkRouter.parse(url) == .unknown)
     }
-
+    @Test
     func testParseCorruptedJSONPayload() throws {
         let corrupt = Data("{ not valid json }".utf8).base64EncodedString()
         let url = URL(string: "shiftalarm://import?payload=\(corrupt)")!
-        XCTAssertEqual(DeepLinkRouter.parse(url), .unknown)
+        #expect(DeepLinkRouter.parse(url) == .unknown)
     }
-
+    @Test
     func testURLEncodedPayloadRoundTrip() throws {
         let bundle = ShiftBundle(
             patterns: [
@@ -87,10 +88,10 @@ final class DeepLinkRouterTests: XCTestCase {
         let action = DeepLinkRouter.parse(url)
 
         if case .importPayload(let parsed) = action {
-            XCTAssertEqual(parsed.patterns.count, 1)
-            XCTAssertEqual(parsed.patterns.first?.name, "3on1off")
+            #expect(parsed.patterns.count == 1)
+            #expect(parsed.patterns.first?.name == "3on1off")
         } else {
-            XCTFail("Expected importPayload, got \(action)")
+            Issue.record("Expected importPayload, got \(action)")
         }
     }
 }

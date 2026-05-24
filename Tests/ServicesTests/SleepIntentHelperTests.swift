@@ -1,15 +1,12 @@
+import Foundation
 import SwiftData
-import XCTest
+import Testing
 
 @testable import ShiftAlarm
 
 @MainActor
-final class SleepIntentHelperTests: XCTestCase {
-    override func tearDown() {
-        super.tearDown()
-        SleepIntentHelper.containerFactory = { SharedPersistence.makeContainer() }
-    }
-
+@Suite(.serialized)
+struct SleepIntentHelperTests {
     private func seededContainer(wakeHour: Int = 6, wakeMinute: Int = 0) -> ModelContainer {
         let container = SharedPersistence.makeContainer(inMemory: true)
         let context = ModelContext(container)
@@ -31,35 +28,49 @@ final class SleepIntentHelperTests: XCTestCase {
         return container
     }
 
+    private func withContainerFactory<T>(
+        _ container: ModelContainer,
+        operation: () async -> T
+    ) async -> T {
+        SleepIntentHelper.containerFactory = { container }
+        defer {
+            SleepIntentHelper.containerFactory = { SharedPersistence.makeContainer() }
+        }
+        return await operation()
+    }
+
+    @Test
     func testReturnsNilWhenNoSchedule() async {
         let empty = SharedPersistence.makeContainer(inMemory: true)
-        SleepIntentHelper.containerFactory = { empty }
-
-        let next = await SleepIntentHelper.fetchNextWindow()
-        XCTAssertNil(next)
+        await withContainerFactory(empty) {
+            let next = await SleepIntentHelper.fetchNextWindow()
+            #expect(next == nil)
+        }
     }
 
+    @Test
     func testFetchUpcomingWindowsExposesPresetMetadata() async {
         let container = seededContainer()
-        SleepIntentHelper.containerFactory = { container }
-
-        let windows = await SleepIntentHelper.fetchUpcomingWindows()
-        XCTAssertFalse(windows.isEmpty)
-        XCTAssertEqual(windows.first?.presetName, "Day")
+        await withContainerFactory(container) {
+            let windows = await SleepIntentHelper.fetchUpcomingWindows()
+            #expect(!windows.isEmpty)
+            #expect(windows.first?.presetName == "Day")
+        }
     }
 
+    @Test
     func testFetchNextBedtimeSkipsWindowsWhoseBedtimeAlreadyPassed() async {
         let container = seededContainer(wakeHour: 6)
-        SleepIntentHelper.containerFactory = { container }
-
-        // Simulate "now" as 23:00 today: today's bedtime (22:00) has passed but tomorrow's wake
-        // is still upcoming. fetchNextBedtimeWindow must skip today and return tomorrow.
-        let calendar = Calendar.current
-        let referenceNow = calendar.date(bySettingHour: 23, minute: 0, second: 0, of: .now)!
-        let next = await SleepIntentHelper.fetchNextBedtimeWindow(now: referenceNow)
-        if let next {
-            XCTAssertGreaterThan(next.bedtime, referenceNow)
+        await withContainerFactory(container) {
+            // Simulate "now" as 23:00 today: today's bedtime (22:00) has passed but tomorrow's wake
+            // is still upcoming. fetchNextBedtimeWindow must skip today and return tomorrow.
+            let calendar = Calendar.current
+            let referenceNow = calendar.date(bySettingHour: 23, minute: 0, second: 0, of: .now)!
+            let next = await SleepIntentHelper.fetchNextBedtimeWindow(now: referenceNow)
+            if let next {
+                #expect(next.bedtime > referenceNow)
+            }
+            // If nil, the seeded rotation didn't cover any future window — also acceptable.
         }
-        // If nil, the seeded rotation didn't cover any future window — also acceptable.
     }
 }
