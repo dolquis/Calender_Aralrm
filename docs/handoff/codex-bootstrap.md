@@ -452,14 +452,17 @@ description: Sources/Domain/ の SwiftData @Model を追加・変更・削除す
 
 ## 8. Claude Code 版との関係 / 二重管理について
 
-- 本リポジトリには既に Claude Code 用設定(`.claude/` `.mcp.json` `CLAUDE.md` 等)が
-  存在する想定。それらは **触らず独立に維持** する。
-- ただし、両方を有意に保つために以下のルールを `README.md` に追記することを推奨：
-  - 3 スキル(`xcodegen-regen` / `alarmkit-scheduling` / `swiftdata-migration`)の
-    SKILL.md を変更した場合は、`.claude/skills/` と `.agents/skills/` の両方を更新する
-    (または将来的にシンボリックリンク化を検討する)。
-  - 同様に `CLAUDE.md` と `AGENTS.md` のビルド・swift-format・Widget セクションも
-    両方更新する。
+- **初回 bootstrap 時のスコープ分離（この doc に従う一度きりの作業の範囲）**：
+  本 doc に従って Codex 用ファイル (`.codex/`, `.agents/`, AGENTS.md 追記) を新規に
+  追加する作業中は、既に存在する Claude Code 用設定 (`.claude/`, `.mcp.json`,
+  `CLAUDE.md`) を **同じ PR では触らない**（PR を Codex 専用に保ち、レビュー範囲を
+  小さく保つため）。
+- **bootstrap 後の継続運用ルール（AGENTS.md §10 が正）**：
+  bootstrap 完了後、MCP 定義やスキル本文を変更する際は、`.mcp.json` と
+  `.codex/config.toml`、`.claude/skills/` と `.agents/skills/` の **両方を必ず
+  同時に更新する**。これが AGENTS.md §10 で定めた二重管理の正規ルール。上の
+  「触らず独立に維持」は **新規 bootstrap PR のスコープ制限** であって、将来の
+  更新作業に拡張してはならない。
 - 将来的に統合したくなったら、ハイブリッド戦略(B)に移行可能。
   実体を `.agents/skills/` 側に置き、`.claude/skills/` から symlink。macOS 開発なので
   シンボリックリンクは自然に動く(`git config core.symlinks true` も基本不要)。

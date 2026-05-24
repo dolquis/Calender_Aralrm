@@ -170,7 +170,7 @@ Codex CLI は `.agents/skills/`、Claude Code は `.claude/skills/` を参照す
 | name | 用途 | 起動方式 |
 |---|---|---|
 | `context7` | AlarmKit / WidgetKit / ActivityKit / SwiftData / HealthKit の Apple ドキュメント参照 | HTTP (`https://mcp.context7.com/mcp`) |
-| `xcodebuild` | Xcode ビルド・iOS 26 シミュレータ制御を構造化 JSON で扱う | stdio (`npx -y xcodebuildmcp`、Node 18+ 必須) |
+| `xcodebuild` | Xcode ビルド・iOS 26 シミュレータ制御を構造化 JSON で扱う | stdio (`npx -y xcodebuildmcp@latest mcp`、Node 18+ 必須。`mcp` サブコマンドが無いと CLI モードで起動して MCP サーバーが立たない) |
 
 macOS + Xcode 26 前提。Linux / Windows では `xcodebuild` MCP が起動失敗するが
 想定動作（`context7` は全 OS で動く）。シークレットは設定ファイルに直書きせず、
