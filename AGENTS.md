@@ -147,3 +147,63 @@ skip）を確認する。
 2. `ROADMAP.md` §6「ファイル別の触るときの注意」
 3. 過去 PR の説明文（特に #1 / #2 / #5 / #6 / #7 / #10 / #11 / #14）
 4. `README.md` の Architecture notes セクション
+
+---
+
+## 8. スキル（`.agents/skills/` / `.claude/skills/`）
+
+Codex CLI は `.agents/skills/`、Claude Code は `.claude/skills/` を参照する。本文は
+**「意図的非対称を除いて」同一**（同期・例外規定は §10.1 参照、将来 symlink 統合の
+余地は残す）。
+
+| name | 自動発動条件（概略） |
+|---|---|
+| `xcodegen-regen` | `project.yml` 編集、`.swift` ファイル追加・削除、`xcodebuild` でファイル不一致エラー時 |
+| `alarmkit-scheduling` | `AlarmScheduler` / `DayResolver` / `RotationExpander` / BG lookahead を編集・デバッグするとき |
+| `swiftdata-migration` | `Sources/Domain/` の `@Model` を追加・変更・削除、App Group ストアや `.shiftalarm` JSON 連動が絡むとき |
+
+各スキルの本文は `SKILL.md`、補足は `references/` 配下（`day-resolver.md` /
+`app-group-store.md`）にある。precedence や App Group の運用ルールはこの references が
+唯一の正。
+
+### 8.1 意図的非対称（Claude / Codex 間で異なる部分）
+
+| 箇所 | Claude 版（`.claude/skills/`） | Codex 版（`.agents/skills/`） | 理由 |
+|---|---|---|---|
+| frontmatter `allowed-tools` | あり（`Bash, Read, Edit` 等） | なし | Codex SKILL.md 仕様は frontmatter に `name` / `description` のみ |
+| 補助ツール節の `swift-lsp` 言及 | あり | なし | swift-lsp は Claude Code 公式マーケットのプラグインで Codex には存在しない |
+| 補助ツール節の `Context7` / `XcodeBuildMCP` 表記 | プラグイン名に揃え（PascalCase） | MCP サーバー名に揃え（小文字 `context7` / `xcodebuild MCP`） | 各ツール側の表記慣習に合わせる |
+| `references/` 配下 | 同一内容 | 同一内容 | 例外なし。`diff -q` で常に一致すべき |
+
+同期時はこの表の左右を**フィールド単位で個別に維持**する。「単純な丸ごとコピー」で
+上書きすると Claude 固有の `allowed-tools` 等が消えてプラグイン挙動が壊れるので注意。
+
+## 9. MCP サーバー（`.codex/config.toml` / `.mcp.json`）
+
+| name | 用途 | 起動方式 |
+|---|---|---|
+| `context7` | AlarmKit / WidgetKit / ActivityKit / SwiftData / HealthKit の Apple ドキュメント参照 | HTTP (`https://mcp.context7.com/mcp`) |
+| `xcodebuild` | Xcode ビルド・iOS 26 シミュレータ制御を構造化 JSON で扱う | stdio (`npx -y xcodebuildmcp@latest mcp`、Node 18+ 必須。`mcp` サブコマンドが無いと CLI モードで起動して MCP サーバーが立たない) |
+
+macOS + Xcode 26 前提。Linux / Windows では `xcodebuild` MCP が起動失敗するが
+想定動作（`context7` は全 OS で動く）。シークレットは設定ファイルに直書きせず、
+必要なら `${ENV_VAR}` 経由で渡す。
+
+## 10. 二重管理ルール（Claude Code 用と Codex 用）
+
+`.claude/` と `.codex/` / `.agents/` は独立に維持する方針。両方を有意に保つために
+以下を守ること：
+
+1. スキル本文（`xcodegen-regen` / `alarmkit-scheduling` / `swiftdata-migration` の
+   `SKILL.md` 共通部および `references/`）を変更したら、`.claude/skills/` と
+   `.agents/skills/` の **両方** を同時に更新する。**ただし §8.1 の意図的非対称
+   （`allowed-tools` frontmatter、`swift-lsp` 言及、ツール表記）はフィールド単位で
+   個別に維持し、丸ごとコピーで上書きしない**。同期後は `diff -q` で `references/`
+   配下が完全一致していることを確認すること。
+2. MCP サーバー定義を増減した場合、`.mcp.json` と `.codex/config.toml` の両方を
+   更新する（用途と起動方式が一致するように）。
+3. ビルド / swift-format / Widget の運用ルールはこの `AGENTS.md`（§4 / §5 / §6）が
+   唯一の正。`CLAUDE.md` はポインタのみで重複させない。
+4. Claude Code 起動プロンプトと bootstrap ドキュメントは `docs/handoff/` に保管
+   （`claude-code-bootstrap.md` / `codex-bootstrap.md`）。setup 完了後は
+   `docs/archive/` への移動または削除を検討してよい。
