@@ -390,10 +390,11 @@ struct ShiftPatternDetectorTests {
         #expect(r1?.fingerprint.isEmpty == false)
     }
 
+    @Test
     func testAcceptedPatternFingerprintMatchesSameSuggestion() throws {
         let a = dailyAlternateHistory(start: Self.windowStart, days: 90)
         let detector = ShiftPatternDetector()
-        let suggestion = try XCTUnwrap(
+        let suggestion = try #require(
             detector.detect(
                 manualAssignments: a, presets: makePresets(), today: Self.today, calendar: calendar
             ))
@@ -409,13 +410,14 @@ struct ShiftPatternDetectorTests {
             isActive: true
         )
 
-        XCTAssertEqual(detector.fingerprint(for: pattern), suggestion.fingerprint)
+        #expect(detector.fingerprint(for: pattern) == suggestion.fingerprint)
     }
 
+    @Test
     func testPatternIdentityComparesAnchorPhase() throws {
         let a = dailyAlternateHistory(start: Self.windowStart, days: 90)
         let detector = ShiftPatternDetector()
-        let suggestion = try XCTUnwrap(
+        let suggestion = try #require(
             detector.detect(
                 manualAssignments: a, presets: makePresets(), today: Self.today, calendar: calendar
             ))
@@ -454,20 +456,21 @@ struct ShiftPatternDetectorTests {
             isActive: true
         )
 
-        XCTAssertTrue(
+        #expect(
             detector.matchesPatternIdentity(samePattern, suggestion: suggestion, calendar: calendar)
         )
-        XCTAssertTrue(
+        #expect(
             detector.matchesPatternIdentity(
                 phaseEquivalentPattern, suggestion: suggestion, calendar: calendar
             ))
-        XCTAssertFalse(
-            detector.matchesPatternIdentity(
+        #expect(
+            !detector.matchesPatternIdentity(
                 phaseShiftedPattern, suggestion: suggestion, calendar: calendar
             ))
-        XCTAssertEqual(detector.fingerprint(for: phaseShiftedPattern), suggestion.fingerprint)
+        #expect(detector.fingerprint(for: phaseShiftedPattern) == suggestion.fingerprint)
     }
 
+    @Test
     func testPatternsDrivingRecentWindowIgnoresFutureExpiredAndShadowedPatterns() {
         let detector = ShiftPatternDetector()
         let currentPatternID = UUID()
@@ -523,9 +526,10 @@ struct ShiftPatternDetectorTests {
             calendar: calendar
         )
 
-        XCTAssertEqual(result.map(\.id), [currentPatternID])
+        #expect(result.map(\.id) == [currentPatternID])
     }
 
+    @Test
     func testManualAssignmentsDrivenByPatternExcludesHigherPriorityOverlap() {
         let detector = ShiftPatternDetector()
         let baseID = UUID()
@@ -581,14 +585,15 @@ struct ShiftPatternDetectorTests {
             calendar: calendar
         )
 
-        XCTAssertEqual(baseAssignments.count, 25)
-        XCTAssertEqual(overrideAssignments.count, 5)
-        XCTAssertNil(baseAssignments[date(2026, 5, 8)])
-        XCTAssertEqual(overrideAssignments[date(2026, 5, 8)]?.presetID, Self.nightID)
+        #expect(baseAssignments.count == 25)
+        #expect(overrideAssignments.count == 5)
+        #expect(baseAssignments[date(2026, 5, 8)] == nil)
+        #expect(overrideAssignments[date(2026, 5, 8)]?.presetID == Self.nightID)
     }
 
+    @Test
     func testAppSettingsDefaultDriftThresholdIsFifteenPercent() {
-        XCTAssertEqual(AppSettings().effectivePatternDriftThreshold, 0.15, accuracy: 0.0001)
+        #expect(abs(AppSettings().effectivePatternDriftThreshold - 0.15) <= 0.0001)
     }
 
     // MARK: - A1 Drift detection
@@ -630,6 +635,7 @@ struct ShiftPatternDetectorTests {
         #expect(result == nil, "Mismatch rate 0% is below threshold; should not suggest update")
     }
 
+    @Test
     func testDriftIgnoresAssignmentsOutsidePatternDateSpan() {
         let pattern = RotationPatternSnapshot(
             id: UUID(),
@@ -664,8 +670,8 @@ struct ShiftPatternDetectorTests {
             threshold: 0.15
         )
 
-        XCTAssertNil(
-            result,
+        #expect(
+            result == nil,
             "Assignments before startDate should not inflate mismatch rate for a recent pattern")
     }
 
