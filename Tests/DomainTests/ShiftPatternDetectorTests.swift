@@ -524,6 +524,67 @@ final class ShiftPatternDetectorTests: XCTestCase {
         XCTAssertEqual(result.map(\.id), [currentPatternID])
     }
 
+    func testManualAssignmentsDrivenByPatternExcludesHigherPriorityOverlap() {
+        let detector = ShiftPatternDetector()
+        let baseID = UUID()
+        let overrideID = UUID()
+        let base = RotationPatternSnapshot(
+            id: baseID,
+            name: "Base",
+            anchorDate: Self.today,
+            cycleLength: 1,
+            slots: [Self.dayID],
+            startDate: nil,
+            endDate: nil,
+            priority: 0,
+            isActive: true
+        )
+        let temporaryOverride = RotationPatternSnapshot(
+            id: overrideID,
+            name: "Temporary Override",
+            anchorDate: Self.today,
+            cycleLength: 1,
+            slots: [Self.nightID],
+            startDate: date(2026, 5, 8),
+            endDate: date(2026, 5, 12),
+            priority: 10,
+            isActive: true
+        )
+        var assignments: [Date: DayAssignmentSnapshot] = [:]
+        for i in 0..<30 {
+            let day = calendar.date(byAdding: .day, value: i - 30, to: Self.today)!
+            let isOverrideDay =
+                day >= calendar.startOfDay(for: temporaryOverride.startDate!)
+                && day <= calendar.startOfDay(for: temporaryOverride.endDate!)
+            assignments[day] = DayAssignmentSnapshot(
+                presetID: isOverrideDay ? Self.nightID : Self.dayID,
+                overrideTime: nil,
+                skipAlarm: false,
+                note: ""
+            )
+        }
+
+        let baseAssignments = detector.manualAssignmentsDrivenByPattern(
+            base,
+            activePatterns: [base, temporaryOverride],
+            manualAssignments: assignments,
+            presets: makePresets(),
+            calendar: calendar
+        )
+        let overrideAssignments = detector.manualAssignmentsDrivenByPattern(
+            temporaryOverride,
+            activePatterns: [base, temporaryOverride],
+            manualAssignments: assignments,
+            presets: makePresets(),
+            calendar: calendar
+        )
+
+        XCTAssertEqual(baseAssignments.count, 25)
+        XCTAssertEqual(overrideAssignments.count, 5)
+        XCTAssertNil(baseAssignments[date(2026, 5, 8)])
+        XCTAssertEqual(overrideAssignments[date(2026, 5, 8)]?.presetID, Self.nightID)
+    }
+
     func testAppSettingsDefaultDriftThresholdIsFifteenPercent() {
         XCTAssertEqual(AppSettings().effectivePatternDriftThreshold, 0.15, accuracy: 0.0001)
     }

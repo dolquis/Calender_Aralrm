@@ -108,10 +108,17 @@ public struct RotationListView: View {
         let threshold = settings?.effectivePatternDriftThreshold ?? 0.15
 
         for pattern in driftPatterns {
+            let patternManualAssignments = detector.manualAssignmentsDrivenByPattern(
+                pattern,
+                activePatterns: activePatterns,
+                manualAssignments: input.manualAssignments,
+                presets: input.presets,
+                calendar: calendar
+            )
             guard
                 let drift = detector.detectDrift(
                     pattern: pattern,
-                    recentManualAssignments: input.manualAssignments,
+                    recentManualAssignments: patternManualAssignments,
                     presets: input.presets,
                     today: today,
                     calendar: calendar,

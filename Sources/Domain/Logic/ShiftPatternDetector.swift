@@ -263,6 +263,31 @@ public struct ShiftPatternDetector: Sendable {
         return activePatterns.filter { drivingPatternIDs.contains($0.id) }
     }
 
+    /// Filters manual assignments to days where `pattern` is the winning active rotation.
+    public func manualAssignmentsDrivenByPattern(
+        _ pattern: RotationPatternSnapshot,
+        activePatterns: [RotationPatternSnapshot],
+        manualAssignments: [Date: DayAssignmentSnapshot],
+        presets: [UUID: ShiftPresetSnapshot],
+        calendar: Calendar
+    ) -> [Date: DayAssignmentSnapshot] {
+        let prioritySortedPatterns =
+            activePatterns
+            .filter(\.isActive)
+            .sorted { $0.priority > $1.priority }
+
+        return manualAssignments.reduce(into: [Date: DayAssignmentSnapshot]()) { result, entry in
+            let day = calendar.startOfDay(for: entry.key)
+            guard
+                let drivingPattern = prioritySortedPatterns.first(where: {
+                    patternDrivesDay($0, day: day, presets: presets, calendar: calendar)
+                }),
+                drivingPattern.id == pattern.id
+            else { return }
+            result[day] = entry.value
+        }
+    }
+
     // MARK: - Helpers
 
     private func symbol(
