@@ -2799,6 +2799,40 @@
         }
       }
     },
+    "pattern.suggestion.drift.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Shift Pattern Changed"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "シフトパターンの変化を検出しました"
+          }
+        }
+      }
+    },
+    "pattern.suggestion.drift.body": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recent edits differ from your active rotation. Replace it with this %d-day cycle?"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "最近の手動変更が現在のローテーションとずれています。この %d 日サイクルに更新しますか？"
+          }
+        }
+      }
+    },
     "pattern.suggestion.accept": {
       "extractionState": "manual",
       "localizations": {
@@ -2880,6 +2914,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "検出パターン"
+          }
+        }
+      }
+    },
+    "pattern.suggestion.drift.default_name": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Updated Pattern"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "更新パターン"
           }
         }
       }

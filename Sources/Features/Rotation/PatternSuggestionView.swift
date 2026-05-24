@@ -5,17 +5,20 @@ import SwiftUI
 public struct PatternSuggestionView: View {
     let suggestion: ShiftPatternDetector.SuggestedRotation
     let presets: [UUID: ShiftPresetSnapshot]
+    let isDriftUpdate: Bool
     let onAccept: @MainActor () -> Void
     let onReject: @MainActor () -> Void
 
     public init(
         suggestion: ShiftPatternDetector.SuggestedRotation,
         presets: [UUID: ShiftPresetSnapshot],
+        isDriftUpdate: Bool = false,
         onAccept: @escaping @MainActor () -> Void,
         onReject: @escaping @MainActor () -> Void
     ) {
         self.suggestion = suggestion
         self.presets = presets
+        self.isDriftUpdate = isDriftUpdate
         self.onAccept = onAccept
         self.onReject = onReject
     }
@@ -26,14 +29,17 @@ public struct PatternSuggestionView: View {
                 Image(systemName: "sparkles")
                     .foregroundStyle(.orange)
                     .accessibilityHidden(true)
-                Text("pattern.suggestion.title")
-                    .font(.headline)
+                if isDriftUpdate {
+                    Text("pattern.suggestion.drift.title")
+                        .font(.headline)
+                } else {
+                    Text("pattern.suggestion.title")
+                        .font(.headline)
+                }
             }
-            Text(
-                String(format: String(localized: "pattern.suggestion.body"), suggestion.cycleLength)
-            )
-            .font(.subheadline)
-            .foregroundStyle(.secondary)
+            Text(bodyText)
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
 
             slotPreview
 
@@ -56,6 +62,16 @@ public struct PatternSuggestionView: View {
         .padding()
         .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
         .accessibilityElement(children: .contain)
+    }
+
+    private var bodyText: String {
+        if isDriftUpdate {
+            return String(
+                format: String(localized: "pattern.suggestion.drift.body"),
+                suggestion.cycleLength
+            )
+        }
+        return String(format: String(localized: "pattern.suggestion.body"), suggestion.cycleLength)
     }
 
     @ViewBuilder private var slotPreview: some View {
