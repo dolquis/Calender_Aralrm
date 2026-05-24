@@ -174,7 +174,7 @@ public struct RotationListView: View {
         if let replacingPattern {
             replacingPattern.isActive = false
         }
-        let nextPriority = (patterns.map(\.priority).max() ?? -1) + 1
+        let nextPriority = replacingPattern?.priority ?? (patterns.map(\.priority).max() ?? -1) + 1
         let patternName =
             context.isDriftUpdate
             ? String(localized: "pattern.suggestion.drift.default_name")
