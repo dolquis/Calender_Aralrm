@@ -83,7 +83,7 @@
     "xcodebuild": {
       "type": "stdio",
       "command": "npx",
-      "args": ["-y", "xcodebuildmcp"]
+      "args": ["-y", "xcodebuildmcp@latest", "mcp"]
     }
   }
 }
@@ -114,12 +114,12 @@
       }
     }
   },
-  "enabledPlugins": [
-    "swift-lsp@claude-plugins-official",
-    "github@claude-plugins-official",
-    "commit-commands@claude-plugins-official",
-    "pr-review-toolkit@claude-plugins-official"
-  ]
+  "enabledPlugins": {
+    "swift-lsp@claude-plugins-official": true,
+    "github@claude-plugins-official": true,
+    "commit-commands@claude-plugins-official": true,
+    "pr-review-toolkit@claude-plugins-official": true
+  }
 }
 ```
 

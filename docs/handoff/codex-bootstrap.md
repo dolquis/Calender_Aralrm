@@ -91,6 +91,28 @@ AGENTS.md                              ← 新規(または既存追記)。Codex
 #:schema https://developers.openai.com/codex/config-schema.json
 
 # ─────────────────────────────────────────────
+# トップレベル設定（サンドボックス / 承認ポリシー）
+# ─────────────────────────────────────────────
+#
+# 重要：TOML はテーブルヘッダ（`[...]`）以降のキーがそのテーブルに属するため、
+# トップレベルのスカラ設定（sandbox_mode / approval_policy 等）は
+# 全ての [table] ヘッダより前にまとめて書く必要がある。
+# 後ろに書くと意図せず直前テーブルにネストされ、設定が効かなくなる。
+
+# workspace-write: リポジトリ内の書き込みは許可
+sandbox_mode = "workspace-write"
+
+# 既定 = on-request (重要操作はユーザー承認を仰ぐ)
+approval_policy = "on-request"
+
+# ─────────────────────────────────────────────
+# サンドボックス詳細
+# ─────────────────────────────────────────────
+
+[sandbox_workspace_write]
+network_access = true   # MCP HTTP(context7)と Swift Package Manager / CocoaPods のため
+
+# ─────────────────────────────────────────────
 # MCP サーバー定義(共有)
 # ─────────────────────────────────────────────
 
@@ -101,23 +123,12 @@ startup_timeout_sec = 15
 
 # XcodeBuildMCP: Xcode ビルド・iOS 26 シミュレータ制御を構造化 JSON で扱える
 # Node.js 18+ が必要(npx 経由でインストール)
+# `mcp` サブコマンドが必須。これが無いと npx は即終了し MCP サーバーが起動しない。
+# 上流: https://github.com/cameroncooke/XcodeBuildMCP
 [mcp_servers.xcodebuild]
 command = "npx"
-args = ["-y", "xcodebuildmcp"]
+args = ["-y", "xcodebuildmcp@latest", "mcp"]
 startup_timeout_sec = 30
-
-# ─────────────────────────────────────────────
-# サンドボックス / 承認ポリシー
-# ─────────────────────────────────────────────
-
-# workspace-write: リポジトリ内の書き込みは許可
-sandbox_mode = "workspace-write"
-
-[sandbox_workspace_write]
-network_access = true   # MCP HTTP(context7)と Swift Package Manager / CocoaPods のため
-
-# 既定 = on-request (重要操作はユーザー承認を仰ぐ)
-approval_policy = "on-request"
 
 # ─────────────────────────────────────────────
 # プロジェクトルート判定
