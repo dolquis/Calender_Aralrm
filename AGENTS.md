@@ -147,3 +147,47 @@ skip）を確認する。
 2. `ROADMAP.md` §6「ファイル別の触るときの注意」
 3. 過去 PR の説明文（特に #1 / #2 / #5 / #6 / #7 / #10 / #11 / #14）
 4. `README.md` の Architecture notes セクション
+
+---
+
+## 8. スキル（`.agents/skills/` / `.claude/skills/`）
+
+Codex CLI は `.agents/skills/`、Claude Code は `.claude/skills/` を参照する。本文は
+両者で同一の物理コピー（将来 symlink 統合の余地は残す。詳細は §10）。
+
+| name | 自動発動条件（概略） |
+|---|---|
+| `xcodegen-regen` | `project.yml` 編集、`.swift` ファイル追加・削除、`xcodebuild` でファイル不一致エラー時 |
+| `alarmkit-scheduling` | `AlarmScheduler` / `DayResolver` / `RotationExpander` / BG lookahead を編集・デバッグするとき |
+| `swiftdata-migration` | `Sources/Domain/` の `@Model` を追加・変更・削除、App Group ストアや `.shiftalarm` JSON 連動が絡むとき |
+
+各スキルの本文は `SKILL.md`、補足は `references/` 配下（`day-resolver.md` /
+`app-group-store.md`）にある。precedence や App Group の運用ルールはこの references が
+唯一の正。
+
+## 9. MCP サーバー（`.codex/config.toml` / `.mcp.json`）
+
+| name | 用途 | 起動方式 |
+|---|---|---|
+| `context7` | AlarmKit / WidgetKit / ActivityKit / SwiftData / HealthKit の Apple ドキュメント参照 | HTTP (`https://mcp.context7.com/mcp`) |
+| `xcodebuild` | Xcode ビルド・iOS 26 シミュレータ制御を構造化 JSON で扱う | stdio (`npx -y xcodebuildmcp`、Node 18+ 必須) |
+
+macOS + Xcode 26 前提。Linux / Windows では `xcodebuild` MCP が起動失敗するが
+想定動作（`context7` は全 OS で動く）。シークレットは設定ファイルに直書きせず、
+必要なら `${ENV_VAR}` 経由で渡す。
+
+## 10. 二重管理ルール（Claude Code 用と Codex 用）
+
+`.claude/` と `.codex/` / `.agents/` は独立に維持する方針。両方を有意に保つために
+以下を守ること：
+
+1. スキル本文（`xcodegen-regen` / `alarmkit-scheduling` / `swiftdata-migration` の
+   `SKILL.md` および `references/`）を変更したら、`.claude/skills/` と
+   `.agents/skills/` の **両方** を同時に更新する。
+2. MCP サーバー定義を増減した場合、`.mcp.json` と `.codex/config.toml` の両方を
+   更新する（用途と起動方式が一致するように）。
+3. ビルド / swift-format / Widget の運用ルールはこの `AGENTS.md`（§4 / §5 / §6）が
+   唯一の正。`CLAUDE.md` はポインタのみで重複させない。
+4. Claude Code 起動プロンプトと bootstrap ドキュメントは `docs/handoff/` に保管
+   （`claude-code-bootstrap.md` / `codex-bootstrap.md`）。setup 完了後は
+   `docs/archive/` への移動または削除を検討してよい。

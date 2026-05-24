@@ -1,0 +1,47 @@
+#:schema https://developers.openai.com/codex/config-schema.json
+
+# ─────────────────────────────────────────────
+# トップレベル設定（サンドボックス / 承認ポリシー）
+# ─────────────────────────────────────────────
+#
+# 重要：TOML はテーブルヘッダ以降のキーがそのテーブルに属するため、
+# トップレベルのスカラ設定（sandbox_mode / approval_policy 等）は
+# 全ての [table] ヘッダより前に書く必要がある。
+
+# workspace-write: リポジトリ内の書き込みは許可
+sandbox_mode = "workspace-write"
+
+# 重要操作はユーザー承認を仰ぐ
+approval_policy = "on-request"
+
+# Web 検索 / モデル（任意。各開発者の好みに任せる場合は省く）
+# web_search = "cached"
+# model = "gpt-5-codex"
+
+# Git ベースなので default（`.git`）で十分。明示しなくてもOK。
+# project_root_markers = [".git"]
+
+# ─────────────────────────────────────────────
+# サンドボックス詳細
+# ─────────────────────────────────────────────
+
+[sandbox_workspace_write]
+# MCP HTTP（context7）と Swift Package Manager の依存解決に必要
+network_access = true
+
+# ─────────────────────────────────────────────
+# MCP サーバー定義（共有）
+# ─────────────────────────────────────────────
+
+# Context7: AlarmKit / WidgetKit / ActivityKit / SwiftData / HealthKit の Apple ドキュメント参照
+[mcp_servers.context7]
+url = "https://mcp.context7.com/mcp"
+startup_timeout_sec = 15
+
+# XcodeBuildMCP: Xcode ビルド・iOS 26 シミュレータ制御を構造化 JSON で扱える。
+# Node.js 18+ が必要（npx 経由でインストール）。
+# macOS + Xcode 26 前提。Linux / Windows では起動失敗するが想定動作（required = false のまま）。
+[mcp_servers.xcodebuild]
+command = "npx"
+args = ["-y", "xcodebuildmcp"]
+startup_timeout_sec = 30

@@ -1,0 +1,16 @@
+{
+  "extraKnownMarketplaces": {
+    "claude-plugins-official": {
+      "source": {
+        "source": "github",
+        "repo": "anthropics/claude-plugins-official"
+      }
+    }
+  },
+  "enabledPlugins": [
+    "swift-lsp@claude-plugins-official",
+    "github@claude-plugins-official",
+    "commit-commands@claude-plugins-official",
+    "pr-review-toolkit@claude-plugins-official"
+  ]
+}
