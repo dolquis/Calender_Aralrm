@@ -13,6 +13,12 @@ public final class AppSettings {
     public var patternSuggestionSnoozedUntil: Date?
     /// Fingerprint of the snoozed suggestion. New fingerprint bypasses snooze.
     public var patternSuggestionSnoozedFingerprint: String?
+    /// Manual override mismatch ratio that triggers accepted-pattern drift suggestions.
+    public var patternDriftThreshold: Double?
+
+    public var effectivePatternDriftThreshold: Double {
+        patternDriftThreshold ?? 0.15
+    }
 
     public init(
         id: UUID = UUID(),
@@ -22,7 +28,8 @@ public final class AppSettings {
         preferredLanguageRaw: String? = nil,
         hasOnboarded: Bool = false,
         patternSuggestionSnoozedUntil: Date? = nil,
-        patternSuggestionSnoozedFingerprint: String? = nil
+        patternSuggestionSnoozedFingerprint: String? = nil,
+        patternDriftThreshold: Double = 0.15
     ) {
         self.id = id
         self.defaultSoundID = defaultSoundID
@@ -32,5 +39,6 @@ public final class AppSettings {
         self.hasOnboarded = hasOnboarded
         self.patternSuggestionSnoozedUntil = patternSuggestionSnoozedUntil
         self.patternSuggestionSnoozedFingerprint = patternSuggestionSnoozedFingerprint
+        self.patternDriftThreshold = patternDriftThreshold
     }
 }

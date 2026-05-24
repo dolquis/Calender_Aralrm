@@ -390,6 +390,207 @@ struct ShiftPatternDetectorTests {
         #expect(r1?.fingerprint.isEmpty == false)
     }
 
+    func testAcceptedPatternFingerprintMatchesSameSuggestion() throws {
+        let a = dailyAlternateHistory(start: Self.windowStart, days: 90)
+        let detector = ShiftPatternDetector()
+        let suggestion = try XCTUnwrap(
+            detector.detect(
+                manualAssignments: a, presets: makePresets(), today: Self.today, calendar: calendar
+            ))
+        let pattern = RotationPatternSnapshot(
+            id: UUID(),
+            name: "Accepted",
+            anchorDate: suggestion.anchorDate,
+            cycleLength: suggestion.cycleLength,
+            slots: suggestion.slots,
+            startDate: nil,
+            endDate: nil,
+            priority: 0,
+            isActive: true
+        )
+
+        XCTAssertEqual(detector.fingerprint(for: pattern), suggestion.fingerprint)
+    }
+
+    func testPatternIdentityComparesAnchorPhase() throws {
+        let a = dailyAlternateHistory(start: Self.windowStart, days: 90)
+        let detector = ShiftPatternDetector()
+        let suggestion = try XCTUnwrap(
+            detector.detect(
+                manualAssignments: a, presets: makePresets(), today: Self.today, calendar: calendar
+            ))
+        let samePattern = RotationPatternSnapshot(
+            id: UUID(),
+            name: "Same",
+            anchorDate: suggestion.anchorDate,
+            cycleLength: suggestion.cycleLength,
+            slots: suggestion.slots,
+            startDate: nil,
+            endDate: nil,
+            priority: 0,
+            isActive: true
+        )
+        let phaseEquivalentPattern = RotationPatternSnapshot(
+            id: UUID(),
+            name: "Phase Equivalent",
+            anchorDate: calendar.date(
+                byAdding: .day, value: suggestion.cycleLength, to: suggestion.anchorDate)!,
+            cycleLength: suggestion.cycleLength,
+            slots: suggestion.slots,
+            startDate: nil,
+            endDate: nil,
+            priority: 0,
+            isActive: true
+        )
+        let phaseShiftedPattern = RotationPatternSnapshot(
+            id: UUID(),
+            name: "Shifted",
+            anchorDate: calendar.date(byAdding: .day, value: 1, to: suggestion.anchorDate)!,
+            cycleLength: suggestion.cycleLength,
+            slots: suggestion.slots,
+            startDate: nil,
+            endDate: nil,
+            priority: 0,
+            isActive: true
+        )
+
+        XCTAssertTrue(
+            detector.matchesPatternIdentity(samePattern, suggestion: suggestion, calendar: calendar)
+        )
+        XCTAssertTrue(
+            detector.matchesPatternIdentity(
+                phaseEquivalentPattern, suggestion: suggestion, calendar: calendar
+            ))
+        XCTAssertFalse(
+            detector.matchesPatternIdentity(
+                phaseShiftedPattern, suggestion: suggestion, calendar: calendar
+            ))
+        XCTAssertEqual(detector.fingerprint(for: phaseShiftedPattern), suggestion.fingerprint)
+    }
+
+    func testPatternsDrivingRecentWindowIgnoresFutureExpiredAndShadowedPatterns() {
+        let detector = ShiftPatternDetector()
+        let currentPatternID = UUID()
+        let current = RotationPatternSnapshot(
+            id: currentPatternID,
+            name: "Current",
+            anchorDate: Self.today,
+            cycleLength: 1,
+            slots: [Self.dayID],
+            startDate: nil,
+            endDate: nil,
+            priority: 0,
+            isActive: true
+        )
+        let future = RotationPatternSnapshot(
+            id: UUID(),
+            name: "Future",
+            anchorDate: Self.today,
+            cycleLength: 1,
+            slots: [Self.nightID],
+            startDate: date(2026, 5, 19),
+            endDate: nil,
+            priority: 10,
+            isActive: true
+        )
+        let expired = RotationPatternSnapshot(
+            id: UUID(),
+            name: "Expired",
+            anchorDate: Self.today,
+            cycleLength: 1,
+            slots: [Self.nightID],
+            startDate: nil,
+            endDate: date(2026, 4, 17),
+            priority: 20,
+            isActive: true
+        )
+        let shadowed = RotationPatternSnapshot(
+            id: UUID(),
+            name: "Shadowed",
+            anchorDate: Self.today,
+            cycleLength: 1,
+            slots: [Self.nightID],
+            startDate: nil,
+            endDate: nil,
+            priority: -1,
+            isActive: true
+        )
+
+        let result = detector.patternsDrivingRecentWindow(
+            activePatterns: [expired, future, current, shadowed],
+            presets: makePresets(),
+            today: Self.today,
+            calendar: calendar
+        )
+
+        XCTAssertEqual(result.map(\.id), [currentPatternID])
+    }
+
+    func testManualAssignmentsDrivenByPatternExcludesHigherPriorityOverlap() {
+        let detector = ShiftPatternDetector()
+        let baseID = UUID()
+        let overrideID = UUID()
+        let base = RotationPatternSnapshot(
+            id: baseID,
+            name: "Base",
+            anchorDate: Self.today,
+            cycleLength: 1,
+            slots: [Self.dayID],
+            startDate: nil,
+            endDate: nil,
+            priority: 0,
+            isActive: true
+        )
+        let temporaryOverride = RotationPatternSnapshot(
+            id: overrideID,
+            name: "Temporary Override",
+            anchorDate: Self.today,
+            cycleLength: 1,
+            slots: [Self.nightID],
+            startDate: date(2026, 5, 8),
+            endDate: date(2026, 5, 12),
+            priority: 10,
+            isActive: true
+        )
+        var assignments: [Date: DayAssignmentSnapshot] = [:]
+        for i in 0..<30 {
+            let day = calendar.date(byAdding: .day, value: i - 30, to: Self.today)!
+            let isOverrideDay =
+                day >= calendar.startOfDay(for: temporaryOverride.startDate!)
+                && day <= calendar.startOfDay(for: temporaryOverride.endDate!)
+            assignments[day] = DayAssignmentSnapshot(
+                presetID: isOverrideDay ? Self.nightID : Self.dayID,
+                overrideTime: nil,
+                skipAlarm: false,
+                note: ""
+            )
+        }
+
+        let baseAssignments = detector.manualAssignmentsDrivenByPattern(
+            base,
+            activePatterns: [base, temporaryOverride],
+            manualAssignments: assignments,
+            presets: makePresets(),
+            calendar: calendar
+        )
+        let overrideAssignments = detector.manualAssignmentsDrivenByPattern(
+            temporaryOverride,
+            activePatterns: [base, temporaryOverride],
+            manualAssignments: assignments,
+            presets: makePresets(),
+            calendar: calendar
+        )
+
+        XCTAssertEqual(baseAssignments.count, 25)
+        XCTAssertEqual(overrideAssignments.count, 5)
+        XCTAssertNil(baseAssignments[date(2026, 5, 8)])
+        XCTAssertEqual(overrideAssignments[date(2026, 5, 8)]?.presetID, Self.nightID)
+    }
+
+    func testAppSettingsDefaultDriftThresholdIsFifteenPercent() {
+        XCTAssertEqual(AppSettings().effectivePatternDriftThreshold, 0.15, accuracy: 0.0001)
+    }
+
     // MARK: - A1 Drift detection
 
     private func makeAllDayPattern() -> RotationPatternSnapshot {
@@ -427,6 +628,45 @@ struct ShiftPatternDetectorTests {
             threshold: 0.15
         )
         #expect(result == nil, "Mismatch rate 0% is below threshold; should not suggest update")
+    }
+
+    func testDriftIgnoresAssignmentsOutsidePatternDateSpan() {
+        let pattern = RotationPatternSnapshot(
+            id: UUID(),
+            name: "Recent All Day",
+            anchorDate: Self.today,
+            cycleLength: 1,
+            slots: [Self.dayID],
+            startDate: date(2026, 5, 9),
+            endDate: nil,
+            priority: 0,
+            isActive: true
+        )
+        var assignments: [Date: DayAssignmentSnapshot] = [:]
+        for i in 0..<30 {
+            let day = calendar.date(byAdding: .day, value: i - 30, to: Self.today)!
+            let isBeforePatternStart = day < calendar.startOfDay(for: pattern.startDate!)
+            assignments[day] = DayAssignmentSnapshot(
+                presetID: isBeforePatternStart ? Self.nightID : Self.dayID,
+                overrideTime: nil,
+                skipAlarm: false,
+                note: ""
+            )
+        }
+
+        let detector = ShiftPatternDetector()
+        let result = detector.detectDrift(
+            pattern: pattern,
+            recentManualAssignments: assignments,
+            presets: makePresets(),
+            today: Self.today,
+            calendar: calendar,
+            threshold: 0.15
+        )
+
+        XCTAssertNil(
+            result,
+            "Assignments before startDate should not inflate mismatch rate for a recent pattern")
     }
 
     // α-U14: mismatch rate above threshold → detectDrift calls detect() and returns a suggestion

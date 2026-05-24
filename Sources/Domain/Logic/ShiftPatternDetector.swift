@@ -195,6 +195,7 @@ public struct ShiftPatternDetector: Sendable {
         var observed = 0
         for i in 0..<30 {
             let day = calendar.date(byAdding: .day, value: i, to: windowStart)!
+            guard patternApplies(pattern, to: day, calendar: calendar) else { continue }
             guard let manual = recentManualAssignments[day] else { continue }
             let expected = RotationExpander.presetID(for: day, pattern: pattern, calendar: calendar)
             let manualPresetID = manual.skipAlarm ? nil : manual.presetID
@@ -210,6 +211,81 @@ public struct ShiftPatternDetector: Sendable {
             today: today,
             calendar: calendar
         )
+    }
+
+    /// Fingerprint for an already accepted rotation, using the same identity as suggestions.
+    public func fingerprint(for pattern: RotationPatternSnapshot) -> String {
+        fingerprint(cycleLength: pattern.cycleLength, slots: pattern.slots)
+    }
+
+    /// Full rotation identity for duplicate suppression.
+    ///
+    /// `fingerprint` intentionally omits the anchor date so snoozes follow the same cycle shape.
+    /// Duplicate pattern suppression must compare rotation phase because equivalent anchors can be
+    /// separated by whole cycles and still produce the same day map.
+    public func matchesPatternIdentity(
+        _ pattern: RotationPatternSnapshot,
+        suggestion: SuggestedRotation,
+        calendar: Calendar
+    ) -> Bool {
+        guard pattern.cycleLength == suggestion.cycleLength,
+            pattern.slots == suggestion.slots,
+            pattern.cycleLength > 0
+        else { return false }
+
+        let existingAnchor = calendar.startOfDay(for: pattern.anchorDate)
+        let suggestedAnchor = calendar.startOfDay(for: suggestion.anchorDate)
+        let dayDelta =
+            calendar.dateComponents([.day], from: existingAnchor, to: suggestedAnchor).day ?? 0
+        return dayDelta.isMultiple(of: pattern.cycleLength)
+    }
+
+    /// Returns active rotations that actually drive at least one day in the 30-day drift window.
+    public func patternsDrivingRecentWindow(
+        activePatterns: [RotationPatternSnapshot],
+        presets: [UUID: ShiftPresetSnapshot],
+        today: Date,
+        calendar: Calendar
+    ) -> [RotationPatternSnapshot] {
+        let windowStart = calendar.startOfDay(
+            for: calendar.date(byAdding: .day, value: -30, to: today)!
+        )
+        var drivingPatternIDs = Set<UUID>()
+        for offset in 0..<30 {
+            let day = calendar.date(byAdding: .day, value: offset, to: windowStart)!
+            guard
+                let pattern = activePatterns.first(where: {
+                    patternDrivesDay($0, day: day, presets: presets, calendar: calendar)
+                })
+            else { continue }
+            drivingPatternIDs.insert(pattern.id)
+        }
+        return activePatterns.filter { drivingPatternIDs.contains($0.id) }
+    }
+
+    /// Filters manual assignments to days where `pattern` is the winning active rotation.
+    public func manualAssignmentsDrivenByPattern(
+        _ pattern: RotationPatternSnapshot,
+        activePatterns: [RotationPatternSnapshot],
+        manualAssignments: [Date: DayAssignmentSnapshot],
+        presets: [UUID: ShiftPresetSnapshot],
+        calendar: Calendar
+    ) -> [Date: DayAssignmentSnapshot] {
+        let prioritySortedPatterns =
+            activePatterns
+            .filter(\.isActive)
+            .sorted { $0.priority > $1.priority }
+
+        return manualAssignments.reduce(into: [Date: DayAssignmentSnapshot]()) { result, entry in
+            let day = calendar.startOfDay(for: entry.key)
+            guard
+                let drivingPattern = prioritySortedPatterns.first(where: {
+                    patternDrivesDay($0, day: day, presets: presets, calendar: calendar)
+                }),
+                drivingPattern.id == pattern.id
+            else { return }
+            result[day] = entry.value
+        }
     }
 
     // MARK: - Helpers
@@ -252,5 +328,35 @@ public struct ShiftPatternDetector: Sendable {
         let raw = "\(cycleLength)|\(slots.map { $0?.uuidString ?? "nil" }.joined(separator: ","))"
         let hash = SHA256.hash(data: Data(raw.utf8))
         return hash.compactMap { String(format: "%02x", $0) }.joined()
+    }
+
+    private func patternDrivesDay(
+        _ pattern: RotationPatternSnapshot,
+        day: Date,
+        presets: [UUID: ShiftPresetSnapshot],
+        calendar: Calendar
+    ) -> Bool {
+        guard patternApplies(pattern, to: day, calendar: calendar),
+            pattern.cycleLength > 0,
+            pattern.slots.count == pattern.cycleLength
+        else { return false }
+
+        guard
+            let presetID = RotationExpander.presetID(
+                for: day, pattern: pattern, calendar: calendar)
+        else {
+            return true
+        }
+        return presets[presetID] != nil
+    }
+
+    private func patternApplies(
+        _ pattern: RotationPatternSnapshot,
+        to day: Date,
+        calendar: Calendar
+    ) -> Bool {
+        if let start = pattern.startDate, day < calendar.startOfDay(for: start) { return false }
+        if let end = pattern.endDate, day > calendar.startOfDay(for: end) { return false }
+        return true
     }
 }

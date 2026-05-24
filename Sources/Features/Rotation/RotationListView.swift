@@ -9,20 +9,28 @@ public struct RotationListView: View {
     @Query private var settingsList: [AppSettings]
     @State private var editing: RotationPattern?
     @State private var creating = false
-    @State private var suggestion: ShiftPatternDetector.SuggestedRotation?
+    @State private var suggestion: PatternSuggestionContext?
     @State private var presetSnapshots: [UUID: ShiftPresetSnapshot] = [:]
 
     public init() {}
 
     private var settings: AppSettings? { settingsList.first }
 
+    private struct PatternSuggestionContext: Equatable {
+        let suggestion: ShiftPatternDetector.SuggestedRotation
+        let replacingPatternID: UUID?
+
+        var isDriftUpdate: Bool { replacingPatternID != nil }
+    }
+
     public var body: some View {
         List {
-            if let suggestion, isSuggestionVisible(suggestion) {
+            if let suggestion, isSuggestionVisible(suggestion.suggestion) {
                 Section {
                     PatternSuggestionView(
-                        suggestion: suggestion,
+                        suggestion: suggestion.suggestion,
                         presets: presetSnapshots,
+                        isDriftUpdate: suggestion.isDriftUpdate,
                         onAccept: { acceptSuggestion(suggestion) },
                         onReject: { rejectSuggestion(suggestion) }
                     )
@@ -74,33 +82,118 @@ public struct RotationListView: View {
         )
         presetSnapshots = input.presets
         let detector = ShiftPatternDetector()
-        suggestion = detector.detect(
-            manualAssignments: input.manualAssignments,
-            presets: input.presets,
+        suggestion = detectDriftOrPattern(
+            input: input,
+            detector: detector,
             today: Date.now,
             calendar: Calendar.current
         )
     }
 
-    private func isSuggestionVisible(_ s: ShiftPatternDetector.SuggestedRotation) -> Bool {
+    private func detectDriftOrPattern(
+        input: DayResolverInput,
+        detector: ShiftPatternDetector,
+        today: Date,
+        calendar: Calendar
+    ) -> PatternSuggestionContext? {
+        let activePatterns = input.rotations
+            .filter(\.isActive)
+            .sorted { $0.priority > $1.priority }
+        let driftPatterns = detector.patternsDrivingRecentWindow(
+            activePatterns: activePatterns,
+            presets: input.presets,
+            today: today,
+            calendar: calendar
+        )
+        let threshold = settings?.effectivePatternDriftThreshold ?? 0.15
+
+        for pattern in driftPatterns {
+            let patternManualAssignments = detector.manualAssignmentsDrivenByPattern(
+                pattern,
+                activePatterns: activePatterns,
+                manualAssignments: input.manualAssignments,
+                presets: input.presets,
+                calendar: calendar
+            )
+            guard
+                let drift = detector.detectDrift(
+                    pattern: pattern,
+                    recentManualAssignments: patternManualAssignments,
+                    presets: input.presets,
+                    today: today,
+                    calendar: calendar,
+                    threshold: threshold
+                )
+            else { continue }
+
+            guard
+                !activePatterns.contains(where: {
+                    detector.matchesPatternIdentity($0, suggestion: drift, calendar: calendar)
+                })
+            else { continue }
+            let context = PatternSuggestionContext(
+                suggestion: drift, replacingPatternID: pattern.id)
+            guard isSuggestionVisible(context.suggestion, now: today) else { continue }
+            return context
+        }
+
+        guard
+            let detected = detector.detect(
+                manualAssignments: input.manualAssignments,
+                presets: input.presets,
+                today: today,
+                calendar: calendar
+            )
+        else { return nil }
+
+        guard
+            !activePatterns.contains(where: {
+                detector.matchesPatternIdentity($0, suggestion: detected, calendar: calendar)
+            })
+        else { return nil }
+        let context = PatternSuggestionContext(suggestion: detected, replacingPatternID: nil)
+        guard isSuggestionVisible(context.suggestion, now: today) else { return nil }
+        return context
+    }
+
+    private func isSuggestionVisible(
+        _ s: ShiftPatternDetector.SuggestedRotation,
+        now: Date = Date.now
+    ) -> Bool {
         guard let settings else { return true }
         if let snoozedUntil = settings.patternSuggestionSnoozedUntil,
             let snoozedFP = settings.patternSuggestionSnoozedFingerprint,
             snoozedFP == s.fingerprint,
-            Date.now < snoozedUntil
+            now < snoozedUntil
         {
             return false
         }
         return true
     }
 
-    private func acceptSuggestion(_ s: ShiftPatternDetector.SuggestedRotation) {
+    private func acceptSuggestion(_ context: PatternSuggestionContext) {
+        let s = context.suggestion
+        let replacingPattern = context.replacingPatternID
+            .flatMap { replacingID in patterns.first(where: { $0.id == replacingID }) }
+        let replacementDateBounds =
+            replacingPattern
+            .map { (startDate: $0.startDate, endDate: $0.endDate) }
+        if let replacingPattern {
+            replacingPattern.isActive = false
+        }
+        let nextPriority = replacingPattern?.priority ?? (patterns.map(\.priority).max() ?? -1) + 1
+        let patternName =
+            context.isDriftUpdate
+            ? String(localized: "pattern.suggestion.drift.default_name")
+            : String(localized: "pattern.suggestion.default_name")
         let pattern = RotationPattern(
-            name: String(localized: "pattern.suggestion.default_name"),
+            name: patternName,
             anchorDate: s.anchorDate,
             cycleLength: s.cycleLength,
             slots: s.slots,
-            priority: 0,
+            startDate: replacementDateBounds?.startDate,
+            endDate: replacementDateBounds?.endDate,
+            priority: nextPriority,
             isActive: true
         )
         modelContext.insert(pattern)
@@ -115,8 +208,9 @@ public struct RotationListView: View {
         suggestion = nil
     }
 
-    private func rejectSuggestion(_ s: ShiftPatternDetector.SuggestedRotation) {
+    private func rejectSuggestion(_ context: PatternSuggestionContext) {
         guard let settings else { return }
+        let s = context.suggestion
         settings.patternSuggestionSnoozedUntil = Calendar.current.date(
             byAdding: .day, value: 30, to: Date.now)
         settings.patternSuggestionSnoozedFingerprint = s.fingerprint
