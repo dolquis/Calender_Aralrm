@@ -332,33 +332,22 @@ allowed-tools: Read, Edit, Grep, Glob
 - `Widget/` 側で同じ App Group を参照している箇所を特定
 - ストア URL の決まり方を整理(`FileManager.default.containerURL(forSecurityApplicationGroupIdentifier:)`)
 
-## 6. CLAUDE.md への追記(マーケット品で代替する内容)
+## 6. CLAUDE.md への追記について
 
-前回案で自作スキルにしていた 2 項目は、CLAUDE.md に短く追記するだけで足りる。
-**既存の CLAUDE.md を読み、矛盾しない場所に以下を追記する**：
+> **本リポジトリでは採用しない**。`CLAUDE.md` はミニマルな「`AGENTS.md` への
+> ポインタ」設計に保ち、swift-format / Widget / Live Activity のルールは
+> `AGENTS.md`（§4 / §5）と `AGENTS.md` §10.3「`CLAUDE.md` はポインタのみで
+> 重複させない」が唯一の正です。
+>
+> 初期案にあった「`CLAUDE.md` に swift-format と Widget セクションを追記する」
+> 手順は **実装時に意図的に採用しませんでした**（同じ内容が `AGENTS.md` §4 / §5 に
+> 既にあり、二重管理の負債を増やしてしまうため）。bootstrap 作業中は
+> このセクション §6 をスキップしてください。
 
-````markdown
-## swift-format
-
-```bash
-bash scripts/lint.sh check    # CI と同じチェック
-bash scripts/lint.sh fix      # in-place 自動修正
-```
-
-`.swift-format`(リポジトリ root)が唯一の設定源。
-使う `swift-format` は Xcode 26 toolchain 同梱版(Homebrew 版とバージョン乖離注意)。
-自動生成コード(`ShiftAlarm.xcodeproj/` 配下)に lint を流さない。
-
-## Widget / Live Activity
-
-- Widget は別プロセス。アプリ本体と直接メモリを共有しない。
-  共有は App Group(既定：`group.com.example.shiftalarm`)の SwiftData ストアか
-  `UserDefaults(suiteName:)` のみ。
-- TimelineProvider は複数エントリを返す(`policy: .never` 禁止)。
-- 依存ロジックは `Sources/Domain/` を再利用、Widget 側でビジネスロジックを再実装しない。
-- Live Activity の表示時間は `liveActivityLeadHours` 設定値に従う。
-- Widget 側から AlarmKit / HealthKit を直接呼ばない。アプリ本体側で書き込んだ値を読むだけ。
-````
+参考：`AGENTS.md` の対応セクション
+- swift-format → `AGENTS.md` §4「ビルド / テスト」末尾の `lint.sh` ブロック
+- Widget / Live Activity 運用ルール → `AGENTS.md` §5「触ってよい / 触ってはいけないもの」
+- 二重管理ルール → `AGENTS.md` §10.3
 
 ## 7. 作業フロー
 
