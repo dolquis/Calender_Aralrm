@@ -233,12 +233,24 @@ v1 では `HolidayOverride` 経由で展開する（新 `@Model` を作らない
 
 - 採用された各 `SuggestedDOWRule` について、次の 6 ヶ月の該当日を計算。
 - 各該当日に `HolidayOverride(date: d, presetID: rule.presetID,
-  skipAlarm: rule.presetID == nil, isVacationGroup: false)` を upsert。
+  skipAlarm: rule.presetID == nil, isVacationGroup: false,
+  expandedFromRuleID: rule.id, expandedAt: now)` を upsert。
 - 6 ヶ月の境界は **ユーザが UI で再生成を承認するまで** 自動更新しない（過剰書込み
   を避ける）。
 
-将来的に `RecurrenceRule` モデル化（バックログ）に置き換える前提で、`HolidayOverride`
-側に展開元 `RuleID` を持たせる選択肢を残す（v1 ではまだ実装しない）。
+**provenance 列の追加（v1 必須、ROADMAP §P3-15 への前提条件）**: A2 v1 出荷時に
+`HolidayOverride` へ次の 2 列を追加する:
+
+- `expandedFromRuleID: UUID?` — A2 由来なら DOW ルール ID、ユーザ手動 override
+  なら `nil`
+- `expandedAt: Date?` — 再展開バッチの判定用、手動なら `nil`
+
+この 2 列が無いまま A2 を出すと、ユーザ手動の祝日 override と A2 自動展開行が
+テーブル上区別できなくなり、後日 §P3-15 で `RuleExpandedOverride` に分離する
+migration で「どの行を移すか」を確定できない。lightweight migration の範囲で
+完結する（nullable 2 列追加 / 既存 row は両方 `nil`）。Widget 側 SwiftData
+container でも schema 解決できることを `/swiftdata-migration` skill 起動時に
+確認する。
 
 **実装精緻化（2026-05-27 追加）:**
 
@@ -1474,6 +1486,12 @@ public protocol AlarmSchedulingClient: Sendable {
     /// AlarmKit に現在登録済みのアラーム ID 集合を返す。診断 (§P1-5) と
     /// orphan 検出に使う。テスト用 fake では in-memory 集合を返す。
     func scheduledIDs() async throws -> Set<UUID>
+
+    /// AlarmKit 認可状態。`AlarmService` は `AlarmManager.shared.authorizationState`
+    /// を直接呼ぶが、fake は任意の状態（`.authorized` / `.denied` /
+    /// `.notDetermined`）を返せること。§P1-5 DIAG-U1（未許可時 critical）が
+    /// `AlarmManager.shared` に触れずに決定論的にテストできる。
+    func authorizationState() async -> AlarmAuthorizationState
 }
 
 extension AlarmService: AlarmSchedulingClient {}
@@ -1486,18 +1504,36 @@ orphan 化を防ぐ）:
 2. DB の `current_alarm_kit_id` を新 ID に書き換える **前に**、置換対象の旧 ID を
    `pending_cancel_alarm_kit_ids: [UUID]` に append する
 3. `current_alarm_kit_id` を新 ID に更新
-4. `pending_cancel_alarm_kit_ids` の各 ID を順次 `cancel` 試行
-5. **cancel が成功した ID のみ** `pending_cancel_alarm_kit_ids` から除去
-6. 残った ID は次回 `refreshScheduledAlarms` 実行時に再試行する
+4. **`modelContext.save()` を必ずここで実行**（旧 ID が pending に退避された
+   状態をディスク永続化。プロセスが落ちても新旧 ID 両方が DB に残るよう保証する）
+5. `pending_cancel_alarm_kit_ids` の各 ID を順次 `cancel` 試行
+6. **cancel が成功した ID のみ** `pending_cancel_alarm_kit_ids` から除去
+   （除去結果もその場で `save()` で永続化）
+7. 残った ID は次回 `refreshScheduledAlarms` 実行時に再試行する
 
 **ポイント**: 旧 ID を「pending」リストに退避してから新 ID で上書きするため、
 cancel が失敗しても旧 AlarmKit エントリの参照が DB 側に残り続ける。これにより
 「新規 schedule 成功 → cancel 失敗で旧アラームが孤児化して鳴り続ける」事故を
-防げる。`refreshScheduledAlarms` の冪等性も保たれる。
+防げる。`refreshScheduledAlarms` の冪等性も保たれる。step 4 の save を省略すると
+「schedule 成功 → cancel 成功 → プロセス kill で save 未到達 → 起動後に旧 ID 
+を再 cancel しようとして旧アラームが存在しないというエッジケース」が現れる
+ため、cancel ループに入る前の save は仕様上必須。
 
-**`ShiftAlarm` / `BedtimeReminder` モデルへの追加**: `current_alarm_kit_id: UUID?`
-（既存 `alarmKitID` を rename）と `pending_cancel_alarm_kit_ids: [UUID]` の 2 列を
-持つ。SwiftData lightweight migration で既存 row は `pending = []` で埋める。
+**`ShiftAlarm` モデルへの追加**: bedtime リマインダは独立した `@Model` ではなく
+`ShiftAlarm` の `isBedtimeReminder` フラグ付き行として保存されているため、追加
+する列は **`ShiftAlarm` 一箇所のみ**:
+
+- `current_alarm_kit_id: UUID?` — 既存 `alarmKitID` プロパティを rename。SwiftData
+  には **`@Attribute(originalName: "alarmKitID")` を必ず付与**して、既存ストア
+  内の値を新カラムに引き継ぐ。これを忘れると lightweight migration は新カラム
+  を空で作り直し、アップグレード時に登録済み AlarmKit ID への参照を全行で失う
+  （cancel 不可・診断画面の saved-ID 判定が常に「未登録」になる回帰）。
+- `pending_cancel_alarm_kit_ids: [UUID]` — 新規列。既存 row はマイグレーション時に
+  `[]` で初期化。
+
+`BedtimeReminder` という独立 @Model は存在しないため、別モデルの追加 / migration
+は不要。Widget の SwiftData container も同 schema を読むため、Widget 側ビルドで
+新列が解決できることをビルド確認する。
 
 **Swift 6 strict concurrency 上の注意**: `AlarmScheduler` が `@MainActor` の場合、
 fake client は `Sendable` actor として実装する。`FakeAlarmSchedulingClient` は
@@ -1564,10 +1600,23 @@ public enum ShiftBundleValidationCode: String, Sendable {
 | 件数上限（preset 100 / assignment 2000） | error | 全体 reject |
 | preset 名 ≥ 64 文字 | error | 全体 reject |
 | note ≥ 512 文字 | warning | preview に表示、truncate 選択可 |
-| missing presetID | warning | 該当 assignment を skip 候補に |
-| duplicate date | warning | preview で後勝ち / 先勝ち選択 |
+| missing presetID（`skipAlarm == false`） | error | 全体 reject（manual 行が rotation を黙らせる事故を防ぐ） |
+| missing presetID（`skipAlarm == true`） | warning | 該当 assignment を skip 候補に |
+| duplicate date | error（P1-6 完了まで） | 全体 reject。P1-6 で conflict resolution UI が用意できたら warning に降格し preview で後勝ち / 先勝ち / スキップを選ばせる |
 | 不正 color hex | warning | デフォルト色 |
 | unknown fields | ignore | forward compatibility |
+
+**`missingPresetReference` を error に昇格した理由**: `skipAlarm == false` のまま
+preset 参照だけが nil になった状態で apply すると、`ShareImporter.applyAssignments`
+は `preset = nil` の manual `DayAssignment` を作成する。`DayResolver.resolve` は
+manual を holiday / rotation より優先するため fire time を返さず、本来鳴るはず
+だったローテーション由来のアラームを **暗黙に黙らせる**。`skipAlarm == true` なら
+ユーザの「鳴らさない」意図と一致するため warning に留める。
+
+**`duplicateDate` を error に昇格した理由**: 同一 `assignments[*].date` が複数回
+現れる bundle を現行 `ShareImporter` がそのまま apply すると、新規 assignment では
+先勝ち / 既存 assignment では繰り返し上書きという **deterministic でない部分適用**
+が発生する。conflict resolution UI が P1-6 で揃うまで一律 reject にする。
 
 ### 7.3 `AlarmDiagnosticsReport` モデル（P1-5）
 
