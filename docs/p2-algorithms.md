@@ -211,9 +211,14 @@ extension ShiftPatternDetector.Configuration {
    - `density = observedCount / expectedCount`
    - `mode` = 最頻値（α と同じタイブレーク規則）
    - `matchRate = count(symbols == mode) / observedCount`
-4. `density ≥ minDOWDensity` かつ `matchRate ≥ minDOWMatchRate` のキーを採用。
-5. 採用キーごとに `SuggestedDOWRule { dayOfWeek, weekOfMonth, presetID, observedMatches,
-   confidence: matchRate }` を生成。
+4. **`observedCount ≥ minObservedMatches`**（既定 2）**かつ** `density ≥
+   minDOWDensity` **かつ** `matchRate ≥ minDOWMatchRate` の 3 条件を **同時に**
+   満たすキーを採用。観測が 1 件しかないキーは `density` と `matchRate` が
+   どちらも 1.0 になり得るが、`minObservedMatches` ゲートを step 4 に明記
+   しないとそのキーが採用されて DOW-U2（観測 1 件では検出しない）が落ちる。
+5. 採用キーごとに `SuggestedDOWRule { id, dayOfWeek, weekOfMonth, presetID,
+   observedMatches, confidence: matchRate }` を生成。`id` は決定論的に
+   `(dayOfWeek, weekOfMonth, presetID)` から導出（§1.10 出力ブロック参照）。
 
 **出力:**
 
@@ -240,9 +245,26 @@ public struct SuggestedDOWRule: Identifiable, Equatable, Sendable {
 v1 では `HolidayOverride` 経由で展開する（新 `@Model` を作らない）:
 
 - 採用された各 `SuggestedDOWRule` について、次の 6 ヶ月の該当日を計算。
-- 各該当日に `HolidayOverride(date: d, presetID: rule.presetID,
-  skipAlarm: rule.presetID == nil, isVacationGroup: false,
-  expandedFromRuleID: rule.id, expandedAt: now)` を upsert。
+- 各該当日 `d` について **既存 `HolidayOverride` を query して衝突分類**:
+  - 既存 row 無し → 新規 `HolidayOverride(date: d, presetID: rule.presetID,
+    skipAlarm: rule.presetID == nil, isVacationGroup: false,
+    expandedFromRuleID: rule.id, expandedAt: now)` を `ChangeKind.add` として
+    `ChangePreview` に積む。
+  - 既存 row があり `expandedFromRuleID == rule.id` → 同一ルールの再展開。
+    `expandedAt` を更新するのみ。`ChangeKind.unchanged`（もしくは date 差分が
+    あれば `.update`）。
+  - 既存 row があり `expandedFromRuleID == nil` → **ユーザの手動 holiday /
+    PTO override** が既に置かれている。**自動 upsert で上書きしない**。
+    `ChangeKind.conflict` として ChangePreview に積み、ユーザが「DOW 提案で
+    上書き」「手動 override を維持」を選べるようにする。デフォルト選択は
+    「手動 override を維持」（手動はユーザ意図、ルールはあくまで提案、という
+    `DayResolver` 優先順位と整合）。
+  - 既存 row があり `expandedFromRuleID != rule.id`（別 DOW ルール由来） →
+    `ChangeKind.conflict`。ChangePreview で「新ルールに置換」「既存ルールを
+    維持」を選ばせる。
+- ChangePreview で承認された変更のみが SwiftData に反映される。承認待ちの
+  状態で SwiftData が直接書き換わることは無い。これにより DOW-I2（手動割当は
+  上書きしない）が UI 層ではなく **データ書き込み層** で守られる。
 - 6 ヶ月の境界は **ユーザが UI で再生成を承認するまで** 自動更新しない（過剰書込み
   を避ける）。
 
@@ -1639,7 +1661,7 @@ public enum ShiftBundleValidationCode: String, Sendable {
 | `hour ∉ 0..23` / `minute ∉ 0..59` | error | 全体 reject |
 | `cycleLength ∉ 1..365` / `slots.count != cycleLength` | error | 全体 reject |
 | duplicate UUID | error | 全体 reject |
-| 件数上限（preset 100 / assignment 2000） | error | 全体 reject |
+| 件数上限（preset ≤ 100 / assignment ≤ 2000 / **pattern ≤ 50** / **override ≤ 3000**） | error | 全体 reject。`ShareImporter.applyPatterns` / `applyOverrides` も配列を直接 iterate するため、preset / assignment と同じ `tooManyItems` で全 top-level コレクションを縛る |
 | preset 名 ≥ 64 文字 | error | 全体 reject |
 | note ≥ 512 文字 | warning | preview に表示、truncate 選択可 |
 | missing presetID（`skipAlarm == false`） | error | 全体 reject（manual 行が rotation を黙らせる事故を防ぐ） |
@@ -1756,9 +1778,19 @@ public struct ChangePreviewSection: Identifiable, Equatable, Sendable {
 }
 
 public struct ChangePreviewItem: Identifiable, Equatable, Sendable {
+    /// **決定論的 ID**。`(entityKind, date, entityID)` から派生させる
+    /// （例: `UUID(uuidString:)` を `SHA256("\(entityKind)|\(date ?? .distantPast)|\(entityID?.uuidString ?? "")")`
+    /// の先頭 16 byte で生成）。`.shiftalarm` import の validation 再実行、
+    /// フィルタ切替、conflict 再評価などで preview が再構築されても同じ変更行
+    /// は同じ `id` を保つ。`UUID()` を毎回振ると SwiftUI `ForEach` が行を
+    /// 「別物」とみなして `isSelected` を破棄し、§P1-6 DoD「選択状態を保持
+    /// できる」に反する。
     public var id: UUID
     public var date: Date?
     public var entityKind: ChangeEntityKind
+    /// 元となったエンティティ ID（preset UUID / pattern UUID / dayAssignment 
+    /// 行 ID 等）。`id` 派生入力としても利用する。
+    public var entityID: UUID?
     public var changeKind: ChangeKind
     public var beforeText: LocalizedStringResource?   // String 直書きを避ける
     public var afterText: LocalizedStringResource?

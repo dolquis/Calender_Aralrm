@@ -235,8 +235,26 @@
       永続化する: 列の型は `pendingCancelData: Data`（`JSONEncoder().encode([UUID])`
       の結果）、API 上は computed `pendingCancelIDs: [UUID]` を経由して読み書き
       する。既存 row はマイグレーション時に空 array を JSON 化した `Data` で
-      初期化する。Schema は引き続き `Sources/Domain/Persistence/SchemaV1.swift`
-      の `SchemaV1.models` 経由で App / Widget 共有される
+      初期化する。
+    - **schema version は新規に `SchemaV2` を導入**して App / Widget 共有ストア
+      の migration 境界を明示する。`SchemaV1` を後から in-place で書き換えると、
+      既に V1 ストアで起動した端末がアップグレード時に「いつの V1 か」を判別
+      できず、`@Attribute(originalName:)` rename のメタデータと既存値の対応が
+      崩れる。具体的には:
+      - `Sources/Domain/Persistence/SchemaV2.swift` を新規追加し、`SchemaV1.models`
+        を継承したうえで `ShiftAlarm` を本変更後の形に差し替える。
+      - `Sources/Domain/Persistence/MigrationPlan.swift`（または等価ファイル）に
+        `SchemaV1 → SchemaV2` の lightweight migration stage を登録。
+        `@Attribute(originalName: "alarmKitID")` を持つ `current_alarm_kit_id`
+        と、`Data` デフォルト値（`Data([0x5b, 0x5d])` = `"[]"`）の
+        `pendingCancelData` で SwiftData が自動的に値を引き継ぐ。
+      - `SharedPersistence.makeContainer()` は `Schema(SchemaV2.models)` を渡し、
+        `MigrationPlan` をコンテナ生成オプションに付与する。
+      - 履歴版 `SchemaV1` 自体は **変更しない**（migration baseline 維持）。
+        以降の P2-β / P2-γ が更にスキーマを足す場合は SchemaV2 → SchemaV3
+        と段階的に追加する。
+      - `/swiftdata-migration` skill を必ず起動し、Widget ターゲットでも V2
+        を読めることをビルドで確認する。
     - 既存 `alarmKitID` プロパティを `current_alarm_kit_id` に rename する際は
       **`@Attribute(originalName: "alarmKitID")` を付与**して SwiftData が既存
       ストアの値を引き継ぐようにする。生の rename だと既存 row の AlarmKit ID
@@ -264,17 +282,27 @@
   - 新規 `Sources/Services/AlarmKit/AlarmSchedulingClient.swift`
   - 変更 `Sources/Services/AlarmKit/AlarmService.swift`
   - 変更 `Sources/Services/AlarmKit/AlarmScheduler.swift`
-  - 変更 `Sources/Domain/Models/ShiftAlarm.swift`（`pending_cancel_alarm_kit_ids`
-    列追加 / `alarmKitID` → `current_alarm_kit_id` に
-    `@Attribute(originalName: "alarmKitID")` 付き rename / SwiftData lightweight
-    migration）
+  - 変更 `Sources/Domain/Models/ShiftAlarm.swift`（`pendingCancelData: Data` 列
+    追加 / `alarmKitID` → `current_alarm_kit_id` に
+    `@Attribute(originalName: "alarmKitID")` 付き rename）
+  - 新規 `Sources/Domain/Persistence/SchemaV2.swift`（`SchemaV1` を継承し
+    `ShiftAlarm` を新形式に差し替えた `models` を公開）
+  - 新規 / 変更 `Sources/Domain/Persistence/MigrationPlan.swift`（`SchemaV1 →
+    SchemaV2` の lightweight migration stage を登録）
+  - 変更 `Sources/Domain/Persistence/ModelContainer+Shared.swift`
+    （`SharedPersistence.makeContainer()` が `Schema(SchemaV2.models)` と
+    `MigrationPlan` を使うように切り替え）
   - 変更 `App/AppDependencies.swift`
   - 新規 `Tests/Support/FakeAlarmSchedulingClient.swift`
   - 新規 `Tests/ServicesTests/AlarmSchedulerTests.swift`
 - **注意**: Swift 6 strict concurrency 下で actor → protocol 化する際の
   `Sendable` 制約、`@MainActor` な `AlarmScheduler` と fake client の相性。
 - **DoD**:
-  - 上記 9 テストが `scripts/verify.sh` で緑。
+  - **AS-U1 / AS-U2 / AS-U3 / AS-U4 / AS-U5 / AS-U6 / AS-U7 / AS-U8 / AS-U9 /
+    AS-I1 の全 10 件**（unit 9 + integration 1）が `scripts/verify.sh` で緑。
+    特に AS-I1 は `refreshScheduledAlarms` の操作列を fake で検証する
+    integration テストで、unit のみ緑でも DoD は満たさない（unit と
+    integration を両方明記して落とし穴を塞ぐ）。
   - 既存 `AlarmService` 公開 API 非破壊。
   - Swift 6 strict concurrency 下で `Sendable` 警告が増えない。
 
@@ -379,7 +407,10 @@
 
 ## 3. P1 — UX 完成度
 
-> ステータス: **すべて完了**（PR #7 / #8 / #9 / #10）。以下は履歴として残す。
+> ステータス: **P1-1〜P1-4 は完了**（PR #7 / #8 / #9 / #10、以下は履歴）。
+> **P1-5 アラーム診断画面 / P1-6 ChangePreview 共通化 / P1（追補）A1 ドリフト
+> UI 統合は 2026-05-27 提案書取り込みで新規追加** — いずれも未着手で、依存関係
+> として §P0-4 が完了している必要がある（§8「次の 1 手」順序を参照）。
 
 ### P1-1. オンボーディング ✅ 完了 (PR #7)
 
@@ -1488,6 +1519,14 @@ TDD 的に最初に **赤いテスト** として並べてから実装すると�
 | β-I4 | `testAutoGroupingPromptShownOnlyOnce` | A4: フラグ `true` 後は β 画面再オープンで表示無し |
 
 **新規テスト ID（2026-05-27 追加） — VAC 系**
+
+> **VAC-U* と β-U* の関係**: 旧 β-U* / β-I* は P2-β の **当初設計時の暫定 ID**
+> で、`docs/p2-algorithms.md §4` の test execution map にも残っている。2026-05-27
+> 提案書取り込み以降の **canonical な ID は VAC-U* / VAC-I*** に統一する。
+> 既存 β-U1〜β-I4 はそのまま消さず、対応関係（β-U1 ↔ VAC-U1 など番号順）として
+> 解釈する。実装着手時は VAC-* を `XCTest` メソッド名に採用し、β-* は当面
+> ドキュメント上の旧名称として残置するに留める（将来の docs 整理 PR で
+> 段階的に削除）。VAC-U10 は β 系には対応物が無い新規（domain factory invariant）。
 
 | # | テスト名 | 検証する性質 |
 |---|---|---|
