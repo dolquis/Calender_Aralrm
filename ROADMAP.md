@@ -209,7 +209,16 @@
   3. `current_alarm_kit_id` を新 ID に更新
   4. **ここで `modelContext.save()` を必ず実行**（旧 ID は pending に退避され、
      新 ID は DB に書かれた状態を**ディスク永続化**する。これより前にプロセスが
-     落ちても旧 ID が失われない不変条件を守る）
+     落ちても旧 ID が失われない不変条件を守る）。
+     - **save が throw した場合のロールバック**: 新 ID は AlarmKit に登録済みだが
+       DB のどこにも記録されていない状態（cancel する手段が失われた orphan）に
+       なる。これを防ぐため、`save()` 失敗を catch して **直前に schedule した
+       新 ID を `alarmClient.cancel(newID)` で取り消してから** 上位に例外を
+       rethrow する。cancel 自体がさらに失敗した場合は構造化ログに `newID` と
+       両方の例外を残し、次回 `refreshScheduledAlarms` 起動時に
+       `alarmClient.scheduledIDs()` と DB の `current_alarm_kit_id`（古い値の
+       まま）を突き合わせて orphan を検出・cancel する。pending-cancel loop には
+       絶対に入らない（旧 ID は安全、新 ID は cancel 済み or orphan 状態）。
   5. `pending_cancel_alarm_kit_ids` の各 ID を順次 cancel 試行
   6. cancel が成功した ID のみ pending リストから除去、残りは次回同期で再試行
      （除去結果も `save()` で永続化）
@@ -737,7 +746,18 @@
   - `VacationPeriod` は **独立 @Model** とし、`HolidayOverride.isVacationGroup`
     フラグは「`VacationPeriod` 由来か否かのマーカー」としてのみ使う。
     `HolidayOverride` 自体の責務は単日 override に維持する。
-  - **3 日未満の VacationPeriod は作成不可**（UI バリデーションで弾く）。
+  - **3 日未満の VacationPeriod は作成不可**。**UI バリデーションだけでなく、
+    `VacationPeriod` の throwing initializer または専用 factory（例: `static func
+    make(...) throws -> VacationPeriod`）の中でも同じ不変条件を強制する**。理由:
+    `RotationExpander` / `DayResolver` は永続化された `VacationPeriod` を
+    アラーム抑制範囲として無条件に扱うため、自動グルーピング (β-S2 / β-S3) や
+    将来の `.shiftalarm` import / App Intents / テストヘルパなど他の write path
+    から 1〜2 日の `VacationPeriod` が混入すると、本来鳴るはずの 1〜2 日分の
+    ローテーション・アラームを **暗黙に黙らせる** 事故が起き得る。invariant
+    違反は `VacationPeriodError.tooShort(days: Int)` を throw し、UI 側は
+    既存の入力検証メッセージに繋ぐ。同じ不変条件をテスト ID **VAC-U10**
+    （初期化時 / domain factory 側で 2 日範囲が reject される）として
+    P2-β テスト群に追加すること。
   - **Widget の SwiftData container も SchemaV2 を読むこと**を migration 時に
     確認（App と Widget で同じ App Group store を共有しているため）。
     `/swiftdata-migration` skill 必須。
@@ -816,10 +836,17 @@
   - 既存 `Sources/Domain/Models/AppSettings.swift` に `userNameOnRoster` を追加
   - 新規 `Sources/Domain/Models/ShiftSymbolMapping.swift`（Phase 1 で必須。
     上記「永続化先」参照）
-  - 変更 `Sources/Domain/Persistence/SchemaV1.swift`（`SchemaV1.models` 配列に
-    `ShiftSymbolMapping.self` を追加。`AppDependencies.swift` ではなくここが
-    App / Widget 共有 `ModelContainer` の単一エントリポイント。`SharedPersistence
-    .makeContainer()` が `Schema(SchemaV1.models)` を構築する）
+  - 変更 `Sources/Domain/Persistence/Schema*.swift`（**P2-γ Phase 1 着手時点で
+    `SharedPersistence.makeContainer()` が読んでいる最新スキーマ版** の
+    `models` 配列に `ShiftSymbolMapping.self` を追加。`AppDependencies.swift`
+    ではなくここが App / Widget 共有 `ModelContainer` の単一エントリポイント。
+    `SharedPersistence.makeContainer()` が `Schema(<最新版>.models)` を構築する。
+    優先順位 (§8 「次の 1 手」) では **P2-β SchemaV2 migration が P2-γ より前**
+    のため、P2-γ Phase 1 が着手される頃には実際の対象は `SchemaV2` 以降に
+    なっている可能性が高い。`SchemaV1` を後から書き換えると migration baseline
+    が変わって既存ユーザストアが壊れるので、**履歴版 (V1) は触らず、現行
+    active 版に追加する**。Phase 1 着手 PR の冒頭で `SharedPersistence` の
+    `Schema(...)` 呼び出しを grep して active 版を特定すること。
   - 既存の Import/Export 画面から「画像から取り込む」導線を追加
   - `App/Info.plist`: `NSCameraUsageDescription`, `NSPhotoLibraryUsageDescription` を追加
   - テスト: 新規 `Tests/ServicesTests/ShiftImageParserTests.swift`
@@ -842,9 +869,13 @@
         への optional 参照、`skipAlarm: Bool`、`lastUsedAt: Date`、`createdAt: Date`。
         AppSettings に格納するシングルトン KV ではなく独立テーブルにすることで、
         記号ごとの最終利用時刻で並べ替えたり破棄したりするクエリが素直に書ける。
-        **`Sources/Domain/Persistence/SchemaV1.swift` の `SchemaV1.models` 配列に
-        `ShiftSymbolMapping.self` を追加**して App / Widget 共有 `ModelContainer`
-        （`SharedPersistence.makeContainer()`）が新モデルを認識するようにする。
+        **`Sources/Domain/Persistence/Schema*.swift` のうち、`SharedPersistence
+        .makeContainer()` が現に `Schema(...)` 引数として渡している最新スキーマ
+        版** の `models` 配列に `ShiftSymbolMapping.self` を追加して、App /
+        Widget 共有 `ModelContainer` が新モデルを認識するようにする。**履歴版
+        (`SchemaV1` 等) は migration baseline を保つため触らない**。P2-β
+        (§P2-β) で SchemaV2 が導入されているため、P2-γ Phase 1 着手時点では
+        SchemaV2 以降が active になっている前提で着手前に grep で確認する。
         `/swiftdata-migration` skill を必ず起動。Widget 側ビルドで model 解決でき
         ることを確認する（参照しないが schema に存在することは必要）。IMG-U1
         「mapping が保存される」テストは Phase 1 PR 内で SwiftData store を経由
