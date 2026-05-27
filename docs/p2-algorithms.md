@@ -1168,7 +1168,8 @@ assert（γ-U12）。
 **2026-05-27 取り込みで追加されるテスト ID 群**（ROADMAP §9-α / §9-β / §9-γ /
 §P0-4 / §P0-5 / §P1-5 末尾参照）:
 
-- **AS-U1〜U8 / AS-I1**: AlarmScheduler fake 注入（§P0-4）
+- **AS-U1〜U9 / AS-I1**: AlarmScheduler fake 注入（§P0-4）。U9 は §7.1 step 4
+  の save-failure rollback（save throw 時に新 ID を cancel して orphan を防ぐ）。
 - **SBV-U1〜U11 / SBV-I1〜I2**: `.shiftalarm` バリデーション（§P0-5）。U7 は
   `skipAlarm` 真偽別 / U9・U10 は assignment override hour・minute 範囲 /
   U11 は duplicate date error 昇格 / 加えて patterns[].slots[] の missing
@@ -1179,7 +1180,8 @@ assert（γ-U12）。
   ケースを critical 判定。
 - **DRIFT-U1〜U5 / DRIFT-I1〜I3**: A1 ドリフト UI 統合
 - **DOW-U1〜U5 / DOW-I1〜I3**: A2 DOW ルール検出
-- **VAC-U1〜U9 / VAC-I1〜I2**: P2-β 連休越境ローテーション
+- **VAC-U1〜U10 / VAC-I1〜I2**: P2-β 連休越境ローテーション。U9 は UI 入力検証 /
+  U10 は domain factory 側で 3 日未満 reject（`VacationPeriodError.tooShort`）。
 - **IMG-U1〜U5 / IMG-I1〜I3 / IMG-S1〜S2**: P2-γ Phase 1 画像インポート
 
 3 段階の gating で CI は速度と決定論を保ちつつ、DoD の精度測定はオンデマンドで
@@ -1519,7 +1521,17 @@ orphan 化を防ぐ）:
    `pending_cancel_alarm_kit_ids: [UUID]` に append する
 3. `current_alarm_kit_id` を新 ID に更新
 4. **`modelContext.save()` を必ずここで実行**（旧 ID が pending に退避された
-   状態をディスク永続化。プロセスが落ちても新旧 ID 両方が DB に残るよう保証する）
+   状態をディスク永続化。プロセスが落ちても新旧 ID 両方が DB に残るよう保証する）。
+   **save が throw した場合のロールバック**: 新 ID は AlarmKit 上に登録済みだが
+   DB のどこにも記録されていない orphan 状態になる。`save()` 失敗を catch して
+   **直前に schedule した新 ID を `alarmClient.cancel(newID)` で取り消してから**
+   上位に例外を rethrow する。cancel 自体が失敗した場合は構造化ログに `newID`
+   と両方の例外を残し、次回 `refreshScheduledAlarms` 起動時に
+   `alarmClient.scheduledIDs()` と DB の `current_alarm_kit_id`（古い値のまま）
+   を突き合わせて orphan を検出・cancel する。pending-cancel loop には絶対に
+   入らない（旧 ID は cancel されていない＝安全、新 ID は cancel 済み or
+   orphan）。AS-U4 は schedule 失敗、加えて **AS-U9 save-failure rollback** を
+   テスト ID として追加する。
 5. `pending_cancel_alarm_kit_ids` の各 ID を順次 `cancel` 試行
 6. **cancel が成功した ID のみ** `pending_cancel_alarm_kit_ids` から除去
    （除去結果もその場で `save()` で永続化）
@@ -1542,8 +1554,15 @@ cancel が失敗しても旧 AlarmKit エントリの参照が DB 側に残り�
   内の値を新カラムに引き継ぐ。これを忘れると lightweight migration は新カラム
   を空で作り直し、アップグレード時に登録済み AlarmKit ID への参照を全行で失う
   （cancel 不可・診断画面の saved-ID 判定が常に「未登録」になる回帰）。
-- `pending_cancel_alarm_kit_ids: [UUID]` — 新規列。既存 row はマイグレーション時に
-  `[]` で初期化。
+- `pendingCancelData: Data` — 新規列。SwiftData の `[UUID]` 直接サポートは
+  バージョン依存で App / Widget 共有ストアでの安全性が不確実なため、**既存
+  `RotationPattern.slotsData` と同じ JSON 化方針** で永続化する。具体的には
+  `JSONEncoder().encode([UUID])` の結果を `Data` として持ち、API 側は computed
+  `pendingCancelIDs: [UUID]` を経由して読み書きする（getter は decode、setter
+  は encode → `pendingCancelData` 代入）。既存 row はマイグレーション時に空
+  array を JSON 化した `Data` で初期化。本文中の "`pending_cancel_alarm_kit_ids`"
+  という呼称は概念名であり、実際の永続列名は `pendingCancelData`、API
+  identifier は `pendingCancelIDs` の二段構成になる。
 
 `BedtimeReminder` という独立 @Model は存在しないため、別モデルの追加 / migration
 は不要。Widget の SwiftData container も同 schema を読むため、Widget 側ビルドで

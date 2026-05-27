@@ -255,6 +255,10 @@
   - AS-U6 bedtime reminder と wake alarm が同一 calendar day でも key collision なし
   - AS-U7 skipAlarm: 登録済みなら pending 経由で cancel
   - AS-U8 祝日 override: expected set から除外
+  - AS-U9 save-failure rollback: `modelContext.save()` が throw した場合に
+    直前の新 ID が `alarmClient.cancel()` され、pending-cancel ループに入らない
+    （fake client で `save()` を意図的に throw させ、`cancel` が 1 回だけ
+    新 ID 引数で呼ばれることを assert）
   - AS-I1 `refreshScheduledAlarms` の操作列を fake で検証
 - **対象ファイル**:
   - 新規 `Sources/Services/AlarmKit/AlarmSchedulingClient.swift`
@@ -772,7 +776,13 @@
   - VAC-U6 resetToDay で昼勤スロットへ揃う
   - VAC-U7 複数連休の補正が累積する
   - VAC-U8 年末年始を跨いでも日付ズレしない
-  - VAC-U9 3 日未満の `VacationPeriod` は作れない
+  - VAC-U9 3 日未満の `VacationPeriod` は **UI 入力検証** で reject される
+    （フォーム / 確認ダイアログ層）
+  - VAC-U10 3 日未満の `VacationPeriod` は **domain factory / throwing init**
+    でも reject される（`VacationPeriodError.tooShort` を throw）。
+    自動グルーピング (β-S2 / β-S3) / `.shiftalarm` import / App Intents /
+    テストヘルパなど UI を経由しない write path をすべてカバーするための
+    invariant。
   - VAC-I1 HolidayManager から連休登録できる
   - VAC-I2 登録後に AlarmScheduler の expected set が変化する
 - **DoD**:
@@ -1333,7 +1343,7 @@
 
 2. **P0-4 AlarmScheduler protocol / fake 化**: `AlarmSchedulingClient` 導入、
    `AlarmService` を準拠、`AlarmScheduler` を protocol ベースに変更。
-   `FakeAlarmSchedulingClient` で AS-U1〜U8 / AS-I1 を緑にする。
+   `FakeAlarmSchedulingClient` で AS-U1〜U9 / AS-I1 を緑にする。
 
 3. **P0-5 `.shiftalarm` バリデーション**: `ShiftBundleValidator` 新設、
    `ShareImporter` の preview / apply 前段で呼び出し、SBV-U1〜U8 / SBV-I1〜I2 を
@@ -1489,7 +1499,8 @@ TDD 的に最初に **赤いテスト** として並べてから実装すると�
 | VAC-U6 | `testResetToDayPolicyAlignsToDaySlot` | resetToDay で昼勤スロットへ揃う |
 | VAC-U7 | `testMultipleVacationsAccumulate` | 複数連休の補正が累積する |
 | VAC-U8 | `testYearBoundaryDoesNotShiftDates` | 年末年始を跨いでも日付ズレしない |
-| VAC-U9 | `testVacationPeriodLessThanThreeDaysRejected` | 3 日未満の `VacationPeriod` は作れない |
+| VAC-U9 | `testVacationPeriodLessThanThreeDaysRejectedByUI` | 3 日未満の `VacationPeriod` は UI 入力検証で reject される |
+| VAC-U10 | `testVacationPeriodFactoryRejectsLessThanThreeDays` | domain factory / throwing init が 2 日範囲を `VacationPeriodError.tooShort` で reject |
 | VAC-I1 | `testHolidayManagerCreatesVacation` | HolidayManager から連休登録できる |
 | VAC-I2 | `testAlarmSchedulerExpectedSetChangesAfterVacation` | 登録後に AlarmScheduler の expected set が変化する |
 
