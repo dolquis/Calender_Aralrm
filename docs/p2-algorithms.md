@@ -240,6 +240,29 @@ v1 では `HolidayOverride` 経由で展開する（新 `@Model` を作らない
 将来的に `RecurrenceRule` モデル化（バックログ）に置き換える前提で、`HolidayOverride`
 側に展開元 `RuleID` を持たせる選択肢を残す（v1 ではまだ実装しない）。
 
+**実装精緻化（2026-05-27 追加）:**
+
+- 検出器設定を `ShiftPatternDetector.Configuration` の入れ子としてではなく、
+  **独立 struct** として持つことを推奨（A2 を α と別ファイルに分離した場合に再利用
+  しやすい）:
+  ```swift
+  public struct DayOfWeekPatternDetectorConfiguration: Sendable {
+      public var windowDays: Int = 90
+      public var minDensity: Double = 0.6
+      public var minMatchRate: Double = 0.85
+      public var minObservedMatches: Int = 2
+  }
+  ```
+- 初期実装範囲は `weekday + weekOfMonth` のみ。`lastWeekOfMonth`（毎月最終週ルール）
+  は Phase 2 として後送する。
+- **受諾フローは §7 の `ChangePreview` を経由**。`HolidayOverride` 展開前に
+  該当日リストをユーザがレビューできる。
+- **展開件数増の懸念**: A2 が `HolidayOverride` に最大 6 ヶ月分一括 insert すると
+  行数が膨らむため、運用数値を見て **専用テーブル `RuleExpandedOverride`** への
+  分離を検討（ROADMAP §P3-15 バックログ）。
+- テスト ID DOW-U1〜DOW-I3（ROADMAP §9-α 末尾）と一対一でアルゴリズム上の保証点を
+  対応させる。
+
 ### 1.11 テスト対応（A1 / A2）
 
 | ROADMAP test | アルゴリズム上の保証 |
@@ -310,6 +333,18 @@ SwiftData の lightweight migration:
 `SchemaV2.versionIdentifier = Schema.Version(2, 0, 0)`、
 `SchemaMigrationPlan` の `stages = [.lightweight(fromVersion: SchemaV1.self,
 toVersion: SchemaV2.self)]` を用意。
+
+**実装精緻化（2026-05-27 追加）:**
+
+- **Widget の SwiftData container も V2 を読むこと** を確認する。App と Widget は
+  App Group 配下の同一 SwiftData store を共有しているため、`Widget/` 側の
+  `ModelContainer` 初期化コードでも `SchemaV2` を渡す必要がある。`/swiftdata-migration`
+  skill を起動して確認漏れを防ぐ。
+- `CrossVacationPolicy.invert/continue/resetToDay` の **Int rawValue (0/1/2) は確定**。
+  将来追加する policy は rawValue 3 以降に積み、既存数値を変更しない。
+- `VacationPeriod` は **独立 @Model** で `HolidayOverride` とは別エンティティ。
+  `HolidayOverride.isVacationGroup` は「`VacationPeriod` 由来か否かのマーカー」専用
+  であり、単日 override の責務に侵食しない。
 
 ### 2.3 アルゴリズム: `VacationAwareRotation.presetID`
 
@@ -520,7 +555,23 @@ public struct VacationCandidate: Equatable, Sendable {
 
 ## 3. P2-γ — シフト表画像インポート
 
-### 3.1 パイプライン全景
+### 3.0 Phase 構成（2026-05-27 仕様提案書取り込みで更新）
+
+評価時の指摘「Vision OCR は日本語縦書き・手書き勤務表で精度が出にくい / グリッド
+推定は本番品質まで持っていくのに大工数」を反映し、**OCR 抜きでも動く土台を先行**
+させる Phase 構成へ再整理した。各 Phase は単独で価値を提供できる。
+
+| Phase | スコープ | 完成時に提供される価値 |
+|---|---|---|
+| **Phase 1 — 手動グリッド + 記号マッピング** | 表範囲・日付行・データセルをユーザがタップで指定。`ShiftSymbolMapping` を保存し次回以降は自動適用。差分プレビューは §7 `ChangePreview` を経由 | **OCR 完全失敗時でも画像取込が完結する**フォールバック UX が常時利用可能 |
+| **Phase 2 — Vision OCR 自動抽出** | `OCRTextRecognizer` / `ShiftTableGridDetector` で §3.1〜§3.4 を自動化。信頼度 `high/medium/low` のうち low セルは未選択で Phase 1 の手動フローへ落ちる | 自動抽出が成功するケースでは入力負荷が大幅に下がる |
+| **Phase 3 — FoundationModels 補助** | iOS 26 `FoundationModels` でラベル意味マッピング補助 + 勤務表形式推定。利用不可機種ではルールベースに fallback | 曖昧記号・複雑な表構造の解釈精度が向上 |
+
+§3.1〜§3.12 は Phase 2 / Phase 3 のパイプラインを詳述する。Phase 1 は記号
+マッピング (§3.6 Stage 5) と差分プレビュー (§3.7 Stage 6) を **ユーザ操作で直接
+駆動する** 形態と読み替える。
+
+### 3.1 パイプライン全景（Phase 2 自動抽出時）
 
 ```
 [画像入力]
@@ -1090,9 +1141,20 @@ assert（γ-U12）。
 
 | トリガ | 走るもの |
 |---|---|
-| `bash scripts/verify.sh`（CI 既定） | α / β / γ の unit + integration（モック使用）。現状 56 件に対し ~40 件追加見込み。 |
-| `SNAPSHOT_TESTING_ENABLED=1 bash scripts/verify.sh` | + 既存スナップショット 5 件。本タスクではスナップショット追加なし。 |
+| `bash scripts/verify.sh`（CI 既定） | α / β / γ の unit + integration（モック使用）。現状 56 件に対し ~40 件追加見込み。**2026-05-27 取り込みでさらに AS / SBV / DIAG / DRIFT / DOW / VAC / IMG 系（~50 件）追加見込み。** |
+| `SNAPSHOT_TESTING_ENABLED=1 bash scripts/verify.sh` | + 既存スナップショット 5 件 + `ChangePreviewSnapshotTests` 系（§P1-6）。 |
 | `VISION_E2E=1 bash scripts/verify.sh` | + γ-U1/U2 smoke + 精度 DoD (γ-D1/D2/D3)。ローカル運用。 |
+
+**2026-05-27 取り込みで追加されるテスト ID 群**（ROADMAP §9-α / §9-β / §9-γ /
+§P0-4 / §P0-5 / §P1-5 末尾参照）:
+
+- **AS-U1〜U8 / AS-I1**: AlarmScheduler fake 注入（§P0-4）
+- **SBV-U1〜U8 / SBV-I1〜I2**: `.shiftalarm` バリデーション（§P0-5）
+- **DIAG-U1〜U5 / DIAG-I1〜I2**: アラーム診断（§P1-5）
+- **DRIFT-U1〜U5 / DRIFT-I1〜I3**: A1 ドリフト UI 統合
+- **DOW-U1〜U5 / DOW-I1〜I3**: A2 DOW ルール検出
+- **VAC-U1〜U9 / VAC-I1〜I2**: P2-β 連休越境ローテーション
+- **IMG-U1〜U5 / IMG-I1〜I3 / IMG-S1〜S2**: P2-γ Phase 1 画像インポート
 
 3 段階の gating で CI は速度と決定論を保ちつつ、DoD の精度測定はオンデマンドで
 可能にする。
@@ -1380,7 +1442,225 @@ enum ICSTestParser {
 
 ---
 
-## 7. P2 拡張 ロードマップ的優先順位（参考）
+## 7. 横断: ChangePreview 抽象 / アラーム診断 / `.shiftalarm` validator
+
+2026-05-27 仕様提案書取り込みで追加された **横断的なデータモデル / プロトコル**
+を本章にまとめる。これらは P0-4 / P0-5 / P1-5 / P1-6（および P1 追補 A1）の
+複数タスクで参照されるため、各タスク説明から重複を避けて当章を参照する。
+
+### 7.1 `AlarmSchedulingClient` protocol（P0-4）
+
+`AlarmScheduler` の diff-sync を fake で検証可能にするための protocol 境界。
+具体 actor `AlarmService` は `AlarmManager.shared` を直叩きするため fake 化でき
+ないので、間に protocol を挟む。
+
+```swift
+public enum ScheduledAlarmKind: Sendable {
+    case main
+    case bedtime
+}
+
+public protocol AlarmSchedulingClient: Sendable {
+    func schedule(
+        id: UUID,
+        fireDate: Date,
+        label: String,
+        soundID: String,
+        kind: ScheduledAlarmKind
+    ) async throws -> UUID
+
+    func cancel(id: UUID) async throws
+}
+
+extension AlarmService: AlarmSchedulingClient {}
+```
+
+**同期順序の保証**（schedule 失敗時に旧アラーム消失を防ぐ）:
+
+1. 新しいアラームを `schedule`（失敗時はここで例外）
+2. DB の `AlarmKit ID` を更新
+3. 古いアラームを `cancel`
+4. `cancel` 失敗時はログを残し、次回同期で再試行可能にする
+
+**Swift 6 strict concurrency 上の注意**: `AlarmScheduler` が `@MainActor` の場合、
+fake client は `Sendable` actor として実装する。`FakeAlarmSchedulingClient` は
+`Tests/Support/` 配下に置き、`operations: [Operation]` を内部状態として保持する。
+
+### 7.2 `ShiftBundleValidator` モデル（P0-5）
+
+`.shiftalarm` の意味検査層。Codable 後 / preview 前に必ず通す。
+
+```swift
+public struct ShiftBundleValidationResult: Equatable, Sendable {
+    public var errors: [ShiftBundleValidationIssue]
+    public var warnings: [ShiftBundleValidationIssue]
+    public var isValid: Bool { errors.isEmpty }
+}
+
+public struct ShiftBundleValidationIssue: Identifiable, Equatable, Sendable {
+    public var id: UUID
+    public var code: ShiftBundleValidationCode
+    public var path: String      // 例: "presets[3].defaultAlarmHour"
+    public var message: String   // ja / en ローカライズ済み
+}
+
+public enum ShiftBundleValidationCode: String, Sendable {
+    case unsupportedVersion
+    case futureVersion
+    case tooManyItems
+    case invalidAlarmHour
+    case invalidAlarmMinute
+    case invalidCycleLength
+    case slotCountMismatch
+    case duplicateID
+    case duplicateDate
+    case missingPresetReference
+    case textTooLong
+    case invalidColorHex
+}
+```
+
+**判定マトリクス**:
+
+| 検査 | 区分 | 動作 |
+|---|---|---|
+| `version` 対応範囲外 | error | 全体 reject |
+| 将来 version | error（初期実装） | 全体 reject |
+| `hour ∉ 0..23` / `minute ∉ 0..59` | error | 全体 reject |
+| `cycleLength ∉ 1..365` / `slots.count != cycleLength` | error | 全体 reject |
+| duplicate UUID | error | 全体 reject |
+| 件数上限（preset 100 / assignment 2000） | error | 全体 reject |
+| preset 名 ≥ 64 文字 | error | 全体 reject |
+| note ≥ 512 文字 | warning | preview に表示、truncate 選択可 |
+| missing presetID | warning | 該当 assignment を skip 候補に |
+| duplicate date | warning | preview で後勝ち / 先勝ち選択 |
+| 不正 color hex | warning | デフォルト色 |
+| unknown fields | ignore | forward compatibility |
+
+### 7.3 `AlarmDiagnosticsReport` モデル（P1-5）
+
+`AlarmDiagnosticsService.generate()` の出力。永続化はしない。
+
+```swift
+public struct AlarmDiagnosticsReport: Equatable, Sendable {
+    public var generatedAt: Date
+    public var overallStatus: AlarmDiagnosticsStatus
+    public var checks: [AlarmDiagnosticsCheck]
+    public var nextAlarmSummary: NextAlarmSummary?
+    public var scheduledAlarmCount: Int
+    public var lastSchedulerRunAt: Date?
+}
+
+public enum AlarmDiagnosticsStatus: String, Sendable {
+    case normal, warning, attention, critical
+}
+
+public struct AlarmDiagnosticsCheck: Identifiable, Equatable, Sendable {
+    public var id: String
+    public var title: String
+    public var status: AlarmDiagnosticsStatus
+    public var message: String
+    public var recoveryAction: AlarmDiagnosticsRecoveryAction?
+}
+
+public enum AlarmDiagnosticsRecoveryAction: Equatable, Sendable {
+    case requestAlarmAuthorization
+    case refreshScheduledAlarms
+    case openSettings
+    case openHealthAuthorization
+    case none
+}
+```
+
+**`overallStatus` 集約規則**:
+
+- どれか 1 つでも `critical` → `critical`
+- どれか 1 つでも `attention` → `attention`
+- どれか 1 つでも `warning` → `warning`
+- 全部 `normal` → `normal`
+
+**`AppSettings` 追加**: `lastAlarmSchedulerRunAt: Date?` /
+`lastAlarmSchedulerResultRaw: String?`。後者は構造化ログ化（§P3-8）と合わせて
+将来 enum rawValue に寄せる。
+
+### 7.4 `ChangePreview` 共通モデル（P1-6）
+
+`.shiftalarm` import / 画像 import / ドリフト受諾 / DOW ルール展開 / 長期連休
+グルーピング / 将来の CSV import で共有する差分プレビュー基盤。
+
+```swift
+public struct ChangePreview: Equatable, Sendable {
+    public var summary: ChangeSummary
+    public var sections: [ChangePreviewSection]
+}
+
+public struct ChangeSummary: Equatable, Sendable {
+    public var addedCount: Int
+    public var updatedCount: Int
+    public var deletedCount: Int
+    public var unchangedCount: Int
+    public var conflictCount: Int
+    public var warningCount: Int
+}
+
+public struct ChangePreviewSection: Identifiable, Equatable, Sendable {
+    public var id: UUID
+    public var title: String
+    public var items: [ChangePreviewItem]
+}
+
+public struct ChangePreviewItem: Identifiable, Equatable, Sendable {
+    public var id: UUID
+    public var date: Date?
+    public var entityKind: ChangeEntityKind
+    public var changeKind: ChangeKind
+    public var beforeText: LocalizedStringResource?   // String 直書きを避ける
+    public var afterText: LocalizedStringResource?
+    public var warnings: [LocalizedStringResource]
+    public var isSelected: Bool
+}
+
+public enum ChangeKind: String, Sendable {
+    case add, update, delete, unchanged, conflict
+}
+
+public enum ChangeEntityKind: String, Sendable {
+    case preset
+    case dayAssignment
+    case rotationPattern
+    case holidayOverride
+    case vacationPeriod
+    case dowRule
+}
+```
+
+**移行順序（漸進）**:
+
+1. **Step 1**: 既存 `ShareImporter` 内のプレビューロジックを
+   `Sources/Features/Sharing/ImportPreviewView.swift` として独立抽出
+   （振る舞い不変リファクタ）。
+2. **Step 2**: `ChangePreview` 抽象モデル導入、`.shiftalarm` import 経路を
+   新モデルへ移行。
+3. **Step 3**: 画像 import / ドリフト UI / DOW ルール展開も同 UI を共有。
+
+Step 1 は §P0-5 と独立に並走可能（validator は ShareImporter 内呼び出し、
+抽出は別 PR）。
+
+### 7.5 これらが集まって守るもの
+
+| 機能 | 守る性質 |
+|---|---|
+| `AlarmSchedulingClient`（P0-4） | 「鳴らないアラーム」を fake テストで再現できる |
+| `ShiftBundleValidator`（P0-5） | 壊れた外部入力からデータを守る |
+| `AlarmDiagnosticsReport`（P1-5） | ユーザが「本当に鳴るか」を可視化できる |
+| `ChangePreview`（P1-6） | すべての破壊的変更を Apply 前に確認させる |
+
+「Alarm first / Preview before mutation / Explainable automation / Reversible」
+という 2026-05-27 取り込みの基本原則を技術側で実装するための核となる 4 つ。
+
+---
+
+## 8. P2 拡張 ロードマップ的優先順位（参考）
 
 P2 本体 (α / β / γ) と派生 (A1-A4) と新規 (δ / η) の **推奨着手順** は、独立性 ×
 リスクで決める:
