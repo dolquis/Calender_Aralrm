@@ -187,22 +187,34 @@
   - `AlarmService` actor を `extension AlarmService: AlarmSchedulingClient {}` で
     準拠させ、`AlarmScheduler` は具体型ではなく protocol を保持する。
   - `App/AppDependencies.swift` での組み立てを更新。
-- **安全な同期順序**: 新 schedule → DB の AlarmKit ID 更新 → 旧 cancel。
-  schedule 失敗時は旧 row 維持、cancel 失敗時は DB row 削除しない。
+- **安全な同期順序**（cancel 失敗時に旧アラームが孤児化しないことを保証）:
+  1. 新しいアラームを `schedule`（失敗時はここで例外、DB 旧 row は無傷）
+  2. 旧 ID を `pending_cancel_alarm_kit_ids` に append（**新 ID で上書きする前**）
+  3. `current_alarm_kit_id` を新 ID に更新
+  4. `pending_cancel_alarm_kit_ids` の各 ID を順次 cancel 試行
+  5. cancel が成功した ID のみ pending リストから除去、残りは次回同期で再試行
+  - 旧 ID を pending リストに退避してから上書きするため、cancel 失敗で DB 上の
+    参照を失わない。`refreshScheduledAlarms` は冪等。
+  - `ShiftAlarm` / `BedtimeReminder` モデルに **`pending_cancel_alarm_kit_ids:
+    [UUID]` を追加**（SwiftData lightweight migration、既存 row は `[]`）。
+    既存 `alarmKitID` は `current_alarm_kit_id` に rename。
 - **追加テスト** (`Tests/ServicesTests/AlarmSchedulerTests.swift` 新規):
   - AS-U1 新規アラーム: schedule のみ呼ばれる
   - AS-U2 変更なし: schedule / cancel なし
-  - AS-U3 時刻変更: new schedule → old cancel の順
+  - AS-U3 時刻変更: new schedule → pending append → current update → old cancel の順
   - AS-U4 schedule 失敗時に旧 AlarmKit ID と DB row を維持
-  - AS-U5 cancel 失敗時に DB row を delete しない
+  - AS-U5 cancel 失敗時に旧 ID が `pending_cancel_alarm_kit_ids` に残り、次回
+    `refresh` で再試行される
   - AS-U6 bedtime reminder と wake alarm が同一 calendar day でも key collision なし
-  - AS-U7 skipAlarm: 登録済みなら cancel
+  - AS-U7 skipAlarm: 登録済みなら pending 経由で cancel
   - AS-U8 祝日 override: expected set から除外
   - AS-I1 `refreshScheduledAlarms` の操作列を fake で検証
 - **対象ファイル**:
   - 新規 `Sources/Services/AlarmKit/AlarmSchedulingClient.swift`
   - 変更 `Sources/Services/AlarmKit/AlarmService.swift`
   - 変更 `Sources/Services/AlarmKit/AlarmScheduler.swift`
+  - 変更 `Sources/Domain/Models/ShiftAlarm.swift`（`pending_cancel_alarm_kit_ids`
+    列追加 / SwiftData lightweight migration）
   - 変更 `App/AppDependencies.swift`
   - 新規 `Tests/Support/FakeAlarmSchedulingClient.swift`
   - 新規 `Tests/ServicesTests/AlarmSchedulerTests.swift`
@@ -245,6 +257,12 @@
   `hour ∉ 0...23` / `minute ∉ 0...59` / `cycleLength ∉ 1...365` /
   `slots.count != cycleLength` / 件数上限超過（preset 100 / assignment 2000、暫定値） /
   duplicate UUID。
+  - **`hour` / `minute` range 検査は preset の default 値だけでなく、
+    `AssignmentDTO.overrideAlarmHour` / `overrideAlarmMinute` も対象**。
+    `ShareImporter` は assignment override をそのまま永続化し、`AlarmScheduler`
+    が fire date 構築に直接利用するため、ここで `24` / `60` が通ると wrong-day
+    alarm / missing alarm の原因になる。path は `presets[N].defaultAlarmHour` /
+    `assignments[N].overrideAlarmHour` の両形式を生成する。
 - **検査項目（warning 区分）**: note 512 文字超 / missing presetID / duplicate date /
   不正 color hex。
 - **検査項目（ignore）**: unknown fields（forward compatibility）。
@@ -253,12 +271,15 @@
 - **追加テスト** (`Tests/ServicesTests/ShiftBundleValidatorTests.swift` 新規):
   - SBV-U1 正常 bundle は valid
   - SBV-U2 unsupported version は error
-  - SBV-U3 hour 24 は error
-  - SBV-U4 minute 60 は error
+  - SBV-U3 preset.defaultAlarmHour 24 は error
+  - SBV-U4 preset.defaultAlarmMinute 60 は error
   - SBV-U5 slots.count 不一致は error
   - SBV-U6 duplicate UUID は error
   - SBV-U7 missing presetID は warning
   - SBV-U8 件数上限超過は error
+  - SBV-U9 assignment.overrideAlarmHour 24 は error（path に
+    `assignments[N].overrideAlarmHour` を含む）
+  - SBV-U10 assignment.overrideAlarmMinute 60 は error（同上 path）
   - SBV-I1 Import preview 前に validator が呼ばれる
   - SBV-I2 error ありで Apply ボタン disabled
 - **対象ファイル**:
@@ -344,7 +365,11 @@
   アラームカードにも `登録済み` / `要確認` / `権限未許可` の小バッジを表示。
 - **診断項目（8 種）**:
   - AlarmKit 権限（OK: authorized / NG: critical → 許可リクエスト CTA）
-  - 次回アラーム登録（AlarmKit ID が保存済みか / NG: 今すぐ同期 CTA）
+  - 次回アラーム登録（**保存 ID が non-nil かつ AlarmKit の scheduled IDs に
+    実在する**こと。`alarmClient.scheduledIDs()`（§P0-4 protocol 経由）と
+    `current_alarm_kit_id` を突き合わせる。権限喪失・外部 purge・同期失敗で
+    AlarmKit 側から消えていても DB 上は残るケースを検出するため、saved ID 単独で
+    OK 判定しない。 NG: 今すぐ同期 CTA）
   - 最終同期時刻（24 時間以内 / NG: 今すぐ同期 CTA）
   - App Group（App/Widget 間で読み取り可能 / NG: 詳細を見る）
   - BG Refresh 登録（NG: 再登録）
@@ -367,6 +392,9 @@
   - DIAG-U3 HealthKit 未許可のみなら warning
   - DIAG-U4 最終同期が 24 時間超なら attention
   - DIAG-U5 すべて OK なら normal
+  - DIAG-U6 **DB 上は `current_alarm_kit_id` が non-nil だが
+    `alarmClient.scheduledIDs()` に含まれない場合は critical**（権限喪失・外部
+    purge シナリオ。Fake client で saved ID と scheduledIDs を意図的にずらして検証）
   - DIAG-I1 「今すぐ同期」CTA で `AlarmScheduler.refresh` が呼ばれる
   - DIAG-I2 SettingsView から診断画面へ遷移できる
 - **対象ファイル**:

@@ -1470,21 +1470,39 @@ public protocol AlarmSchedulingClient: Sendable {
     ) async throws -> UUID
 
     func cancel(id: UUID) async throws
+
+    /// AlarmKit に現在登録済みのアラーム ID 集合を返す。診断 (§P1-5) と
+    /// orphan 検出に使う。テスト用 fake では in-memory 集合を返す。
+    func scheduledIDs() async throws -> Set<UUID>
 }
 
 extension AlarmService: AlarmSchedulingClient {}
 ```
 
-**同期順序の保証**（schedule 失敗時に旧アラーム消失を防ぐ）:
+**同期順序の保証**（schedule 失敗時に旧アラーム消失 / cancel 失敗時に
+orphan 化を防ぐ）:
 
-1. 新しいアラームを `schedule`（失敗時はここで例外）
-2. DB の `AlarmKit ID` を更新
-3. 古いアラームを `cancel`
-4. `cancel` 失敗時はログを残し、次回同期で再試行可能にする
+1. 新しいアラームを `schedule`（失敗時はここで例外、DB 旧 row は無傷）
+2. DB の `current_alarm_kit_id` を新 ID に書き換える **前に**、置換対象の旧 ID を
+   `pending_cancel_alarm_kit_ids: [UUID]` に append する
+3. `current_alarm_kit_id` を新 ID に更新
+4. `pending_cancel_alarm_kit_ids` の各 ID を順次 `cancel` 試行
+5. **cancel が成功した ID のみ** `pending_cancel_alarm_kit_ids` から除去
+6. 残った ID は次回 `refreshScheduledAlarms` 実行時に再試行する
+
+**ポイント**: 旧 ID を「pending」リストに退避してから新 ID で上書きするため、
+cancel が失敗しても旧 AlarmKit エントリの参照が DB 側に残り続ける。これにより
+「新規 schedule 成功 → cancel 失敗で旧アラームが孤児化して鳴り続ける」事故を
+防げる。`refreshScheduledAlarms` の冪等性も保たれる。
+
+**`ShiftAlarm` / `BedtimeReminder` モデルへの追加**: `current_alarm_kit_id: UUID?`
+（既存 `alarmKitID` を rename）と `pending_cancel_alarm_kit_ids: [UUID]` の 2 列を
+持つ。SwiftData lightweight migration で既存 row は `pending = []` で埋める。
 
 **Swift 6 strict concurrency 上の注意**: `AlarmScheduler` が `@MainActor` の場合、
 fake client は `Sendable` actor として実装する。`FakeAlarmSchedulingClient` は
-`Tests/Support/` 配下に置き、`operations: [Operation]` を内部状態として保持する。
+`Tests/Support/` 配下に置き、`operations: [Operation]` と
+`scheduledIDs: Set<UUID>` を内部状態として保持する。
 
 ### 7.2 `ShiftBundleValidator` モデル（P0-5）
 
@@ -1500,7 +1518,8 @@ public struct ShiftBundleValidationResult: Equatable, Sendable {
 public struct ShiftBundleValidationIssue: Identifiable, Equatable, Sendable {
     public var id: UUID
     public var code: ShiftBundleValidationCode
-    public var path: String      // 例: "presets[3].defaultAlarmHour"
+    public var path: String      // 例: "presets[3].defaultAlarmHour" /
+                                 //     "assignments[42].overrideAlarmHour"
     public var message: String   // ja / en ローカライズ済み
 }
 
@@ -1508,8 +1527,10 @@ public enum ShiftBundleValidationCode: String, Sendable {
     case unsupportedVersion
     case futureVersion
     case tooManyItems
-    case invalidAlarmHour
-    case invalidAlarmMinute
+    case invalidAlarmHour       // preset.defaultAlarmHour と
+                                // assignment.overrideAlarmHour の両方で使用
+    case invalidAlarmMinute     // preset.defaultAlarmMinute と
+                                // assignment.overrideAlarmMinute の両方で使用
     case invalidCycleLength
     case slotCountMismatch
     case duplicateID
@@ -1519,6 +1540,17 @@ public enum ShiftBundleValidationCode: String, Sendable {
     case invalidColorHex
 }
 ```
+
+**`hour` / `minute` 範囲検査は preset と assignment override の両方で必須**。
+`ShareImporter` は `AssignmentDTO.overrideAlarmHour` / `overrideAlarmMinute` を
+そのまま `DayAssignment` に永続化し、`AlarmScheduler` が fire date 構築に直接
+利用するため、これらが `24` や `60` を含むと wrong-day alarm や missing alarm の
+原因になる。validator は次の path をすべてカバーする:
+
+- `presets[N].defaultAlarmHour` / `defaultAlarmMinute`（既存）
+- `assignments[N].overrideAlarmHour` / `overrideAlarmMinute`（**今回明示的に追加**）
+- `assignments[N].bedtimeOverrideMinutes` のような将来追加フィールドも、
+  `AlarmScheduler` が時刻として使う限り同じ range 検査を通すこと。
 
 **判定マトリクス**:
 
@@ -1578,6 +1610,29 @@ public enum AlarmDiagnosticsRecoveryAction: Equatable, Sendable {
 - どれか 1 つでも `attention` → `attention`
 - どれか 1 つでも `warning` → `warning`
 - 全部 `normal` → `normal`
+
+**「次回アラーム登録」チェックの判定ロジック**（DB の `current_alarm_kit_id` が
+non-nil なだけでは不十分。AlarmKit 側で **実際に scheduled** であることを確認する）:
+
+```swift
+let savedID: UUID? = next ShiftAlarm row's current_alarm_kit_id
+let liveIDs: Set<UUID> = try await alarmClient.scheduledIDs()  // §7.1 protocol
+
+switch (savedID, liveIDs.contains(savedID ?? UUID())) {
+case (nil, _):
+    return .critical(.refreshScheduledAlarms)   // 未登録
+case (let id?, false):
+    return .critical(.refreshScheduledAlarms)   // 保存 ID が AlarmKit に存在しない
+                                                // → 権限喪失 / 外部 purge / 同期失敗
+case (_, true):
+    return .normal                              // OK
+}
+```
+
+`AlarmService` は既に `scheduledAlarms` を内部で参照しているので、
+`AlarmSchedulingClient.scheduledIDs()`（§7.1 で追加）を経由して取得する。これに
+より「DB 上は登録済みに見えるが実際は鳴らない」状態を診断画面で `critical` として
+表面化できる。
 
 **`AppSettings` 追加**: `lastAlarmSchedulerRunAt: Date?` /
 `lastAlarmSchedulerResultRaw: String?`。後者は構造化ログ化（§P3-8）と合わせて
