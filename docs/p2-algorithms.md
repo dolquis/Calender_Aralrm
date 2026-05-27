@@ -851,7 +851,25 @@ ROADMAP §7 規則 6 に従い `Resources/Localizable.xcstrings` に両言語を
 
 **保存先:**
 
+> **Phase 1 `ShiftSymbolMapping` との統合方針（2026-05-27 取り込みで更新）**:
+> P2-γ Phase 1 で `ShiftSymbolMapping` を `@Model` として導入したため、
+> A3 の学習データは **`ShiftSymbolMapping` テーブルに集約** し、独立した
+> `AppSettings.learnedLabelMappingsJSON` の新規利用は止める。理由:
+> Phase 1 が「次回以降は自動適用」と謳う唯一の永続 source-of-truth と
+> 矛盾する 2 系統を同じユーザ体験に混在させない。
+>
+> - 新規実装: A3 経路（OCR/LLM 推論 → 補正 UI）は `ShiftSymbolMapping`
+>   行を upsert（`symbol = LabelKey`, `presetID = correction.presetID`,
+>   `skipAlarm = correction.isOff`, `lastUsedAt = Date.now`）。
+> - 旧 `AppSettings.learnedLabelMappingsJSON` が既に存在する端末向けの
+>   migration: A3 の初回ロード時に JSON を decode → `ShiftSymbolMapping`
+>   に upsert → JSON 文字列をクリア（`"{}"`）。Phase 1 PR で実施。
+> - 以下の `LearnedMapping` 型と JSON 経由ロード処理は **migration コード
+>   としてのみ残す**（新規書き込み経路では使わない）。LabelKey 正規化規則
+>   は `ShiftSymbolMapping.symbol` の保存値にもそのまま適用する。
+
 - `AppSettings.learnedLabelMappingsJSON: String`（既定: `"{}"`）。
+  **新規利用は廃止**（旧データの一回限り migration 用途のみ）。
 - SwiftData の Dictionary 制約を避けるため JSON 文字列で保持。
 - ロード時に `Data` → `JSONDecoder` で `[String: LearnedMapping]` にデコード。
 - 保存時に `JSONEncoder` で再シリアライズ。
@@ -875,44 +893,58 @@ let normalized = label.precomposedStringWithCompatibilityMapping.lowercased()
 let key = "\(normalized)|\(AppSettings.userNameOnRoster ?? "")"
 ```
 
-**マッパへの組込:**
+**マッパへの組込（2026-05-27 取り込み以降は `ShiftSymbolMapping` テーブルを参照）:**
 
 `FoundationModelsShiftMapper.map(...)` の冒頭で参照:
 
 ```
+let mappings: [String: ShiftSymbolMapping] =
+    Dictionary(uniqueKeysWithValues: try modelContext
+        .fetch(FetchDescriptor<ShiftSymbolMapping>())
+        .map { ($0.symbol, $0) })
+
 for label in labels:
     let key = makeKey(label)
-    if let cached = learned[key]:
-        result[label] = cached.isOff
+    if let cached = mappings[key]:
+        result[label] = cached.skipAlarm
             ? .off(confidence: 1.0)
             : (cached.presetID.flatMap { id in
                 existingPresets.first { $0.id == id }
                     .map { _ in MapResult.existingPreset(id, confidence: 1.0) }
               } ?? .unresolved(reason: "cached_preset_deleted"))
+        // ヒットしたら lastUsedAt を Date.now に更新（LRU 退避用）
     else:
         // Pass A → Pass B に進む（既存ロジック）
 ```
 
-**ユーザ補正フローでの書込:**
+**ユーザ補正フローでの書込（2026-05-27 取り込みで `ShiftSymbolMapping` 経由に変更）:**
 
 `ImageImportView` の差分プレビューでユーザがマッピングを変更したら：
 
 1. 補正された `(label, presetID?)` を抽出。
-2. `LabelKey` を計算。
-3. `LearnedMapping(presetID:, isOff: presetID == nil, learnedAt: Date.now)` を
-   `learnedLabelMappings[key] = ...` で upsert。
-4. JSON 再シリアライズ → `AppSettings.learnedLabelMappingsJSON` に保存。
+2. `LabelKey` を計算（`ShiftSymbolMapping.symbol` にもこの正規化済み文字列を
+   そのまま入れる）。
+3. **`ShiftSymbolMapping` 行を upsert**: `symbol = labelKey`,
+   `presetID = correction.presetID`, `skipAlarm = (correction.presetID == nil)`,
+   `lastUsedAt = Date.now`, `createdAt = (新規行のときのみ Date.now、既存
+   なら維持)`。SwiftData `@Attribute(.unique)` が effective に upsert 動作
+   を提供する（fetch by symbol → 無ければ insert / 有れば update）。
+4. JSON 再シリアライズは行わない（`AppSettings.learnedLabelMappingsJSON` は
+   旧データの一度限り migration 用途で残置）。
 
 **LRU 退避:**
 
 - 上限 200 エントリ。
-- 書込み時に `learned.count > 200` なら `learnedAt` 古い順に 1 件削除。
-- 等タイムスタンプは `LabelKey` 辞書順タイブレーク（決定論性）。
+- 書込み時に `count(ShiftSymbolMapping) > 200` なら `lastUsedAt` 古い順に 1 件
+  削除。
+- 等タイムスタンプは `symbol` 辞書順タイブレーク（決定論性）。
 
 **削除セマンティクス:**
 
 - 設定画面に「学習データをリセット」ボタンを追加。
-- リセット = `learnedLabelMappingsJSON = "{}"`。
+- リセット = `ShiftSymbolMapping` 全行削除（`modelContext.delete(_:)` を
+  全 fetch 結果に対して呼ぶ）+ 旧 `AppSettings.learnedLabelMappingsJSON = "{}"`
+  も併せてクリア（古いデータの再 import 経路を確実に断つ）。
 - 個別エントリ削除は UI からは提供しない（v1 は全消去のみ）。
 
 **プライバシー:**
@@ -1192,11 +1224,12 @@ assert（γ-U12）。
 
 - **AS-U1〜U9 / AS-I1**: AlarmScheduler fake 注入（§P0-4）。U9 は §7.1 step 4
   の save-failure rollback（save throw 時に新 ID を cancel して orphan を防ぐ）。
-- **SBV-U1〜U11 / SBV-I1〜I2**: `.shiftalarm` バリデーション（§P0-5）。U7 は
+- **SBV-U1〜U14 / SBV-I1〜I2**: `.shiftalarm` バリデーション（§P0-5）。U7 は
   `skipAlarm` 真偽別 / U9・U10 は assignment override hour・minute 範囲 /
-  U11 は duplicate date error 昇格 / 加えて patterns[].slots[] の missing
-  preset 参照 と patterns / overrides 件数上限を `tooManyItems` の path 形式
-  で網羅すること。
+  U11 は duplicate date error 昇格 / U12・U13 は
+  `overrides[N].replacementPresetID` の `skipAlarm` 真偽別 / U14 は
+  `patterns[N].slots[M]` の missing preset 参照。`tooManyItems` は preset /
+  assignment / pattern / override の 4 種すべてを path 形式で網羅。
 - **DIAG-U1〜U6 / DIAG-I1〜I2**: アラーム診断（§P1-5）。U6 は saved
   `current_alarm_kit_id` non-nil だが `alarmClient.scheduledIDs()` に含まれない
   ケースを critical 判定。
@@ -1666,6 +1699,8 @@ public enum ShiftBundleValidationCode: String, Sendable {
 | note ≥ 512 文字 | warning | preview に表示、truncate 選択可 |
 | missing presetID（`skipAlarm == false`） | error | 全体 reject（manual 行が rotation を黙らせる事故を防ぐ） |
 | missing presetID（`skipAlarm == true`） | warning | 該当 assignment を skip 候補に |
+| **patterns[N].slots[M] の missing preset 参照** | **error**（常に） | 全体 reject。`ShareImporter.applyPatterns` は slot を直接 persist し、`DayResolver` は高優先度の pattern slot で nil preset を引いた瞬間に fire date を返さない（アラーム沈黙）。slot 単位には `skipAlarm` の概念が無いので例外無く error。path は `patterns[N].slots[M]` |
+| **overrides[N].replacementPresetID の missing 参照（`skipAlarm == false`）** | **error** | 全体 reject。`ShareImporter.applyOverrides` は `replacementPresetID` を nil にマップして holiday 行を上書きし、`DayResolver` は precedence を持つその行で fire date を出せず本来の祝日代替アラームが沈黙する。path は `overrides[N].replacementPresetID`。`skipAlarm == true` ならユーザ意図と一致するため warning に降格 |
 | duplicate date | error（P1-6 完了まで） | 全体 reject。P1-6 で conflict resolution UI が用意できたら warning に降格し preview で後勝ち / 先勝ち / スキップを選ばせる |
 | 不正 color hex | warning | デフォルト色 |
 | unknown fields | ignore | forward compatibility |
@@ -1778,18 +1813,31 @@ public struct ChangePreviewSection: Identifiable, Equatable, Sendable {
 }
 
 public struct ChangePreviewItem: Identifiable, Equatable, Sendable {
-    /// **決定論的 ID**。`(entityKind, date, entityID)` から派生させる
-    /// （例: `UUID(uuidString:)` を `SHA256("\(entityKind)|\(date ?? .distantPast)|\(entityID?.uuidString ?? "")")`
-    /// の先頭 16 byte で生成）。`.shiftalarm` import の validation 再実行、
-    /// フィルタ切替、conflict 再評価などで preview が再構築されても同じ変更行
-    /// は同じ `id` を保つ。`UUID()` を毎回振ると SwiftUI `ForEach` が行を
-    /// 「別物」とみなして `isSelected` を破棄し、§P1-6 DoD「選択状態を保持
-    /// できる」に反する。
+    /// **決定論的 ID**。次の 4 要素全てを入力として
+    /// `UUID(uuidString:)` を `SHA256(...)` の先頭 16 byte で生成する:
+    /// `(entityKind, sourcePath, date, entityID)`。
+    /// `sourcePath` を含めるのは、**永続化前の候補同士の衝突を防ぐため**:
+    /// - `.shiftalarm` import で `assignments[3]` と `assignments[7]` が同じ
+    ///   日付・同じ entityKind を指す重複（duplicate date error の 2 行）
+    /// - IMG-U5 画像インポートで同一日付セルが複数候補ある場合
+    /// - DOW ルール展開で同じ日付に異なるルールが当たる conflict 2 行
+    /// これらはすべて `entityID == nil`（まだ persist 前）で `(entityKind,
+    /// date)` だけだと衝突してしまうため、`sourcePath`（例:
+    /// `"shiftalarm:assignments[3]"` / `"image:cell(2,4)"` /
+    /// `"dow-rule:<rule.id>"`）を派生入力に必ず混ぜる。`entityID` は永続化済み
+    /// エンティティを編集する場合のみ非 nil。
+    /// preview 再構築（validation 再実行・フィルタ切替・conflict 再評価）
+    /// でも同じ候補は同じ `id` を保ち、SwiftUI `ForEach` が `isSelected` を
+    /// 破棄しない（§P1-6 DoD「選択状態を保持できる」）。
     public var id: UUID
+    /// 候補の発生源を識別する path 文字列。例: `"shiftalarm:assignments[3]"`,
+    /// `"image:cell(2,4)"`, `"dow-rule:<UUID>"`, `"drift:<patternID>"`。
+    /// 同 entity / 同日に対する複数候補がある場合は **必ず一意** にすること。
+    public var sourcePath: String
     public var date: Date?
     public var entityKind: ChangeEntityKind
-    /// 元となったエンティティ ID（preset UUID / pattern UUID / dayAssignment 
-    /// 行 ID 等）。`id` 派生入力としても利用する。
+    /// 既存エンティティを編集する場合の永続 ID（preset UUID / pattern UUID /
+    /// dayAssignment 行 ID 等）。新規追加候補や未 persist 候補では `nil`。
     public var entityID: UUID?
     public var changeKind: ChangeKind
     public var beforeText: LocalizedStringResource?   // String 直書きを避ける

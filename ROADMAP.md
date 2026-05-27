@@ -214,11 +214,29 @@
        DB のどこにも記録されていない状態（cancel する手段が失われた orphan）に
        なる。これを防ぐため、`save()` 失敗を catch して **直前に schedule した
        新 ID を `alarmClient.cancel(newID)` で取り消してから** 上位に例外を
-       rethrow する。cancel 自体がさらに失敗した場合は構造化ログに `newID` と
-       両方の例外を残し、次回 `refreshScheduledAlarms` 起動時に
-       `alarmClient.scheduledIDs()` と DB の `current_alarm_kit_id`（古い値の
-       まま）を突き合わせて orphan を検出・cancel する。pending-cancel loop には
-       絶対に入らない（旧 ID は安全、新 ID は cancel 済み or orphan 状態）。
+       rethrow する。
+       - **cancel(newID) も失敗した二段失敗の orphan 検出**: 新 ID は AlarmKit
+         上に live のまま、DB にはどこにも記録されていない最悪パターン。
+         単純な「saved `current_alarm_kit_id` vs `scheduledIDs()`」突き合わせ
+         では旧 ID が依然 live なので一致してしまい新 ID の存在を見逃す。
+         具体的な対処は次のどちらかを必ず採る:
+         - **(a) 集合差分による orphan 検出**: `refreshScheduledAlarms` の
+           プロローグで `live = alarmClient.scheduledIDs()` を取得し、
+           DB 上の全 `ShiftAlarm.current_alarm_kit_id` ∪
+           `pending_cancel_alarm_kit_ids` を合算した DB 既知集合 `known` と
+           比較する。`live \ known` は「DB が知らないが AlarmKit には存在
+           する」ID で、これらは無条件に `cancel` 対象として除去する
+           （冪等で安全）。これによりロールバック失敗で残った新 ID も
+           次回 sync で必ず回収される。
+         - **(b) 失敗 ID の最小限永続化**: `save()` 失敗の rollback パスでも、
+           catch 内で `failedRollbackIDs: [UUID]` の専用列に append + save
+           を試みる（この最小 save が失敗したら最後はクラッシュレポートに
+           頼る）。次回 sync は `failedRollbackIDs` を pending-cancel と同じ
+           扱いで cancel する。
+         - 推奨は **(a)**（実装シンプル・追加列なし）。`refreshScheduledAlarms`
+           は冪等のままで `live \ known` の余剰 ID 掃除を仕様に組み込む。
+       - pending-cancel loop には絶対に入らない（旧 ID は安全、新 ID は
+         cancel 済み or (a) で次回回収）。
   5. `pending_cancel_alarm_kit_ids` の各 ID を順次 cancel 試行
   6. cancel が成功した ID のみ pending リストから除去、残りは次回同期で再試行
      （除去結果も `save()` で永続化）
@@ -271,8 +289,19 @@
   - AS-U5 cancel 失敗時に旧 ID が `pending_cancel_alarm_kit_ids` に残り、次回
     `refresh` で再試行される
   - AS-U6 bedtime reminder と wake alarm が同一 calendar day でも key collision なし
-  - AS-U7 skipAlarm: 登録済みなら pending 経由で cancel
-  - AS-U8 祝日 override: expected set から除外
+  - AS-U7 skipAlarm: 登録済みなら **pending 経由で cancel**。具体的には:
+    1. 旧 ID を `pending_cancel_alarm_kit_ids` に append、
+    2. `current_alarm_kit_id` を `nil` にクリア、
+    3. **ここで必ず `modelContext.save()`**（cancel ループに入る前に
+       「pending に退避 + current=nil」を永続化。process kill しても旧 ID は
+       pending に残るので冪等再試行可能）、
+    4. pending 内の各 ID を順次 `cancel`、成功した ID のみ pending から
+       除去して再 save。
+    schedule 付き再登録時の step 1〜6 と同じ "save-before-cancel" 順序を
+    cancel-only の expected-set 縮小（skipAlarm 切替 / 祝日 override 追加 /
+    rotation 削除など）でも守る。
+  - AS-U8 祝日 override: expected set から除外（cancel-only path も
+    AS-U7 と同じ save-before-cancel 順序で行う）
   - AS-U9 save-failure rollback: `modelContext.save()` が throw した場合に
     直前の新 ID が `alarmClient.cancel()` され、pending-cancel ループに入らない
     （fake client で `save()` を意図的に throw させ、`cancel` が 1 回だけ
@@ -366,6 +395,16 @@
   date を返さない＝アラームが沈黙する）。path は `patterns[N].slots[M]`
   を生成する。`skipAlarm` の概念は slot 単位には無いので、slot 側は
   常に error。
+- **`missingPresetReference` は `overrides[N].replacementPresetID` も対象**:
+  holiday / PTO 用 override の代替 preset 参照切れ + `skipAlarm == false` は
+  error。`ShareImporter.applyOverrides` は `replacementPresetID` が nil の
+  override 行を作り、`DayResolver` はその行を precedence 順で採用するが fire
+  date が生成できず、本来の祝日 / 有給代替アラームが沈黙する。`skipAlarm
+  == true` のときは「鳴らさない」意図と一致するため warning に降格、
+  apply 時に `replacement = nil` の skip 経路として扱う。path は
+  `overrides[N].replacementPresetID`。テスト ID **SBV-U12**（override の
+  preset 参照切れ + skipAlarm=false で error）と **SBV-U13**（skipAlarm=true
+  で warning）を新設。
 - **`duplicateDate` を error に昇格**: 同一 `assignments[*].date` が複数回現れる
   bundle は §P1-6 の conflict resolution UI が出るまで一律 error として reject
   する。現行 `ShareImporter` は new assignment では先勝ち / 既存 assignment は
@@ -389,6 +428,11 @@
     `assignments[N].overrideAlarmHour` を含む）
   - SBV-U10 assignment.overrideAlarmMinute 60 は error（同上 path）
   - SBV-U11 duplicate date は error（P1-6 完了までは一律 reject）
+  - SBV-U12 overrides[N].replacementPresetID 参照切れ + `skipAlarm == false`
+    は error
+  - SBV-U13 overrides[N].replacementPresetID 参照切れ + `skipAlarm == true`
+    は warning
+  - SBV-U14 patterns[N].slots[M] の missing preset 参照は常に error
   - SBV-I1 Import preview 前に validator が呼ばれる
   - SBV-I2 error ありで Apply ボタン disabled
 - **対象ファイル**:
@@ -665,17 +709,25 @@
 
   - 純粋周期に乗らない「第 1・第 3 金曜は夜勤」「毎月最終週は休」型の **DOW
     (day-of-week × week-of-month)** パターンを別アルゴリズムで検出。
-  - 結果は `SuggestedRotation` ではなく `SuggestedDOWRule { dayOfWeek, weekOfMonth,
-    presetID, observedMatches }` のリストとして返し、UI 上は通常ローテ提案と並列の
-    カードで表示。
+  - 結果は `SuggestedRotation` ではなく `SuggestedDOWRule { id, dayOfWeek,
+    weekOfMonth, presetID, observedMatches, confidence }` のリストとして返し
+    （`id` は決定論的派生、下記「実装精緻化」参照）、UI 上は通常ローテ提案と
+    並列のカードで表示。
   - 受諾時は v1 では **`HolidayOverride`** に展開（週序計算で範囲展開、複数月分を
     一括 insert）。`RecurrenceRule` モデル化はバックログ扱い。
   - **対象ファイル**:
     - 新規 `Sources/Domain/Logic/DayOfWeekPatternDetector.swift`（α 検出器の兄弟）
     - 既存 `Sources/Features/Rotation/RotationListView.swift` に DOW 提案カードを追加
   - **実装精緻化（2026-05-27 追加）**:
-    - `SuggestedDOWRule` を `{ dayOfWeek, weekOfMonth, presetID?, observedMatches,
-      confidence }` 形に確定（`confidence: Double` 追加）。
+    - `SuggestedDOWRule` を `{ id, dayOfWeek, weekOfMonth, presetID?,
+      observedMatches, confidence }` 形に確定（`confidence: Double` 追加）。
+      **`id: UUID` は決定論的派生**（`(dayOfWeek, weekOfMonth, presetID)` を
+      入力として `SHA256` 先頭 16 byte で生成、詳細は
+      [docs/p2-algorithms.md §1.10](docs/p2-algorithms.md#110-曜日週序検出) 参照）。
+      同じ入力からは常に同じ ID を生成しないと、後続の `HolidayOverride
+      .expandedFromRuleID = rule.id` 永続化がルール再検出のたびに別 UUID を
+      持つことになり、§P3-15 で `RuleExpandedOverride` に分離する migration
+      で「元の規則 → 展開行」の対応が壊れる。
     - 検出設定を構造体化:
       ```swift
       public struct DayOfWeekPatternDetectorConfiguration: Sendable {
@@ -698,6 +750,22 @@
       migration が安全に実装できない（手動データを巻き込む / 取りこぼすリスク）。
       SwiftData lightweight migration の範囲で完結する（nullable 2 列追加 / 既存
       row は両方 `nil` で初期化）。`/swiftdata-migration` skill を必ず起動。
+    - **`.shiftalarm` 共有バンドルにも provenance を載せる**: SwiftData 列を
+      追加するだけでは export → import 経路で provenance が失われ、
+      再 import 後は全 A2 由来行が `expandedFromRuleID = nil` 扱いになって
+      手動 override と区別不能になる（§P3-15 migration の前提が壊れる）。
+      A2 と同じ PR で次のいずれかを併せて実装:
+      - **(a) DTO 拡張（推奨）**: `OverrideDTO` に `expandedFromRuleID:
+        UUID?` と `expandedAt: Date?` をオプショナルに追加。古い `.shiftalarm`
+        は両 field 欠落 = `nil` decode で後方互換、新 bundle は両 field を
+        export/import で往復する。`ShiftBundleValidator` 側は ignore する
+        unknown field 扱いではなく **正規 field** として認識（forward
+        compat ポリシーは §P0-5 のとおり）。
+      - **(b) 共有時除外**: A2 由来行（`expandedFromRuleID != nil`）は
+        `ShareExporter` で export 対象から落とし、`SuggestedDOWRule`
+        自体を別 DTO として export する。受け取り側は再展開で復元。
+      - 初期実装は (a) を採用し、`OverrideDTO` の `expandedFromRuleID` /
+        `expandedAt` を `Codable` default-`nil` で導入する。
       Widget の SwiftData container も同 schema を共有するため、Widget 側ビルド
       でも参照可能であることを確認すること。
   - **テスト ID**:
@@ -793,9 +861,16 @@
     既存の入力検証メッセージに繋ぐ。同じ不変条件をテスト ID **VAC-U10**
     （初期化時 / domain factory 側で 2 日範囲が reject される）として
     P2-β テスト群に追加すること。
-  - **Widget の SwiftData container も SchemaV2 を読むこと**を migration 時に
+  - **Widget の SwiftData container も最新スキーマを読むこと**を migration 時に
     確認（App と Widget で同じ App Group store を共有しているため）。
-    `/swiftdata-migration` skill 必須。
+    `/swiftdata-migration` skill 必須。**§8 の優先順位に従うと P0-4 完了時点で
+    SchemaV2 が active になっている**ため、P2-β は **SchemaV3 を新規追加** し、
+    `MigrationPlan` に `SchemaV2 → SchemaV3` stage を登録する形で `VacationPeriod`
+    + `RotationPattern` / `ShiftPreset` 列追加を載せる。SchemaV2 に追記する
+    形にすると、既に V2 で起動した端末（P0-4 を入れた状態）にスキーマ baseline
+    の不整合が生じる。`Sources/Domain/Persistence/SchemaV3.swift` を新規追加し、
+    `SharedPersistence.makeContainer()` の `Schema(...)` 引数も SchemaV3 に
+    切り替える。
   - 連休内の日付は **手動割当を優先**（既存 DayResolver 優先順位
     `手動 > 祝日/有休/連休 > ローテ > なし` を維持）。
 - **テスト ID**:
