@@ -220,7 +220,14 @@
     save は必須。
   - **bedtime リマインダは独立モデルではなく `ShiftAlarm` の `isBedtimeReminder`
     フラグ付き行として保存されている**ため、追加する列は `ShiftAlarm` 一箇所のみ:
-    - `pending_cancel_alarm_kit_ids: [UUID]` を新規列として追加（既存 row は `[]`）
+    - `pending_cancel_alarm_kit_ids` を新規列として追加。SwiftData の `[UUID]`
+      直接サポートはバージョン依存で App / Widget 共有ストアでの安全性が
+      不確実なため、**既存 `RotationPattern.slotsData` と同じ JSON 化方針** で
+      永続化する: 列の型は `pendingCancelData: Data`（`JSONEncoder().encode([UUID])`
+      の結果）、API 上は computed `pendingCancelIDs: [UUID]` を経由して読み書き
+      する。既存 row はマイグレーション時に空 array を JSON 化した `Data` で
+      初期化する。Schema は引き続き `Sources/Domain/Persistence/SchemaV1.swift`
+      の `SchemaV1.models` 経由で App / Widget 共有される
     - 既存 `alarmKitID` プロパティを `current_alarm_kit_id` に rename する際は
       **`@Attribute(originalName: "alarmKitID")` を付与**して SwiftData が既存
       ストアの値を引き継ぐようにする。生の rename だと既存 row の AlarmKit ID
@@ -288,8 +295,15 @@
   ```
 - **検査項目（error 区分）**: `version` 対応範囲外 / 将来 version / preset 名 64 文字超 /
   `hour ∉ 0...23` / `minute ∉ 0...59` / `cycleLength ∉ 1...365` /
-  `slots.count != cycleLength` / 件数上限超過（preset 100 / assignment 2000、暫定値） /
-  duplicate UUID。
+  `slots.count != cycleLength` / 件数上限超過 / duplicate UUID。
+  - **件数上限（`tooManyItems`）はすべての top-level コレクションを対象**:
+    暫定値として `presets ≤ 100` / `assignments ≤ 2000` / **`patterns ≤ 50`** /
+    **`overrides ≤ 3000`**（祝日 + 有給 + 将来の DOW 展開を見越して大きめ）。
+    `ShareImporter.applyPatterns` / `applyOverrides` は配列をそのまま iterate
+    して persist するため、上限を設けないと preset / assignment が小さい
+    bundle でも `patterns` / `overrides` 側で SwiftData ストアを膨張・停滞
+    させ得る。path は `patterns` / `overrides` / `presets` / `assignments`
+    の 4 種を返せること。
   - **`hour` / `minute` range 検査は preset の default 値だけでなく、
     `AssignmentDTO.overrideAlarmHour` / `overrideAlarmMinute` も対象**。
     `ShareImporter` は assignment override をそのまま永続化し、`AlarmScheduler`
@@ -304,6 +318,13 @@
   本来鳴るはずだったローテーション由来のアラームを **暗黙に黙らせる**。`skipAlarm
   == true` のときは意図的に音を出さない指示なので warning に留め、apply 時に
   `preset = nil` のままでも skip 経路として安全に扱える。
+- **`missingPresetReference` は `patterns[N].slots[M]` も対象**: ローテ slot
+  内の preset UUID が bundle 内の `presets[]` に存在しない場合も同じ理由で
+  error にする（`ShareImporter.applyPatterns` は slot を直接 persist し、
+  `DayResolver` は高優先度の pattern slot で nil preset を引いた瞬間に fire
+  date を返さない＝アラームが沈黙する）。path は `patterns[N].slots[M]`
+  を生成する。`skipAlarm` の概念は slot 単位には無いので、slot 側は
+  常に error。
 - **`duplicateDate` を error に昇格**: 同一 `assignments[*].date` が複数回現れる
   bundle は §P1-6 の conflict resolution UI が出るまで一律 error として reject
   する。現行 `ShareImporter` は new assignment では先勝ち / 既存 assignment は
@@ -795,7 +816,10 @@
   - 既存 `Sources/Domain/Models/AppSettings.swift` に `userNameOnRoster` を追加
   - 新規 `Sources/Domain/Models/ShiftSymbolMapping.swift`（Phase 1 で必須。
     上記「永続化先」参照）
-  - 変更 `App/AppDependencies.swift`（`Schema([..., ShiftSymbolMapping.self])` に追加）
+  - 変更 `Sources/Domain/Persistence/SchemaV1.swift`（`SchemaV1.models` 配列に
+    `ShiftSymbolMapping.self` を追加。`AppDependencies.swift` ではなくここが
+    App / Widget 共有 `ModelContainer` の単一エントリポイント。`SharedPersistence
+    .makeContainer()` が `Schema(SchemaV1.models)` を構築する）
   - 既存の Import/Export 画面から「画像から取り込む」導線を追加
   - `App/Info.plist`: `NSCameraUsageDescription`, `NSPhotoLibraryUsageDescription` を追加
   - テスト: 新規 `Tests/ServicesTests/ShiftImageParserTests.swift`
@@ -818,11 +842,13 @@
         への optional 参照、`skipAlarm: Bool`、`lastUsedAt: Date`、`createdAt: Date`。
         AppSettings に格納するシングルトン KV ではなく独立テーブルにすることで、
         記号ごとの最終利用時刻で並べ替えたり破棄したりするクエリが素直に書ける。
-        `App/AppDependencies.swift` の Schema にも追加し、`/swiftdata-migration`
-        skill を必ず起動。Widget の SwiftData container も同 schema を共有する
-        ため、Widget 側ビルドで model 解決できることを確認する（参照しないが
-        schema に存在することは必要）。IMG-U1 「mapping が保存される」テストは
-        Phase 1 PR 内で SwiftData store を経由した read-back で検証する。
+        **`Sources/Domain/Persistence/SchemaV1.swift` の `SchemaV1.models` 配列に
+        `ShiftSymbolMapping.self` を追加**して App / Widget 共有 `ModelContainer`
+        （`SharedPersistence.makeContainer()`）が新モデルを認識するようにする。
+        `/swiftdata-migration` skill を必ず起動。Widget 側ビルドで model 解決でき
+        ることを確認する（参照しないが schema に存在することは必要）。IMG-U1
+        「mapping が保存される」テストは Phase 1 PR 内で SwiftData store を経由
+        した read-back で検証する。
     - **Phase 2 — Vision OCR 自動抽出**:
       - `OCRTextRecognizer` / `ShiftTableGridDetector` 追加（既存 P2-γ 本文の
         `ShiftImageOCR` / `ShiftImageParser` がここに相当）

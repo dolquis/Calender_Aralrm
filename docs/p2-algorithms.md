@@ -218,7 +218,15 @@ extension ShiftPatternDetector.Configuration {
 **出力:**
 
 ```swift
-public struct SuggestedDOWRule: Equatable, Sendable {
+public struct SuggestedDOWRule: Identifiable, Equatable, Sendable {
+    /// 検出器が `(dayOfWeek, weekOfMonth, presetID)` から **決定論的に** 生成する
+    /// 安定 ID。同じ規則が同じ入力から再検出されれば同じ UUID になる
+    /// （例: `UUID(uuidString:)` を `SHA256("\(dayOfWeek)|\(weekOfMonth)|\(presetID?.uuidString ?? "off")")`
+    /// の先頭 16 byte で生成）。`HolidayOverride.expandedFromRuleID` がこれを
+    /// 参照し、後日 §P3-15 で `RuleExpandedOverride` に migration するときに
+    /// 「元の規則」を再特定できるようにする。受諾時に毎回新 UUID を振ると
+    /// provenance チェーンが切れて migration が壊れるため避ける。
+    public let id: UUID
     public let dayOfWeek: Int            // 1..7（calendar 由来）
     public let weekOfMonth: Int          // 1..6
     public let presetID: UUID?           // .off → nil
@@ -1161,8 +1169,14 @@ assert（γ-U12）。
 §P0-4 / §P0-5 / §P1-5 末尾参照）:
 
 - **AS-U1〜U8 / AS-I1**: AlarmScheduler fake 注入（§P0-4）
-- **SBV-U1〜U8 / SBV-I1〜I2**: `.shiftalarm` バリデーション（§P0-5）
-- **DIAG-U1〜U5 / DIAG-I1〜I2**: アラーム診断（§P1-5）
+- **SBV-U1〜U11 / SBV-I1〜I2**: `.shiftalarm` バリデーション（§P0-5）。U7 は
+  `skipAlarm` 真偽別 / U9・U10 は assignment override hour・minute 範囲 /
+  U11 は duplicate date error 昇格 / 加えて patterns[].slots[] の missing
+  preset 参照 と patterns / overrides 件数上限を `tooManyItems` の path 形式
+  で網羅すること。
+- **DIAG-U1〜U6 / DIAG-I1〜I2**: アラーム診断（§P1-5）。U6 は saved
+  `current_alarm_kit_id` non-nil だが `alarmClient.scheduledIDs()` に含まれない
+  ケースを critical 判定。
 - **DRIFT-U1〜U5 / DRIFT-I1〜I3**: A1 ドリフト UI 統合
 - **DOW-U1〜U5 / DOW-I1〜I3**: A2 DOW ルール検出
 - **VAC-U1〜U9 / VAC-I1〜I2**: P2-β 連休越境ローテーション
@@ -1552,10 +1566,19 @@ public struct ShiftBundleValidationResult: Equatable, Sendable {
 }
 
 public struct ShiftBundleValidationIssue: Identifiable, Equatable, Sendable {
+    /// **決定論的 ID**。`"\(code.rawValue)|\(path)"` を `id` の生成入力にして、
+    /// 同じ違反が同じ bundle から 2 度抽出されても同一 UUID を返すこと。
+    /// P0-5 は preview 直前と apply 直前で validator を 2 回呼ぶ設計のため、
+    /// `UUID()` を毎回振ると `Equatable` 比較が false になって SwiftUI の
+    /// `ForEach` がプレビュー行を毎回 churn し直し、ユーザの選択が解除される
+    /// 回帰が出る。実装案: `UUID(uuidString:)` を `SHA256("\(code)|\(path)")`
+    /// の先頭 16 byte で生成、または `Hashable` のみで保持して `id` を
+    /// computed property にする。
     public var id: UUID
     public var code: ShiftBundleValidationCode
     public var path: String      // 例: "presets[3].defaultAlarmHour" /
-                                 //     "assignments[42].overrideAlarmHour"
+                                 //     "assignments[42].overrideAlarmHour" /
+                                 //     "patterns[1].slots[3]"
     public var message: String   // ja / en ローカライズ済み
 }
 
