@@ -4,12 +4,12 @@
 **開発仕様兼ロードマップ**です。タスクは優先度（P0 → P3）順、各項目に
 **目的 / 対象ファイル / 完了条件 (DoD)** を明記しています。
 
-最終更新: 2026-05-23
+最終更新: 2026-05-27
 対象ブランチ運用: タスクごとに `feature/<topic>` を切り、main へ PR。
 
 ---
 
-## 0. 現状サマリ（2026-05-23 時点）
+## 0. 現状サマリ（2026-05-27 時点）
 
 - iOS 26+ / Swift 6 / SwiftUI + SwiftData / AlarmKit ベースのシフト勤務向けアラームアプリ。
 - 主要レイヤー（Domain / Services / Features / Widget / Live Activity / Sharing / Deep link / ja-en ローカライズ）は実装済み。
@@ -54,6 +54,20 @@
 - 第三者レビュー(2026-05-22)で挙がった開発環境ハードニング項目（依存固定 /
   AlarmScheduler テスト容易性 / `.shiftalarm` import バリデーション / 構造化
   ログ / CI ガードレール 等）は **§5 P3 配下 (P3-6 〜 P3-14) で追跡**する。
+
+2026-05-27 仕様提案書取り込み（評価結果は本 ROADMAP / `docs/p2-algorithms.md`
+に直接インライン化。元提案書は PR #27 のレビューで合意済みのものをドキュメント
+側に集約しており、リポジトリ内に別ファイルとしては配置しない）:
+
+- **P3-7 を §2 P0-4 へ昇格**: AlarmScheduler の protocol / fake 化を P0 に格上げ。
+- **P3-9 を §2 P0-5 へ昇格**: `.shiftalarm` バリデーション層を P0 に格上げ。
+- **§3 に P1-5 / P1-6 を新規追加**: アラーム診断画面 / ChangePreview 共通化。
+- **§4 P2-α A1（ドリフト UI 統合）を P1 相当に昇格**: §3 P1 から前方参照。
+- **§4 P2-α A2 / P2-β / P2-γ** に「実装精緻化（2026-05-27 追加）」サブ見出しを設け、
+  データモデル形式・テスト ID・Phase 順序などの確定情報を追記。
+- 取り込みアルゴリズム / 横断モデル詳細は `docs/p2-algorithms.md` に集約。
+- 提案書 §6（近日アラーム）/ §11（仮眠）/ §12（統計）/ §13（家族共有 privacy）
+  は 2026-05-27 時点で不採用。
 
 ---
 
@@ -150,11 +164,297 @@
   （レビュー#2 §3.1）。当面は本セクションを実機検証時に Issue に貼る運用を継続。
 - **DoD**: 上記すべて OK のチェックリストを Issue に貼り closed。
 
+### P0-4. AlarmScheduler を protocol / fake 注入可能にする（未着手）
+
+> 2026-05-27 提案書取り込みにより **§P3-7 から昇格**。本文は当セクションを正とし、
+> §P3-7 はアンカー兼履歴として最小化する。アルゴリズム / モデル詳細は
+> [docs/p2-algorithms.md §7](docs/p2-algorithms.md#7-横断-changepreview-抽象--アラーム診断--shiftalarm-validator) に集約。
+
+- **目的**: `AlarmScheduler` の diff-sync 副作用（schedule / cancel の順序、失敗時の
+  DB 整合性）をユニットテストで検証可能にし、「新規アラーム登録に失敗したのに古い
+  アラームを消してしまう」「cancel に失敗したのに DB 上は消したことにしてしまう」
+  などの致命的失敗系を再現テストで縛る。
+- **設計方針**:
+  - 新規 protocol `AlarmSchedulingClient`:
+    ```swift
+    public protocol AlarmSchedulingClient: Sendable {
+        func schedule(
+            id: UUID, fireDate: Date, label: String,
+            soundID: String, kind: ScheduledAlarmKind
+        ) async throws -> UUID
+        func cancel(id: UUID) async throws
+
+        /// AlarmKit に現在登録済みのアラーム ID 集合を返す。§P1-5 診断の
+        /// saved-ID vs 実在 ID 突き合わせ（DIAG-U6）に必須。fake は in-memory
+        /// 集合を返す。
+        func scheduledIDs() async throws -> Set<UUID>
+
+        /// AlarmKit の認可状態（authorized / denied / notDetermined）を返す。
+        /// §P1-5 診断の `AlarmKit 権限` チェック（DIAG-U1）が決定論的に
+        /// テスト可能になるよう protocol 経由で取得する。`AlarmService` 具体型は
+        /// `AlarmManager.shared.authorizationState` を直接呼ぶが、fake は
+        /// 任意の状態を返せること。
+        func authorizationState() async -> AlarmAuthorizationState
+    }
+    ```
+  - `kind: ScheduledAlarmKind` は **初期は `.main` / `.bedtime` のみ**。
+  - `AlarmAuthorizationState` は既存 `Sources/Services/AlarmKit/AlarmAuthorization.swift`
+    の enum を再利用（新規追加しない）。
+  - `AlarmService` actor を `extension AlarmService: AlarmSchedulingClient {}` で
+    準拠させ、`AlarmScheduler` は具体型ではなく protocol を保持する。
+  - `App/AppDependencies.swift` での組み立てを更新。
+- **安全な同期順序**（cancel 失敗時に旧アラームが孤児化しないことを保証）:
+  1. 新しいアラームを `schedule`（失敗時はここで例外、DB 旧 row は無傷）
+  2. 旧 ID を `pending_cancel_alarm_kit_ids` に append（**新 ID で上書きする前**）
+  3. `current_alarm_kit_id` を新 ID に更新
+  4. **ここで `modelContext.save()` を必ず実行**（旧 ID は pending に退避され、
+     新 ID は DB に書かれた状態を**ディスク永続化**する。これより前にプロセスが
+     落ちても旧 ID が失われない不変条件を守る）。
+     - **save が throw した場合のロールバック**: 新 ID は AlarmKit に登録済みだが
+       DB のどこにも記録されていない状態（cancel する手段が失われた orphan）に
+       なる。これを防ぐため、`save()` 失敗を catch して **直前に schedule した
+       新 ID を `alarmClient.cancel(newID)` で取り消してから** 上位に例外を
+       rethrow する。
+       - **cancel(newID) も失敗した二段失敗の orphan 検出**: 新 ID は AlarmKit
+         上に live のまま、DB にはどこにも記録されていない最悪パターン。
+         単純な「saved `current_alarm_kit_id` vs `scheduledIDs()`」突き合わせ
+         では旧 ID が依然 live なので一致してしまい新 ID の存在を見逃す。
+         具体的な対処は次のどちらかを必ず採る:
+         - **(a) 集合差分による orphan 検出**: `refreshScheduledAlarms` の
+           プロローグで `live = alarmClient.scheduledIDs()` を取得し、
+           DB 上の全 `ShiftAlarm.current_alarm_kit_id` ∪
+           `pending_cancel_alarm_kit_ids` を合算した DB 既知集合 `known` と
+           比較する。`live \ known` は「DB が知らないが AlarmKit には存在
+           する」ID で、これらは無条件に `cancel` 対象として除去する
+           （冪等で安全）。これによりロールバック失敗で残った新 ID も
+           次回 sync で必ず回収される。
+         - **(b) 失敗 ID の最小限永続化**: `save()` 失敗の rollback パスでも、
+           catch 内で `failedRollbackIDs: [UUID]` の専用列に append + save
+           を試みる（この最小 save が失敗したら最後はクラッシュレポートに
+           頼る）。次回 sync は `failedRollbackIDs` を pending-cancel と同じ
+           扱いで cancel する。
+         - 推奨は **(a)**（実装シンプル・追加列なし）。`refreshScheduledAlarms`
+           は冪等のままで `live \ known` の余剰 ID 掃除を仕様に組み込む。
+       - pending-cancel loop には絶対に入らない（旧 ID は安全、新 ID は
+         cancel 済み or (a) で次回回収）。
+  5. `pending_cancel_alarm_kit_ids` の各 ID を順次 cancel 試行
+  6. cancel が成功した ID のみ pending リストから除去、残りは次回同期で再試行
+     （除去結果も `save()` で永続化）
+  - 旧 ID を pending リストに退避してから上書きするため、cancel 失敗で DB 上の
+    参照を失わない。`refreshScheduledAlarms` は冪等。Step 4 の save を省略すると
+    「新 schedule 成功 → cancel 成功 → プロセス kill で save 未到達 → 起動後に
+    旧 ID を再 cancel」のような取り違えが起き得るため、cancel ループに入る前の
+    save は必須。
+  - **bedtime リマインダは独立モデルではなく `ShiftAlarm` の `isBedtimeReminder`
+    フラグ付き行として保存されている**ため、追加する列は `ShiftAlarm` 一箇所のみ:
+    - `pending_cancel_alarm_kit_ids` を新規列として追加。SwiftData の `[UUID]`
+      直接サポートはバージョン依存で App / Widget 共有ストアでの安全性が
+      不確実なため、**既存 `RotationPattern.slotsData` と同じ JSON 化方針** で
+      永続化する: 列の型は `pendingCancelData: Data`（`JSONEncoder().encode([UUID])`
+      の結果）、API 上は computed `pendingCancelIDs: [UUID]` を経由して読み書き
+      する。既存 row はマイグレーション時に空 array を JSON 化した `Data` で
+      初期化する。
+    - **schema version は新規に `SchemaV2` を導入**して App / Widget 共有ストア
+      の migration 境界を明示する。`SchemaV1` を後から in-place で書き換えると、
+      既に V1 ストアで起動した端末がアップグレード時に「いつの V1 か」を判別
+      できず、`@Attribute(originalName:)` rename のメタデータと既存値の対応が
+      崩れる。具体的には:
+      - `Sources/Domain/Persistence/SchemaV2.swift` を新規追加し、`SchemaV1.models`
+        を継承したうえで `ShiftAlarm` を本変更後の形に差し替える。
+      - `Sources/Domain/Persistence/MigrationPlan.swift`（または等価ファイル）に
+        `SchemaV1 → SchemaV2` の lightweight migration stage を登録。
+        `@Attribute(originalName: "alarmKitID")` を持つ `current_alarm_kit_id`
+        と、`Data` デフォルト値（`Data([0x5b, 0x5d])` = `"[]"`）の
+        `pendingCancelData` で SwiftData が自動的に値を引き継ぐ。
+      - `SharedPersistence.makeContainer()` は `Schema(SchemaV2.models)` を渡し、
+        `MigrationPlan` をコンテナ生成オプションに付与する。
+      - 履歴版 `SchemaV1` 自体は **変更しない**（migration baseline 維持）。
+        以降の P2-β / P2-γ が更にスキーマを足す場合は SchemaV2 → SchemaV3
+        と段階的に追加する。
+      - `/swiftdata-migration` skill を必ず起動し、Widget ターゲットでも V2
+        を読めることをビルドで確認する。
+    - 既存 `alarmKitID` プロパティを `current_alarm_kit_id` に rename する際は
+      **`@Attribute(originalName: "alarmKitID")` を付与**して SwiftData が既存
+      ストアの値を引き継ぐようにする。生の rename だと既存 row の AlarmKit ID
+      が失われ、アップグレード後に旧アラームの cancel 不可能・診断画面 (§P1-5)
+      の saved-ID チェックが空振りする回帰が出る。
+    - migration は引き続き lightweight 範囲で完結する（新列 + 既存列のメタデータ
+      上の rename のみ）。`BedtimeReminder` という独立 @Model は存在しないので
+      作成・migration の追加は不要。
+- **追加テスト** (`Tests/ServicesTests/AlarmSchedulerTests.swift` 新規):
+  - AS-U1 新規アラーム: schedule のみ呼ばれる
+  - AS-U2 変更なし: schedule / cancel なし
+  - AS-U3 時刻変更: new schedule → pending append → current update → old cancel の順
+  - AS-U4 schedule 失敗時に旧 AlarmKit ID と DB row を維持
+  - AS-U5 cancel 失敗時に旧 ID が `pending_cancel_alarm_kit_ids` に残り、次回
+    `refresh` で再試行される
+  - AS-U6 bedtime reminder と wake alarm が同一 calendar day でも key collision なし
+  - AS-U7 skipAlarm: 登録済みなら **pending 経由で cancel**。具体的には:
+    1. 旧 ID を `pending_cancel_alarm_kit_ids` に append、
+    2. `current_alarm_kit_id` を `nil` にクリア、
+    3. **ここで必ず `modelContext.save()`**（cancel ループに入る前に
+       「pending に退避 + current=nil」を永続化。process kill しても旧 ID は
+       pending に残るので冪等再試行可能）、
+    4. pending 内の各 ID を順次 `cancel`、成功した ID のみ pending から
+       除去して再 save。
+    schedule 付き再登録時の step 1〜6 と同じ "save-before-cancel" 順序を
+    cancel-only の expected-set 縮小（skipAlarm 切替 / 祝日 override 追加 /
+    rotation 削除など）でも守る。
+  - AS-U8 祝日 override: expected set から除外（cancel-only path も
+    AS-U7 と同じ save-before-cancel 順序で行う）
+  - AS-U9 save-failure rollback: `modelContext.save()` が throw した場合に
+    直前の新 ID が `alarmClient.cancel()` され、pending-cancel ループに入らない
+    （fake client で `save()` を意図的に throw させ、`cancel` が 1 回だけ
+    新 ID 引数で呼ばれることを assert）
+  - AS-I1 `refreshScheduledAlarms` の操作列を fake で検証
+- **対象ファイル**:
+  - 新規 `Sources/Services/AlarmKit/AlarmSchedulingClient.swift`
+  - 変更 `Sources/Services/AlarmKit/AlarmService.swift`
+  - 変更 `Sources/Services/AlarmKit/AlarmScheduler.swift`
+  - 変更 `Sources/Domain/Models/ShiftAlarm.swift`（`pendingCancelData: Data` 列
+    追加 / `alarmKitID` → `current_alarm_kit_id` に
+    `@Attribute(originalName: "alarmKitID")` 付き rename）
+  - 新規 `Sources/Domain/Persistence/SchemaV2.swift`（`SchemaV1` を継承し
+    `ShiftAlarm` を新形式に差し替えた `models` を公開）
+  - 新規 / 変更 `Sources/Domain/Persistence/MigrationPlan.swift`（`SchemaV1 →
+    SchemaV2` の lightweight migration stage を登録）
+  - 変更 `Sources/Domain/Persistence/ModelContainer+Shared.swift`
+    （`SharedPersistence.makeContainer()` が `Schema(SchemaV2.models)` と
+    `MigrationPlan` を使うように切り替え）
+  - 変更 `App/AppDependencies.swift`
+  - 新規 `Tests/Support/FakeAlarmSchedulingClient.swift`
+  - 新規 `Tests/ServicesTests/AlarmSchedulerTests.swift`
+- **注意**: Swift 6 strict concurrency 下で actor → protocol 化する際の
+  `Sendable` 制約、`@MainActor` な `AlarmScheduler` と fake client の相性。
+- **DoD**:
+  - **AS-U1 / AS-U2 / AS-U3 / AS-U4 / AS-U5 / AS-U6 / AS-U7 / AS-U8 / AS-U9 /
+    AS-I1 の全 10 件**（unit 9 + integration 1）が `scripts/verify.sh` で緑。
+    特に AS-I1 は `refreshScheduledAlarms` の操作列を fake で検証する
+    integration テストで、unit のみ緑でも DoD は満たさない（unit と
+    integration を両方明記して落とし穴を塞ぐ）。
+  - 既存 `AlarmService` 公開 API 非破壊。
+  - Swift 6 strict concurrency 下で `Sendable` 警告が増えない。
+
+### P0-5. `.shiftalarm` バリデーション層（未着手）
+
+> 2026-05-27 提案書取り込みにより **§P3-9 から昇格**。本文は当セクションを正とし、
+> §P3-9 はアンカー兼履歴として最小化する。データモデル詳細は
+> [docs/p2-algorithms.md §7](docs/p2-algorithms.md#7-横断-changepreview-抽象--アラーム診断--shiftalarm-validator) に集約。
+
+- **目的**: 外部から渡ってくる `.shiftalarm` JSON について、Codable で構造が読める
+  だけでは検出できない **意味的に壊れた値** を弾く層を追加する。共有・バックアップ・
+  URL import の **入口での検査** を一本化する。
+- **基本方針**:
+  - decode 後 / preview 前に必ず validator を通す
+  - **重大エラーは全体 reject**、軽微な警告は preview に表示
+  - apply 時にも再検証する
+  - 将来 version は原則 read-only preview または reject
+- **モデル**:
+  ```swift
+  public struct ShiftBundleValidationResult: Equatable, Sendable {
+      public var errors: [ShiftBundleValidationIssue]
+      public var warnings: [ShiftBundleValidationIssue]
+      public var isValid: Bool { errors.isEmpty }
+  }
+  public enum ShiftBundleValidationCode: String, Sendable {
+      case unsupportedVersion, futureVersion, tooManyItems
+      case invalidAlarmHour, invalidAlarmMinute, invalidCycleLength
+      case slotCountMismatch, duplicateID, duplicateDate
+      case missingPresetReference, textTooLong, invalidColorHex
+  }
+  ```
+- **検査項目（error 区分）**: `version` 対応範囲外 / 将来 version / preset 名 64 文字超 /
+  `hour ∉ 0...23` / `minute ∉ 0...59` / `cycleLength ∉ 1...365` /
+  `slots.count != cycleLength` / 件数上限超過 / duplicate UUID。
+  - **件数上限（`tooManyItems`）はすべての top-level コレクションを対象**:
+    暫定値として `presets ≤ 100` / `assignments ≤ 2000` / **`patterns ≤ 50`** /
+    **`overrides ≤ 3000`**（祝日 + 有給 + 将来の DOW 展開を見越して大きめ）。
+    `ShareImporter.applyPatterns` / `applyOverrides` は配列をそのまま iterate
+    して persist するため、上限を設けないと preset / assignment が小さい
+    bundle でも `patterns` / `overrides` 側で SwiftData ストアを膨張・停滞
+    させ得る。path は `patterns` / `overrides` / `presets` / `assignments`
+    の 4 種を返せること。
+  - **`hour` / `minute` range 検査は preset の default 値だけでなく、
+    `AssignmentDTO.overrideAlarmHour` / `overrideAlarmMinute` も対象**。
+    `ShareImporter` は assignment override をそのまま永続化し、`AlarmScheduler`
+    が fire date 構築に直接利用するため、ここで `24` / `60` が通ると wrong-day
+    alarm / missing alarm の原因になる。path は `presets[N].defaultAlarmHour` /
+    `assignments[N].overrideAlarmHour` の両形式を生成する。
+- **検査項目（warning 区分）**: note 512 文字超 / 不正 color hex。
+- **`missingPresetReference` を error に昇格**: `AssignmentDTO.presetID` が存在し
+  ない（参照切れ）かつ `skipAlarm == false` のアサインは error。`ShareImporter`
+  が現状 `preset = nil` の manual `DayAssignment` を素通しすると、`DayResolver`
+  はその manual 行を holiday / rotation より優先するため fire date を返さず、
+  本来鳴るはずだったローテーション由来のアラームを **暗黙に黙らせる**。`skipAlarm
+  == true` のときは意図的に音を出さない指示なので warning に留め、apply 時に
+  `preset = nil` のままでも skip 経路として安全に扱える。
+- **`missingPresetReference` は `patterns[N].slots[M]` も対象**: ローテ slot
+  内の preset UUID が bundle 内の `presets[]` に存在しない場合も同じ理由で
+  error にする（`ShareImporter.applyPatterns` は slot を直接 persist し、
+  `DayResolver` は高優先度の pattern slot で nil preset を引いた瞬間に fire
+  date を返さない＝アラームが沈黙する）。path は `patterns[N].slots[M]`
+  を生成する。`skipAlarm` の概念は slot 単位には無いので、slot 側は
+  常に error。
+- **`missingPresetReference` は `overrides[N].replacementPresetID` も対象**:
+  holiday / PTO 用 override の代替 preset 参照切れ + `skipAlarm == false` は
+  error。`ShareImporter.applyOverrides` は `replacementPresetID` が nil の
+  override 行を作り、`DayResolver` はその行を precedence 順で採用するが fire
+  date が生成できず、本来の祝日 / 有給代替アラームが沈黙する。`skipAlarm
+  == true` のときは「鳴らさない」意図と一致するため warning に降格、
+  apply 時に `replacement = nil` の skip 経路として扱う。path は
+  `overrides[N].replacementPresetID`。テスト ID **SBV-U12**（override の
+  preset 参照切れ + skipAlarm=false で error）と **SBV-U13**（skipAlarm=true
+  で warning）を新設。
+- **`duplicateDate` を error に昇格**: 同一 `assignments[*].date` が複数回現れる
+  bundle は §P1-6 の conflict resolution UI が出るまで一律 error として reject
+  する。現行 `ShareImporter` は new assignment では先勝ち / 既存 assignment は
+  上書きの連発で **deterministic でない部分適用** が起きる。P1-6 完了後に warning
+  へ降格し preview で「後勝ち / 先勝ち / スキップ」を選ばせる予定（その時点で
+  warning 区分に戻し、判定マトリクスを再更新する）。
+- **検査項目（ignore）**: unknown fields（forward compatibility）。
+- **UI**: 既存 `ShareImporter` の preview / apply 前段で呼び出し、error がある場合は
+  Apply ボタンを disabled にする。`ImportPreviewView` への抽出は §P1-6 で実施。
+- **追加テスト** (`Tests/ServicesTests/ShiftBundleValidatorTests.swift` 新規):
+  - SBV-U1 正常 bundle は valid
+  - SBV-U2 unsupported version は error
+  - SBV-U3 preset.defaultAlarmHour 24 は error
+  - SBV-U4 preset.defaultAlarmMinute 60 は error
+  - SBV-U5 slots.count 不一致は error
+  - SBV-U6 duplicate UUID は error
+  - SBV-U7 missing presetID は `skipAlarm == false` で error / `skipAlarm == true`
+    では warning（境界を両方検証）
+  - SBV-U8 件数上限超過は error
+  - SBV-U9 assignment.overrideAlarmHour 24 は error（path に
+    `assignments[N].overrideAlarmHour` を含む）
+  - SBV-U10 assignment.overrideAlarmMinute 60 は error（同上 path）
+  - SBV-U11 duplicate date は error（P1-6 完了までは一律 reject）
+  - SBV-U12 overrides[N].replacementPresetID 参照切れ + `skipAlarm == false`
+    は error
+  - SBV-U13 overrides[N].replacementPresetID 参照切れ + `skipAlarm == true`
+    は warning
+  - SBV-U14 patterns[N].slots[M] の missing preset 参照は常に error
+  - SBV-I1 Import preview 前に validator が呼ばれる
+  - SBV-I2 error ありで Apply ボタン disabled
+- **対象ファイル**:
+  - 新規 `Sources/Services/Sharing/ShiftBundleValidator.swift`
+  - 変更 `Sources/Services/Sharing/ShareImporter.swift`
+  - 新規 `Tests/ServicesTests/ShiftBundleValidatorTests.swift`
+  - 変更 `Resources/Localizable.xcstrings`（ja / en の error / warning メッセージ）
+- **DoD**:
+  - 壊れた bundle を apply できない。
+  - 警告は preview で読める。
+  - 既存正常系 `ShareImporterTests` が壊れない。
+  - 参照切れ presetID でクラッシュしない。
+  - ja / en ローカライズ済み。
+
 ---
 
 ## 3. P1 — UX 完成度
 
-> ステータス: **すべて完了**（PR #7 / #8 / #9 / #10）。以下は履歴として残す。
+> ステータス: **P1-1〜P1-4 は完了**（PR #7 / #8 / #9 / #10、以下は履歴）。
+> **P1-5 アラーム診断画面 / P1-6 ChangePreview 共通化 / P1（追補）A1 ドリフト
+> UI 統合は 2026-05-27 提案書取り込みで新規追加** — いずれも未着手で、依存関係
+> として §P0-4 が完了している必要がある（§8「次の 1 手」順序を参照）。
 
 ### P1-1. オンボーディング ✅ 完了 (PR #7)
 
@@ -208,6 +508,125 @@
 - **DoD**:
   - Settings から Live Activity 表示開始時間を変更でき、即時反映。
   - Widget のタイムラインが次のアラームに近づくにつれて自然に更新される。
+
+### P1-5. アラーム診断画面（未着手 / 2026-05-27 追加）
+
+> 詳細モデル / アルゴリズムは
+> [docs/p2-algorithms.md §7](docs/p2-algorithms.md#7-横断-changepreview-抽象--アラーム診断--shiftalarm-validator) に集約。
+
+- **目的**: ユーザが「次のアラームは本当に鳴るのか」を一目で確認できる画面を追加し、
+  ユーザ向けの安心表示と開発者向けのトラブルシュート材料を兼ねる。
+- **画面名**: `アラーム診断` / `Alarm Diagnostics`
+- **導線**: `SettingsView` の「安全性 / 診断」セクションに追加。可能なら次回
+  アラームカードにも `登録済み` / `要確認` / `権限未許可` の小バッジを表示。
+- **診断項目（8 種）**:
+  - AlarmKit 権限（OK: authorized / NG: critical → 許可リクエスト CTA）。
+    取得は `alarmClient.authorizationState()`（§P0-4 protocol 経由）で行い、
+    `AlarmManager.shared` への直接依存を避ける。fake client は `.denied` /
+    `.notDetermined` / `.authorized` を任意に返せるので DIAG-U1 がテスト時に
+    決定論的になる。
+  - 次回アラーム登録（**保存 ID が non-nil かつ AlarmKit の scheduled IDs に
+    実在する**こと。`alarmClient.scheduledIDs()`（§P0-4 protocol 経由）と
+    `current_alarm_kit_id` を突き合わせる。権限喪失・外部 purge・同期失敗で
+    AlarmKit 側から消えていても DB 上は残るケースを検出するため、saved ID 単独で
+    OK 判定しない。 NG: 今すぐ同期 CTA）
+  - 最終同期時刻（24 時間以内 / NG: 今すぐ同期 CTA）
+  - App Group（App/Widget 間で読み取り可能 / NG: 詳細を見る）
+  - BG Refresh 登録（NG: 再登録）
+  - Live Activity 設定値（NG: 設定を開く）
+  - HealthKit（任意 / 未許可は warning）
+  - 近日の未登録日（next N days に未同期がない / NG: 再同期）
+- **状態 4 段階**: `normal` / `warning`（任意機能のみ問題） / `attention`（AlarmKit 登録・
+  BG refresh に問題） / `critical`（権限なし、次回アラームなし等）。
+- **モデル**: `AlarmDiagnosticsReport` / `AlarmDiagnosticsStatus` / `AlarmDiagnosticsCheck` /
+  `AlarmDiagnosticsRecoveryAction`。**永続化なし**（一時値）。
+- **AppSettings 追加**:
+  - `lastAlarmSchedulerRunAt: Date?`
+  - `lastAlarmSchedulerResultRaw: String?` ← 構造化ログ化は §P3-8 と一緒に実施する
+    前提で、初期は raw String を許容。
+- **依存**: P0-4（AlarmScheduler protocol 化）完了後に着手。
+  `lastAlarmSchedulerRunAt` の更新は AlarmScheduler から行う。
+- **追加テスト**:
+  - DIAG-U1 AlarmKit 権限なしなら critical
+  - DIAG-U2 次回アラームなしなら attention 以上
+  - DIAG-U3 HealthKit 未許可のみなら warning
+  - DIAG-U4 最終同期が 24 時間超なら attention
+  - DIAG-U5 すべて OK なら normal
+  - DIAG-U6 **DB 上は `current_alarm_kit_id` が non-nil だが
+    `alarmClient.scheduledIDs()` に含まれない場合は critical**（権限喪失・外部
+    purge シナリオ。Fake client で saved ID と scheduledIDs を意図的にずらして検証）
+  - DIAG-I1 「今すぐ同期」CTA で `AlarmScheduler.refresh` が呼ばれる
+  - DIAG-I2 SettingsView から診断画面へ遷移できる
+- **対象ファイル**:
+  - 新規 `Sources/Services/Diagnostics/AlarmDiagnosticsService.swift`
+  - 新規 `Sources/Features/Settings/AlarmDiagnosticsView.swift`
+  - 変更 `Sources/Features/Settings/SettingsView.swift`
+  - 変更 `Sources/Services/AlarmKit/AlarmScheduler.swift`
+  - 変更 `Sources/Domain/Models/AppSettings.swift`
+  - 新規 `Tests/ServicesTests/AlarmDiagnosticsServiceTests.swift`
+- **DoD**:
+  - Settings から診断画面を開ける。
+  - 次回アラーム、登録件数、最終同期時刻が表示される。
+  - AlarmKit 未許可時に明確な CTA が出る。
+  - 診断結果が VoiceOver で意味のある順序で読める（既存 P1-2 a11y 監査済みリストに
+    追記）。
+  - 単体テストで状態判定 5 ケースを網羅する。
+
+### P1-6. ChangePreview 共通化（未着手 / 2026-05-27 追加）
+
+> 詳細モデルは
+> [docs/p2-algorithms.md §7](docs/p2-algorithms.md#7-横断-changepreview-抽象--アラーム診断--shiftalarm-validator) に集約。
+
+- **目的**: `.shiftalarm` import、シフト表画像インポート、ドリフト検出からの
+  ローテ更新、A2 DOW ルール展開、A4 長期連休自動グルーピング、将来の CSV import
+  などで使える **差分プレビュー基盤** を作る。
+- **段階分け（漸進実装）**:
+  - **Step 1**: `ShareImporter.swift` 内に埋め込まれているプレビューロジックを
+    `Sources/Features/Sharing/ImportPreviewView.swift` として独立ファイルに抽出
+    （リファクタのみ・振る舞い不変）。
+  - **Step 2**: `ChangePreview` 抽象モデルを新設し `.shiftalarm` import から移行。
+  - **Step 3**: 画像インポート / ドリフト UI / DOW ルール展開からも同抽象を利用。
+- **モデル**: `ChangePreview` / `ChangeSummary` / `ChangePreviewSection` /
+  `ChangePreviewItem` / `ChangeKind { add, update, delete, unchanged, conflict }` /
+  `ChangeEntityKind { preset, dayAssignment, rotationPattern, holidayOverride,
+  vacationPeriod, dowRule }`。
+- **設計留意**: `beforeText` / `afterText` は `String` ではなく **localizable な
+  構造化値**（`AttributedString` か `LocalizedStringResource`）を許容できる設計に
+  する。
+- **UI**: フィルタ（すべて / 追加 / 変更 / 競合 / 警告 / 選択中のみ）と一括操作
+  （すべて選択 / 解除 / 競合を除いて選択 / 変更だけ選択）を備える。
+- **対象ファイル**:
+  - 新規 `Sources/Domain/Models/ChangePreview.swift`
+  - 新規 `Sources/Features/Shared/ChangePreviewView.swift`
+  - 新規 `Sources/Features/Shared/ChangePreviewRow.swift`
+  - 新規 `Sources/Features/Sharing/ImportPreviewView.swift`
+  - 変更 `Sources/Services/Sharing/ShareImporter.swift`（抽出後の参照更新）
+  - 新規 `Tests/DomainTests/ChangePreviewTests.swift`
+  - 新規 `Tests/SnapshotTests/ChangePreviewSnapshotTests.swift`
+- **DoD**:
+  - `.shiftalarm` import preview が共通 UI へ移行できる。
+  - 追加 / 変更 / 競合 / 警告の表示が可能。
+  - 選択状態を保持できる。
+  - Dynamic Type XL で崩れない。
+  - VoiceOver で before / after が読める。
+
+### P1（追補）. A1 ドリフト検出 UI 統合（§P2-α A1 を P1 相当に昇格）
+
+> 詳細は §P2-α A1（[L389-407](#p2-α-シフトパターン自動検出--プリセット--ローテ提案--コア実装済み-pr-19)）を参照。
+> アルゴリズムは PR #19 で実装済み (`ShiftPatternDetector.detectDrift()`)。
+> 残作業は **UI 統合のみ**。
+
+- **追加実装**:
+  - 新規 `Sources/Features/Rotation/PatternDriftSuggestionView.swift`
+  - 変更 `Sources/Features/Rotation/RotationListView.swift`
+- **snooze 設計の精緻化（2026-05-27 追加）**:
+  - `AppSettings.patternDriftSnoozedUntil: Date?`
+  - `AppSettings.patternDriftSnoozedFingerprint: String?` に **algorithm version
+    プレフィックス** を含める。例: `"v1:abc123..."`。アルゴリズム更新時に古い
+    fingerprint が誤って snooze 一致しないようにする。
+- **追加テスト**: DRIFT-U1〜U5 / DRIFT-I1〜I3（提案書 §8.7 を採用）。
+- **旧 pattern は削除せず `isActive = false`** のフラグ運用（提案書 §8.5 ＝
+  既存 A1 DoD と一致）。
 
 ---
 
@@ -290,18 +709,80 @@
 
   - 純粋周期に乗らない「第 1・第 3 金曜は夜勤」「毎月最終週は休」型の **DOW
     (day-of-week × week-of-month)** パターンを別アルゴリズムで検出。
-  - 結果は `SuggestedRotation` ではなく `SuggestedDOWRule { dayOfWeek, weekOfMonth,
-    presetID, observedMatches }` のリストとして返し、UI 上は通常ローテ提案と並列の
-    カードで表示。
+  - 結果は `SuggestedRotation` ではなく `SuggestedDOWRule { id, dayOfWeek,
+    weekOfMonth, presetID, observedMatches, confidence }` のリストとして返し
+    （`id` は決定論的派生、下記「実装精緻化」参照）、UI 上は通常ローテ提案と
+    並列のカードで表示。
   - 受諾時は v1 では **`HolidayOverride`** に展開（週序計算で範囲展開、複数月分を
     一括 insert）。`RecurrenceRule` モデル化はバックログ扱い。
   - **対象ファイル**:
     - 新規 `Sources/Domain/Logic/DayOfWeekPatternDetector.swift`（α 検出器の兄弟）
     - 既存 `Sources/Features/Rotation/RotationListView.swift` に DOW 提案カードを追加
+  - **実装精緻化（2026-05-27 追加）**:
+    - `SuggestedDOWRule` を `{ id, dayOfWeek, weekOfMonth, presetID?,
+      observedMatches, confidence }` 形に確定（`confidence: Double` 追加）。
+      **`id: UUID` は決定論的派生**（`(dayOfWeek, weekOfMonth, presetID)` を
+      入力として `SHA256` 先頭 16 byte で生成、詳細は
+      [docs/p2-algorithms.md §1.10](docs/p2-algorithms.md#110-曜日週序検出) 参照）。
+      同じ入力からは常に同じ ID を生成しないと、後続の `HolidayOverride
+      .expandedFromRuleID = rule.id` 永続化がルール再検出のたびに別 UUID を
+      持つことになり、§P3-15 で `RuleExpandedOverride` に分離する migration
+      で「元の規則 → 展開行」の対応が壊れる。
+    - 検出設定を構造体化:
+      ```swift
+      public struct DayOfWeekPatternDetectorConfiguration: Sendable {
+          public var windowDays: Int = 90
+          public var minDensity: Double = 0.6
+          public var minMatchRate: Double = 0.85
+          public var minObservedMatches: Int = 2
+      }
+      ```
+    - 初期実装範囲は `weekday + weekOfMonth` のみ。`lastWeekOfMonth`（毎月最終週）は
+      Phase 2 として後送。
+    - 受諾フローは **§P1-6 `ChangePreview` を経由**してから `HolidayOverride` へ
+      展開。既存手動割当は上書きしない。
+    - **展開件数が増えやすい懸念**（6 ヶ月分の `HolidayOverride` 大量追加）に対し、
+      専用テーブル化（`RuleExpandedOverride`）は §5 P3 バックログとして追加検討。
+    - **v1 出荷時に provenance 列の追加を必須化**: `HolidayOverride` に
+      `expandedFromRuleID: UUID?` と `expandedAt: Date?` の 2 列を **A2 と同じ
+      PR で** 追加する。これが無いとユーザの手動 override と A2 自動展開行が
+      テーブル上区別できず、後日 §P3-15 で `RuleExpandedOverride` を分離する
+      migration が安全に実装できない（手動データを巻き込む / 取りこぼすリスク）。
+      SwiftData lightweight migration の範囲で完結する（nullable 2 列追加 / 既存
+      row は両方 `nil` で初期化）。`/swiftdata-migration` skill を必ず起動。
+    - **`.shiftalarm` 共有バンドルにも provenance を載せる**: SwiftData 列を
+      追加するだけでは export → import 経路で provenance が失われ、
+      再 import 後は全 A2 由来行が `expandedFromRuleID = nil` 扱いになって
+      手動 override と区別不能になる（§P3-15 migration の前提が壊れる）。
+      A2 と同じ PR で次のいずれかを併せて実装:
+      - **(a) DTO 拡張（推奨）**: `OverrideDTO` に `expandedFromRuleID:
+        UUID?` と `expandedAt: Date?` をオプショナルに追加。古い `.shiftalarm`
+        は両 field 欠落 = `nil` decode で後方互換、新 bundle は両 field を
+        export/import で往復する。`ShiftBundleValidator` 側は ignore する
+        unknown field 扱いではなく **正規 field** として認識（forward
+        compat ポリシーは §P0-5 のとおり）。
+      - **(b) 共有時除外**: A2 由来行（`expandedFromRuleID != nil`）は
+        `ShareExporter` で export 対象から落とし、`SuggestedDOWRule`
+        自体を別 DTO として export する。受け取り側は再展開で復元。
+      - 初期実装は (a) を採用し、`OverrideDTO` の `expandedFromRuleID` /
+        `expandedAt` を `Codable` default-`nil` で導入する。
+      Widget の SwiftData container も同 schema を共有するため、Widget 側ビルド
+      でも参照可能であることを確認すること。
+  - **テスト ID**:
+    - DOW-U1 第 1・第 3 金曜を検出
+    - DOW-U2 観測 1 件では検出しない
+    - DOW-U3 matchRate 不足では検出しない
+    - DOW-U4 off も検出可能
+    - DOW-U5 複数ルールを返せる
+    - DOW-I1 受諾で 6 ヶ月分展開
+    - DOW-I2 手動割当は上書きしない
+    - DOW-I3 差分プレビューを経由
   - **DoD**:
     - 第 1・第 3 金曜のみ夜勤の履歴で 2 つの `SuggestedDOWRule` が返る。
     - 観測 1 件など低密度パターンは検出されない。
     - α 周期検出と DOW 検出が同入力で並走し、両ヒット時は両カードが出る。
+    - 受諾前に該当日を `ChangePreview` で確認できる。
+    - 既存の手動割当を壊さない。
 
 - **A5. 提案 UX フィードバック計測（派生 / 未着手）**
 
@@ -356,11 +837,67 @@
   - 既存の祝日/有休 UI に "連休としてまとめる" 操作を追加
   - 既存 `Sources/Features/Presets/PresetEditorView.swift` に policy ピッカー追加
   - テスト: 新規 `Tests/DomainTests/VacationAwareRotationTests.swift`
+- **実装精緻化（2026-05-27 追加）**:
+  - `CrossVacationPolicy` を **Int rawValue** Codable enum で固定:
+    ```swift
+    public enum CrossVacationPolicy: Int, Codable, CaseIterable, Sendable {
+        case invert = 0
+        case `continue` = 1
+        case resetToDay = 2
+    }
+    ```
+  - `VacationPeriod` は **独立 @Model** とし、`HolidayOverride.isVacationGroup`
+    フラグは「`VacationPeriod` 由来か否かのマーカー」としてのみ使う。
+    `HolidayOverride` 自体の責務は単日 override に維持する。
+  - **3 日未満の VacationPeriod は作成不可**。**UI バリデーションだけでなく、
+    `VacationPeriod` の throwing initializer または専用 factory（例: `static func
+    make(...) throws -> VacationPeriod`）の中でも同じ不変条件を強制する**。理由:
+    `RotationExpander` / `DayResolver` は永続化された `VacationPeriod` を
+    アラーム抑制範囲として無条件に扱うため、自動グルーピング (β-S2 / β-S3) や
+    将来の `.shiftalarm` import / App Intents / テストヘルパなど他の write path
+    から 1〜2 日の `VacationPeriod` が混入すると、本来鳴るはずの 1〜2 日分の
+    ローテーション・アラームを **暗黙に黙らせる** 事故が起き得る。invariant
+    違反は `VacationPeriodError.tooShort(days: Int)` を throw し、UI 側は
+    既存の入力検証メッセージに繋ぐ。同じ不変条件をテスト ID **VAC-U10**
+    （初期化時 / domain factory 側で 2 日範囲が reject される）として
+    P2-β テスト群に追加すること。
+  - **Widget の SwiftData container も最新スキーマを読むこと**を migration 時に
+    確認（App と Widget で同じ App Group store を共有しているため）。
+    `/swiftdata-migration` skill 必須。**§8 の優先順位に従うと P0-4 完了時点で
+    SchemaV2 が active になっている**ため、P2-β は **SchemaV3 を新規追加** し、
+    `MigrationPlan` に `SchemaV2 → SchemaV3` stage を登録する形で `VacationPeriod`
+    + `RotationPattern` / `ShiftPreset` 列追加を載せる。SchemaV2 に追記する
+    形にすると、既に V2 で起動した端末（P0-4 を入れた状態）にスキーマ baseline
+    の不整合が生じる。`Sources/Domain/Persistence/SchemaV3.swift` を新規追加し、
+    `SharedPersistence.makeContainer()` の `Schema(...)` 引数も SchemaV3 に
+    切り替える。
+  - 連休内の日付は **手動割当を優先**（既存 DayResolver 優先順位
+    `手動 > 祝日/有休/連休 > ローテ > なし` を維持）。
+- **テスト ID**:
+  - VAC-U1 連休なしなら既存 `RotationExpander` と同じ
+  - VAC-U2 連休中は nil
+  - VAC-U3 手動割当は連休より優先
+  - VAC-U4 invert で半周期ずれる
+  - VAC-U5 continue で連休日数が周期から除外される
+  - VAC-U6 resetToDay で昼勤スロットへ揃う
+  - VAC-U7 複数連休の補正が累積する
+  - VAC-U8 年末年始を跨いでも日付ズレしない
+  - VAC-U9 3 日未満の `VacationPeriod` は **UI 入力検証** で reject される
+    （フォーム / 確認ダイアログ層）
+  - VAC-U10 3 日未満の `VacationPeriod` は **domain factory / throwing init**
+    でも reject される（`VacationPeriodError.tooShort` を throw）。
+    自動グルーピング (β-S2 / β-S3) / `.shiftalarm` import / App Intents /
+    テストヘルパなど UI を経由しない write path をすべてカバーするための
+    invariant。
+  - VAC-I1 HolidayManager から連休登録できる
+  - VAC-I2 登録後に AlarmScheduler の expected set が変化する
 - **DoD**:
   - 既定 (`.invert`) で連休前夜勤 → 連休 → 昼勤、が再現できる。
   - `.continue` policy で連休前と同じ位相が維持される。
   - `.resetToDay` で常に昼勤始まりになる。
   - SwiftData マイグレーション後、既存 `HolidayOverride` は破壊されない。
+  - 3 日未満の連休登録が UI で弾かれる。
+  - Widget の next-alarm timeline も連休を考慮した結果になる。
 
 - **A4. 連休自動グルーピング（opt-in 派生 / 未着手）**
 
@@ -413,17 +950,84 @@
   - 新規 `Sources/Features/Import/ImageImportView.swift`（PhotosPicker + 進捗 + diff UI）
   - 既存 `Sources/Services/Sharing/ShareImporter.swift` の diff/apply ロジックを再利用
   - 既存 `Sources/Domain/Models/AppSettings.swift` に `userNameOnRoster` を追加
+  - 新規 `Sources/Domain/Models/ShiftSymbolMapping.swift`（Phase 1 で必須。
+    上記「永続化先」参照）
+  - 変更 `Sources/Domain/Persistence/Schema*.swift`（**P2-γ Phase 1 着手時点で
+    `SharedPersistence.makeContainer()` が読んでいる最新スキーマ版** の
+    `models` 配列に `ShiftSymbolMapping.self` を追加。`AppDependencies.swift`
+    ではなくここが App / Widget 共有 `ModelContainer` の単一エントリポイント。
+    `SharedPersistence.makeContainer()` が `Schema(<最新版>.models)` を構築する。
+    優先順位 (§8 「次の 1 手」) では **P2-β SchemaV2 migration が P2-γ より前**
+    のため、P2-γ Phase 1 が着手される頃には実際の対象は `SchemaV2` 以降に
+    なっている可能性が高い。`SchemaV1` を後から書き換えると migration baseline
+    が変わって既存ユーザストアが壊れるので、**履歴版 (V1) は触らず、現行
+    active 版に追加する**。Phase 1 着手 PR の冒頭で `SharedPersistence` の
+    `Schema(...)` 呼び出しを grep して active 版を特定すること。
   - 既存の Import/Export 画面から「画像から取り込む」導線を追加
   - `App/Info.plist`: `NSCameraUsageDescription`, `NSPhotoLibraryUsageDescription` を追加
   - テスト: 新規 `Tests/ServicesTests/ShiftImageParserTests.swift`
     （`Resources/TestFixtures/` にサンプル画像を置き、構造抽出が安定するか確認）。
     FoundationModels 部分は **プロトコル境界でモック**。
+- **実装精緻化（2026-05-27 追加） — Phase 順序入れ替え**:
+  - 評価時に「Vision OCR は日本語縦書き・手書き勤務表で精度が出にくい / グリッド
+    推定は本番品質まで持っていくのに大工数」という指摘を反映し、**OCR 抜きでも
+    動く土台 (手動グリッド + 記号マッピング) を先行**させる Phase 構成へ再整理:
+    - **Phase 1 — 手動グリッド + 記号マッピング**（OCR なしでも完成形）:
+      - ユーザが画像から表範囲・日付行・データセルをタップで指定
+      - `ShiftSymbolMapping { symbol, presetID?, skipAlarm, lastUsedAt }` を保存
+        し、次回以降は自動適用
+      - 差分プレビューは §P1-6 `ChangePreview` を経由
+      - 「OCR が読めなかった時のフォールバック UX」がこの Phase で常時利用できる
+        状態になる
+      - **永続化先**: `ShiftSymbolMapping` を **SwiftData の `@Model` として
+        新規追加**（`Sources/Domain/Models/ShiftSymbolMapping.swift`）。`symbol`
+        は string PK 相当（`@Attribute(.unique)`）、`presetID` は `ShiftPreset` 
+        への optional 参照、`skipAlarm: Bool`、`lastUsedAt: Date`、`createdAt: Date`。
+        AppSettings に格納するシングルトン KV ではなく独立テーブルにすることで、
+        記号ごとの最終利用時刻で並べ替えたり破棄したりするクエリが素直に書ける。
+        **`Sources/Domain/Persistence/Schema*.swift` のうち、`SharedPersistence
+        .makeContainer()` が現に `Schema(...)` 引数として渡している最新スキーマ
+        版** の `models` 配列に `ShiftSymbolMapping.self` を追加して、App /
+        Widget 共有 `ModelContainer` が新モデルを認識するようにする。**履歴版
+        (`SchemaV1` 等) は migration baseline を保つため触らない**。P2-β
+        (§P2-β) で SchemaV2 が導入されているため、P2-γ Phase 1 着手時点では
+        SchemaV2 以降が active になっている前提で着手前に grep で確認する。
+        `/swiftdata-migration` skill を必ず起動。Widget 側ビルドで model 解決でき
+        ることを確認する（参照しないが schema に存在することは必要）。IMG-U1
+        「mapping が保存される」テストは Phase 1 PR 内で SwiftData store を経由
+        した read-back で検証する。
+    - **Phase 2 — Vision OCR 自動抽出**:
+      - `OCRTextRecognizer` / `ShiftTableGridDetector` 追加（既存 P2-γ 本文の
+        `ShiftImageOCR` / `ShiftImageParser` がここに相当）
+      - 信頼度判定 `high` / `medium` / `low` を `ShiftImportConfidence` で持つ。
+        low セルは未選択で Phase 1 の手動フローへ落ちる
+    - **Phase 3 — FoundationModels 補助**:
+      - iOS 26 `FoundationModels` でラベル意味マッピング補助 + 勤務表形式推定
+      - 利用不可機種ではルールベースに fallback（既存 DoD どおり）
+  - 主要勤務記号の例: 早 / 日 / 遅 / 夜 / 明（alarm なし） / 休（alarm なし） /
+    有（alarm なし）。
+  - プライバシー初回明示: 「画像解析は端末内で行われます。勤務表の画像は外部
+    サーバーへ送信されません。」
+- **テスト ID（提案書 §10.14 採用）**:
+  - IMG-U1 勤務記号 mapping が保存される
+  - IMG-U2 unknown symbol は未確定になる
+  - IMG-U3 休 / 明は skipAlarm になる
+  - IMG-U4 低信頼度セルは未選択
+  - IMG-U5 同じ日付の重複は conflict
+  - IMG-I1 画像解析後に差分プレビュー表示
+  - IMG-I2 Apply で DayAssignment 作成
+  - IMG-I3 既存手動割当との競合表示
+  - IMG-S1 Mapping UI snapshot
+  - IMG-S2 Preview UI snapshot
 - **DoD**:
   - 月次シフト表サンプル（昼/夜/休 3 種ラベル）から 80% 以上のセルが正しく抽出される
-    （ja / en サンプル各 1 セット）。
-  - 抽出結果は `ShareImporter` と同じ差分プレビューでレビューしてから適用できる。
+    （ja / en サンプル各 1 セット、Phase 2 達成時点で評価）。
+  - **Phase 1 単独でも、画像 + 手動グリッド指定 + 記号マッピングで完結する**
+    （OCR が完全に失敗しても利用可能）。
+  - 抽出結果は §P1-6 `ChangePreview` でレビューしてから適用できる。
   - FoundationModels が利用不可な OS / 機種でもルールベース fallback で動作する。
   - **クラウド通信は発生しない**（プライバシー / ネット非依存）。
+  - 不確実なセルは自動適用されない。
 - **既知の不確実性**:
   - iOS 26 `FoundationModels` の API は実装着手時に `.swiftinterface` で再チェック。
   - 手書きシフト表は OCR 精度が落ちる可能性。初版では印刷 / デジタル表に限定し、手書きは
@@ -608,8 +1212,11 @@
   - 新規 clone 直後の CI / ローカル `verify.sh` で同一バージョンが解決される。
   - snapshot test の差分が依存解決揺らぎで増えない。
 
-### P3-7. AlarmScheduler を protocol / fake 注入可能にする（未着手）
+### P3-7. AlarmScheduler を protocol / fake 注入可能にする → **§P0-4 へ昇格 (2026-05-27)**
 
+> 2026-05-27 仕様提案書取り込みにより **§2 P0-4 に昇格**。本項は履歴アンカーとして
+> 残す。実装着手は §P0-4 を正とする（テスト ID / 詳細設計が拡張されている）。
+>
 > 根拠: 第三者レビュー#1 §4.4
 
 - **目的**: `AlarmScheduler` の diff-sync 副作用（schedule / cancel の順序、失敗
@@ -657,8 +1264,12 @@
 - **DoD**: Console.app でフィルタリングして diff-sync 1 回ぶんの結果を把握
   できる。
 
-### P3-9. `.shiftalarm` import バリデーション層（未着手）
+### P3-9. `.shiftalarm` import バリデーション層 → **§P0-5 へ昇格 (2026-05-27)**
 
+> 2026-05-27 仕様提案書取り込みにより **§2 P0-5 に昇格**。本項は履歴アンカーとして
+> 残す。実装着手は §P0-5 を正とする（`ShiftBundleValidationCode` enum / error vs
+> warning 区分 / テスト ID が確定している）。
+>
 > 根拠: 第三者レビュー#1 §4.5
 
 - **目的**: 外部から渡ってくる `.shiftalarm` JSON について、Codable で構造が
@@ -762,6 +1373,35 @@
 - **g) Widget / Live Activity の snapshot 拡張**: P3-2 の追補として
   `NextAlarmWidgetView` / `DynamicIslandViews` のケースを追加。
 
+### P3-15. DOW ルール用 `RuleExpandedOverride` 専用テーブル（未着手 / 2026-05-27 追加）
+
+> 根拠: 仕様提案書取り込み（§9 DOW）評価時の指摘
+
+- **目的**: §P2-α A2 DOW ルール検出が受諾されると最大 6 ヶ月分の
+  `HolidayOverride` を一括 insert するため、行数が増えて `DayResolver` クエリ
+  コストへ影響しうる懸念に対応する。
+- **方針**: DOW ルール由来の展開分は **専用の `RuleExpandedOverride` @Model** に
+  分離し、`HolidayOverride` は引き続き単日 override の責務に留める。
+- **依存**: A2 が v1 として `HolidayOverride` 展開で出荷された後、運用数値を見て
+  着手判断。**A2 出荷ブロッカーではない**。
+- **A2 v1 出荷時の前提条件（migration 安全性）**: A2 が `HolidayOverride` を
+  共用テーブルとして使う以上、後で `RuleExpandedOverride` に分離するには
+  「どの行が DOW ルール由来か」を判定できる必要がある。**A2 v1 出荷時点で**
+  `HolidayOverride` に次の 2 列を追加し、ユーザの手動 override と A2 由来の
+  展開行を後方互換に区別できる状態にしておく:
+  - `expandedFromRuleID: UUID?`（nil なら手動・既存ロジックそのまま）
+  - `expandedAt: Date?`（再展開バッチ判定用）
+  ↑この 2 列が無いまま A2 を出してしまうと、ユーザ手動の祝日 override と
+  A2 由来の展開行が事実上区別不能になり、P3-15 migration で「どの行を
+  `RuleExpandedOverride` へ移すか」を確定できなくなる。よって P3-15 自体を
+  後送するのは可だが、**provenance 2 列の追加だけは A2 と同じ PR に含める**。
+- **DoD**:
+  - DOW ルール展開分が独立テーブルに保存され、`DayResolver` の優先順位（手動 >
+    祝日/有休 > ルール展開 > ローテ > なし）が壊れない。
+  - 既存 `HolidayOverride` データを破壊せず、A2 由来分（`expandedFromRuleID`
+    non-nil）を migration で `RuleExpandedOverride` に振り分け可能。手動 override
+    （`expandedFromRuleID == nil`）はそのまま `HolidayOverride` に残る。
+
 ---
 
 ## 6. ファイル別「触るときの注意」（エージェント向け索引）
@@ -801,22 +1441,41 @@
 
 ## 8. 「次の 1 手」
 
-**P2-α / P2-η は PR #19 でマージ済み。** 次の優先順位:
+**P2-α / P2-η は PR #19 でマージ済み。** 2026-05-27 仕様提案書取り込み後の優先順位:
 
 1. **P0-3 実機ゴールデンパス**: `Config/LocalSigning.xcconfig` に実 Developer Team /
    bundle id / App Group を入れ、`bash scripts/p0-readiness.sh` を緑にしてから
    AlarmKit 認可ダイアログ・アラーム発火・Live Activity / Widget の通し確認。
 
-2. **A1 RotationListView 統合**: `ShiftPatternDetector.detectDrift()` は実装済みのため、
-   `RotationListView.detectPattern()` にドリフト検出を追加し、受入で旧 pattern を
-   `isActive = false` にするフローを実装する。
+2. **P0-4 AlarmScheduler protocol / fake 化**: `AlarmSchedulingClient` 導入、
+   `AlarmService` を準拠、`AlarmScheduler` を protocol ベースに変更。
+   `FakeAlarmSchedulingClient` で AS-U1〜U9 / AS-I1 を緑にする。
 
-3. **P2-β 連休越境ローテーション**: `RotationExpander` の vacation-aware 拡張（最大規模の
-   次タスク）。SwiftData V2 マイグレーションが必要。
+3. **P0-5 `.shiftalarm` バリデーション**: `ShiftBundleValidator` 新設、
+   `ShareImporter` の preview / apply 前段で呼び出し、SBV-U1〜U8 / SBV-I1〜I2 を
+   緑にする。ja / en メッセージ整備。
+
+4. **A1 ドリフト検出 UI 統合（P1 相当）**: `ShiftPatternDetector.detectDrift()` は
+   実装済みのため、`RotationListView` にドリフト検出カードを追加し、受入で旧
+   pattern を `isActive = false` にする。`patternDriftSnoozedFingerprint` は
+   `"v1:..."` プレフィックス付き。
+
+5. **P1-5 アラーム診断画面**: P0-4 完了後に着手。`AlarmDiagnosticsService` 新設、
+   `SettingsView` から導線追加、DIAG-U1〜U5 / DIAG-I1〜I2 を緑にする。
+
+6. **P1-6 ChangePreview 共通化**: Step 1（`ImportPreviewView` 抽出）→ Step 2
+   （`ChangePreview` 抽象モデル導入）→ Step 3（画像 / ドリフト / DOW へ展開）。
+   Step 1 は P0-5 と並走可能。
+
+7. **P2-β 連休越境ローテーション**: `RotationExpander` の vacation-aware 拡張、
+   `VacationPeriod` 独立 @Model 追加、SwiftData V2 マイグレーション。
+   Widget container 整合性確認。
+
+8. **P2-γ 画像インポート Phase 1**: 手動グリッド + 記号マッピング UI を OCR 抜きで
+   先行リリース。差分プレビューは P1-6 を経由。
 
 **直近の開発環境ハードニング（P3 配下 / 機能追加と並行で進める想定）**:
-P3-6 (`Package.resolved` 固定) → P3-9 (`ShiftBundle` validator) →
-P3-7 / P3-8 (`AlarmScheduler` テスト容易性 / 構造化ログ) →
+P3-6 (`Package.resolved` 固定) → P3-8 (`AlarmScheduler` 構造化ログ、P0-4 完了後) →
 P3-14a (`UIBackgroundModes` 整理) → P3-14b (`workflow_dispatch`) の順で、
 小さな PR を継続的に出す。
 
@@ -867,6 +1526,27 @@ TDD 的に最初に **赤いテスト** として並べてから実装すると�
 | α-I6 | `testOnboardingPathTriggersSuggestion` | Onboarding 完了直後にサンプル履歴があれば提案分岐に入る |
 | α-I7 | `testAcceptDriftDeactivatesPreviousPattern` | A1: ドリフト受諾で旧 pattern が `isActive=false`、新 pattern が active |
 
+**新規テスト ID（2026-05-27 追加） — A1 / A2 拡充版**
+
+| # | テスト名 | 検証する性質 |
+|---|---|---|
+| DRIFT-U1 | `testDetectDriftReturnsNilWhenObservedZero` | observed 0 で `nil` |
+| DRIFT-U2 | `testDetectDriftReturnsNilBelowThreshold` | mismatchRate < `patternDriftThreshold` で `nil` |
+| DRIFT-U3 | `testDetectDriftRedetectsAboveThreshold` | 閾値以上で再検出が走る |
+| DRIFT-U4 | `testDetectDriftHidesSameFingerprint` | 既存と同 fingerprint なら非表示 |
+| DRIFT-U5 | `testDetectDriftHidesDuringSnooze` | snooze 中なら非表示 |
+| DRIFT-I1 | `testDriftAcceptDeactivatesOldPattern` | 受諾で旧 pattern が `isActive = false` |
+| DRIFT-I2 | `testDriftAcceptActivatesNewPattern` | 受諾で新 pattern が active |
+| DRIFT-I3 | `testDriftAcceptRefreshesAlarmScheduler` | 受諾後に `AlarmScheduler.refresh` が呼ばれる |
+| DOW-U1 | `testFirstAndThirdFridayDetected` | 第 1・第 3 金曜の夜勤を検出 |
+| DOW-U2 | `testDOWDetectorRejectsSingleObservation` | 観測 1 件では検出しない |
+| DOW-U3 | `testDOWDetectorRejectsLowMatchRate` | matchRate 不足では検出しない |
+| DOW-U4 | `testDOWDetectorDetectsOffPattern` | off も検出可能 |
+| DOW-U5 | `testDOWDetectorReturnsMultipleRules` | 複数ルールを返せる |
+| DOW-I1 | `testDOWAcceptExpandsSixMonths` | 受諾で 6 ヶ月分展開 |
+| DOW-I2 | `testDOWAcceptDoesNotOverrideManual` | 手動割当は上書きしない |
+| DOW-I3 | `testDOWAcceptGoesThroughChangePreview` | `ChangePreview` を経由 |
+
 **手動 (golden path)**
 
 - 22 日分の混合シフトを Calendar で手動割当 → Rotation 画面に提案バナー出現を確認。
@@ -912,6 +1592,31 @@ TDD 的に最初に **赤いテスト** として並べてから実装すると�
 | β-I2 | `testAlarmSchedulerRegistersFlippedAlarmAfterVacation` | 連休明け初日のアラーム時刻が `.invert` で正しい |
 | β-I3 | `testDayResolverReturnsCorrectPresetAfterVacation` | `DayResolver` で連休明け初日のプリセットが解決 |
 | β-I4 | `testAutoGroupingPromptShownOnlyOnce` | A4: フラグ `true` 後は β 画面再オープンで表示無し |
+
+**新規テスト ID（2026-05-27 追加） — VAC 系**
+
+> **VAC-U* と β-U* の関係**: 旧 β-U* / β-I* は P2-β の **当初設計時の暫定 ID**
+> で、`docs/p2-algorithms.md §4` の test execution map にも残っている。2026-05-27
+> 提案書取り込み以降の **canonical な ID は VAC-U* / VAC-I*** に統一する。
+> 既存 β-U1〜β-I4 はそのまま消さず、対応関係（β-U1 ↔ VAC-U1 など番号順）として
+> 解釈する。実装着手時は VAC-* を `XCTest` メソッド名に採用し、β-* は当面
+> ドキュメント上の旧名称として残置するに留める（将来の docs 整理 PR で
+> 段階的に削除）。VAC-U10 は β 系には対応物が無い新規（domain factory invariant）。
+
+| # | テスト名 | 検証する性質 |
+|---|---|---|
+| VAC-U1 | `testNoVacationProducesSameResultAsBaseExpander` | 連休なしは既存 `RotationExpander` と完全一致 |
+| VAC-U2 | `testVacationDaysReturnNil` | 連休中は `nil` |
+| VAC-U3 | `testManualOverrideBeatsVacation` | 手動割当は連休より優先 |
+| VAC-U4 | `testInvertPolicyShiftsHalfPeriod` | invert で半周期ずれる |
+| VAC-U5 | `testContinuePolicyExcludesVacationFromCycle` | continue で連休日数が周期から除外 |
+| VAC-U6 | `testResetToDayPolicyAlignsToDaySlot` | resetToDay で昼勤スロットへ揃う |
+| VAC-U7 | `testMultipleVacationsAccumulate` | 複数連休の補正が累積する |
+| VAC-U8 | `testYearBoundaryDoesNotShiftDates` | 年末年始を跨いでも日付ズレしない |
+| VAC-U9 | `testVacationPeriodLessThanThreeDaysRejectedByUI` | 3 日未満の `VacationPeriod` は UI 入力検証で reject される |
+| VAC-U10 | `testVacationPeriodFactoryRejectsLessThanThreeDays` | domain factory / throwing init が 2 日範囲を `VacationPeriodError.tooShort` で reject |
+| VAC-I1 | `testHolidayManagerCreatesVacation` | HolidayManager から連休登録できる |
+| VAC-I2 | `testAlarmSchedulerExpectedSetChangesAfterVacation` | 登録後に AlarmScheduler の expected set が変化する |
 
 **手動 (golden path)**
 
@@ -975,12 +1680,29 @@ TDD 的に最初に **赤いテスト** として並べてから実装すると�
 | γ-D2 | en 月次サンプル 30 日 × 1 行で **セル一致率** | ≥ 80% |
 | γ-D3 | ユーザ名フィルタの正解率（複数行表） | ≥ 95% |
 
+**新規テスト ID（2026-05-27 追加） — Phase 1 手動グリッド + 記号マッピング系**
+
+| # | テスト名 | 検証する性質 |
+|---|---|---|
+| IMG-U1 | `testSymbolMappingPersists` | 勤務記号 mapping が `ShiftSymbolMapping` として保存される |
+| IMG-U2 | `testUnknownSymbolBecomesUnresolved` | unknown symbol は未確定状態（要ユーザ指定） |
+| IMG-U3 | `testRestAndAfterShiftMapToSkipAlarm` | 休 / 明は `skipAlarm = true` になる |
+| IMG-U4 | `testLowConfidenceCellsRemainUnselected` | 低信頼度 (`ShiftImportConfidence.low`) セルは未選択 |
+| IMG-U5 | `testDuplicateDateMarkedAsConflict` | 同じ日付の重複は `ChangeKind.conflict` |
+| IMG-I1 | `testImageAnalysisShowsChangePreview` | 画像解析後に `ChangePreview` 経由のプレビュー表示 |
+| IMG-I2 | `testApplyCreatesDayAssignments` | Apply で `DayAssignment` 作成 |
+| IMG-I3 | `testConflictWithExistingManualAssignment` | 既存手動割当との競合表示 |
+| IMG-S1 | `testMappingUISnapshot` | Mapping UI snapshot |
+| IMG-S2 | `testPreviewUISnapshot` | Preview UI snapshot |
+
 **手動 (golden path)**
 
 - 機内モードで画像を取込 → 通信エラーが出ず正しく抽出 → 差分プレビュー → 適用 → Calendar
   に反映。
 - カメラ撮影 (`DataScannerViewController`) で撮影 → 同じパイプラインで適用できる。
 - `FoundationModels` が利用不可な OS にフォールバックを設定 → ルールベースで動作する。
+- **Phase 1 単独**: OCR を意図的に無効化し、画像 + 手動グリッド指定だけで完結すること
+  を確認（OCR 完全失敗時のフォールバック動作）。
 
 ---
 

@@ -153,12 +153,22 @@ Recently shipped:
 
 Designed, not yet implemented:
 
+- **Alarm reliability diagnostics** — a settings screen that shows at a glance whether the
+  next alarm will actually fire (permissions, scheduler sync, App Group, BG refresh,
+  Live Activity, HealthKit), with one-tap recovery actions when something is off.
+- **`.shiftalarm` input validation** — semantic checks beyond Codable (hour / minute /
+  cycle length / duplicate IDs / size limits / missing preset references) so that a
+  malformed share or URL import can never corrupt the local store.
+- **Unified diff preview** — a shared change-preview abstraction reused by `.shiftalarm`
+  import, image import, pattern-drift suggestions, and day-of-week rule expansion, so
+  every destructive change is reviewed before it lands.
 - **Vacation-aware shift flip** — let users mark long holidays (お盆 / GW etc.) as a single
   vacation block, and apply a configurable policy (invert / continue / reset-to-day) to
   the shift that resumes after the break.
-- **Shift-roster image import (AI)** — upload a photo of a printed or digital shift table;
-  on-device OCR (`Vision`) + iOS 26 `FoundationModels` parse the grid and propose
-  assignments through the same diff-preview as the JSON importer. No cloud round-trip.
+- **Shift-roster image import** — Phase 1 ships a manual grid + symbol-mapping flow that
+  works even when OCR fails; Phase 2 layers on `Vision` OCR for automatic extraction;
+  Phase 3 adds iOS 26 `FoundationModels` for label interpretation. On-device only —
+  no cloud round-trip.
 
 iCloud sync and an Apple Watch companion were considered earlier and are now **out of
 scope**. See `ROADMAP.md` for the full phased plan.

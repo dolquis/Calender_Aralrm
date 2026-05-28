@@ -139,6 +139,28 @@ skip）を確認する。
 本 PR で修正する。スコープ外で大きい場合は修正せず、`ROADMAP.md` への
 反映や Issue 化を提案したうえでユーザーに確認する。
 
+**新規タスク群のレビュー観点（2026-05-27 仕様提案書取り込みで追加）**
+
+`ROADMAP.md` §P0-4 / §P0-5 / §P1-5 / §P1-6 / §P2-α A2 / §P2-β / §P2-γ Phase 1
+配下の作業時は、上記 1〜6 に加えて次を確認する:
+
+- **`Sources/Services/AlarmKit/AlarmService.swift` / `AlarmScheduler.swift` を
+  触ったか?**: `bash scripts/verify.sh` で `Sendable` 警告が増えていないことを
+  確認する。Swift 6 strict concurrency 下で actor → protocol 化する箇所は
+  `Sendable` / `@MainActor` の境界が崩れやすい。
+- **`Sources/Domain/Models/` を触ったか?**: `.claude/skills/swiftdata-migration`
+  または `.agents/skills/swiftdata-migration` の SKILL.md を読み、App と Widget
+  の双方で同 schema を扱えていることを確認する。`Widget/` 配下の
+  `ModelContainer` 初期化も含めて目視する。
+- **`Resources/Localizable.xcstrings` を触ったか?**: ja / en 両方に key を追加
+  したか確認する。`ShiftBundleValidationCode` のメッセージなど、片言語のみだと
+  バリデーション結果が空表示になる可能性がある。P3-12 整合チェック自動化は
+  未着手のため、当面は目視で担保する。
+- **`ChangePreview` を経由する破壊的変更を追加したか?**: 画像インポート / DOW
+  ルール展開 / 連休グルーピングは、Apply 前に必ず `ChangePreview` 経由で
+  ユーザに確認させる導線になっているかを確認する（spec proposal の
+  "Preview before mutation" 原則）。
+
 ---
 
 ## 7. 困ったときの参照順
