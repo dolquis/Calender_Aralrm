@@ -44,7 +44,7 @@ Calender_Aralrm/
 │   └── Shared/                 # Extensions, URL scheme router
 ├── Resources/                  # Localizable.xcstrings, InfoPlist.xcstrings, HolidaysJP.json
 ├── Widget/                     # Widget Extension + Live Activity
-└── Tests/                      # XCTest unit tests
+└── Tests/                      # Swift Testing unit tests
 ```
 
 ## Build
@@ -93,9 +93,11 @@ DESTINATION='platform=iOS Simulator,name=iPhone 17 Pro,OS=26.5' bash scripts/ver
 bash scripts/verify.sh test
 ```
 
-The Tests target currently runs 85 XCTest cases (16 test classes) across domain, services, App
-Intents, HealthKit helpers, background refresh, deep links, sharing, and snapshot coverage. Five
-DayCell snapshot tests are skipped by default unless `SNAPSHOT_TESTING_ENABLED=1` is set.
+The Tests target is written with Apple's [Swift Testing](https://developer.apple.com/documentation/testing)
+(`@Test` / `#expect`) and currently runs 91 tests across 16 test suites (18 files) covering domain,
+services, App Intents, HealthKit helpers, background refresh, deep links, sharing, and snapshot
+coverage. Five DayCell snapshot tests are skipped by default unless `SNAPSHOT_TESTING_ENABLED=1` is
+set.
 
 ## Code style
 
@@ -113,7 +115,10 @@ bash scripts/lint.sh fix     # reformat in place
 - `AlarmScheduler` (`Sources/Services/AlarmKit/AlarmScheduler.swift`) is the heart of the app. It
   diff-syncs the expected set of alarms (from `DayResolver`) against AlarmKit's registered alarms,
   scheduling/cancelling only the differences.
-- `DayResolver` resolves per-date precedence as **manual > holiday > rotation > none**.
+- `DayResolver` resolves per-date precedence as **manual > holiday > rotation > none**. Note one
+  intentional exception: a holiday override with `skipAlarm == false` and no replacement preset
+  falls through to rotation resolution, so the normal scheduled alarm still fires
+  (`Sources/Domain/Logic/DayResolver.swift`).
 - `BGAppRefreshTask` keeps the lookahead window (default 30 days) populated when the app is
   backgrounded.
 - The Widget shares state through the configured App Group (default:
