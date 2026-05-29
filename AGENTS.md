@@ -68,8 +68,8 @@ CI は `.github/workflows/ios.yml` が `macos-26` / Xcode 26+ で実行する。
 `build-test` ジョブが `scripts/verify.sh`、`lint` ジョブが `scripts/lint.sh check`
 （`swift-format`、設定は `.swift-format`）を並列に走らせる。
 **CI 緑 = ローカルで `verify.sh` と `lint.sh check` がともに緑** が前提。
-現状は 85 件の XCTest（16 テストクラス、うち DayCell snapshot 5 件は通常 verify で
-skip）を確認する。
+テストは Apple の Swift Testing（`@Test` / `#expect`）で記述。現状は 91 件のテスト
+（16 テストスイート / 18 ファイル、うち DayCell snapshot 5 件は通常 verify で skip）を確認する。
 実機向け P0 確認は `bash scripts/p0-readiness.sh`、実機 build 入口は
 `bash scripts/p0-device-build.sh`。
 
@@ -136,8 +136,32 @@ skip）を確認する。
 
 セルフレビューで問題が見つかった場合は、プッシュ前に修正すること。
 発見したバグや P1 / P2 レベルの問題は、当該変更のスコープ内であれば
-本 PR で修正する。スコープ外で大きい場合は修正せず、`ROADMAP.md` への
-反映や Issue 化を提案したうえでユーザーに確認する。
+本 PR で修正する。**スコープ外で当該セッション内に修正しないものは、§6.1.1 に従い
+GitHub Issue として登録**してハンドオフする（大きな設計変更を伴う場合は登録前に
+`AskUserQuestion` 等でユーザーに確認する）。
+
+### 6.1.1 発見したバグ・Pending 問題の GitHub Issue 化
+
+**既知のバグ・修正待ちの問題は、ドキュメント（`ROADMAP.md` 等）に埋め込まず
+GitHub Issue で追跡する**のが本リポジトリの方針。セッション中に発見したが
+当該セッション内では修正しない問題は、以下に従って Issue 化すること。
+
+1. **対象リポジトリ**: `dolquis/calender_aralrm`。
+2. **登録内容**: Issue を作成し、本文に以下を含める。
+   - 問題の要約（タイトル）と再現手順（可能な場合）
+   - 影響範囲（クラッシュ / データ不整合 / アラーム沈黙 など。P0〜P3 のどれ相当か）
+   - 発見経緯と、当該セッションで直さない理由（スコープ外 / 別タスク化 等）
+   - 関連コード・ドキュメント箇所（`file:line` 形式）
+   - ラベル（存在すれば `bug` / `enhancement` / `task` 等。無ければ省略可）
+3. **PR との関連付け**: 修正を伴わない参照は PR 本文に `References #N`（`Closes #N`
+   は実際に閉じる場合のみ）で記す。
+4. **ドキュメントとの整合**: 既存の `ROADMAP.md` 等の本文は**残したまま**、該当節に
+   `→ #N` の Issue リンクを追記する（本文の詳細仕様を Issue に移して削除しない）。
+   §0「現状サマリ」の Issue リンク集も必要に応じて更新する。
+
+**理由**: known bug / pending をドキュメントだけに書くとセッション間で追跡が途切れ、
+重複実装や見落としを招く。GitHub Issue に一元化することで複数セッション・複数
+エージェント間のハンドオフが確実になる。
 
 **新規タスク群のレビュー観点（2026-05-27 仕様提案書取り込みで追加）**
 

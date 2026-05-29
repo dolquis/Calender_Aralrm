@@ -74,10 +74,11 @@ DESTINATION='platform=iOS Simulator,name=iPhone 17 Pro,OS=26.5' bash scripts/ver
 bash scripts/verify.sh test
 ```
 
-現在は 85 件の XCTest（16 テストクラス）で、Domain / Services / App Intents /
-HealthKit 補助ロジック / Background refresh / Deep link / Sharing / Snapshot を
-カバーしています。DayCell の snapshot test 5 件は通常 `verify.sh` では skip され、
-`SNAPSHOT_TESTING_ENABLED=1` 指定時に記録 / 検証されます。
+テストは Apple の [Swift Testing](https://developer.apple.com/documentation/testing)
+（`@Test` / `#expect`）で記述しており、現在は 91 件のテスト（16 テストスイート / 18 ファイル）
+で Domain / Services / App Intents / HealthKit 補助ロジック / Background refresh / Deep link /
+Sharing / Snapshot をカバーしています。DayCell の snapshot test 5 件は通常 `verify.sh` では
+skip され、`SNAPSHOT_TESTING_ENABLED=1` 指定時に記録 / 検証されます。
 
 ## コードスタイル
 
@@ -96,6 +97,9 @@ bash scripts/lint.sh fix     # その場で整形
   `DayResolver` で算出した「あるべきアラーム集合」と AlarmKit の登録状況を突き合わせ、
   差分のみ schedule / cancel します。
 - `DayResolver` の優先順位: **手動割当 > 祝日 > ローテーション > なし**。
+  ただし 1 つだけ意図的な例外があり、祝日オーバーライドが `skipAlarm == false` かつ
+  代替プリセット無しの場合はローテーション解決にフォールスルーし、通常のアラームが鳴ります
+  （`Sources/Domain/Logic/DayResolver.swift`）。
 - `BGAppRefreshTask` がバックグラウンドで先読み窓（既定 30 日）を更新し続けます。
 - Widget は設定済み App Group（既定: `group.com.example.shiftalarm`）経由で SwiftData ストアを共有。
 - AlarmKit は `#if canImport(AlarmKit)` で囲ってあり、未対応ツールチェインでもコードがパースできます。
@@ -143,4 +147,4 @@ iCloud 同期と Apple Watch コンパニオンは検討の結果 **スコープ
 
 ## ライセンス
 
-MIT
+MIT。詳細はリポジトリ直下の `LICENSE` を参照してください。

@@ -18,10 +18,19 @@
 - P0-1 は Xcode 26.5 / iOS 26.5 SDK でコードレベル検証に着手済み。
   `AlarmPresentation.Alert.stopButton` の iOS 26.1 deprecation を回避し、
   `AlarmManager.AlarmConfiguration.alarm(...)` に寄せた。実機確認は未完了。
-- テスト 85 件 (16 テストクラス) 緑。通常の `scripts/verify.sh` では
-  5 件の snapshot test は `SNAPSHOT_TESTING_ENABLED=1` 未指定のため skip。
+- テストは Apple の Swift Testing（`@Test` / `#expect`）で記述。91 件 (16 スイート /
+  18 ファイル) 緑。通常の `scripts/verify.sh` では 5 件の snapshot test は
+  `SNAPSHOT_TESTING_ENABLED=1` 未指定のため skip。
   CI は `macos-26` / Xcode 26+ で `scripts/verify.sh` を実行。
-- オープン Issue / PR は 0。
+- 既知のバグ・既知の不安要素は **GitHub Issue で追跡**する（一覧はリポジトリの
+  Issues タブ）。doc に埋め込まず Issue 化する方針は `AGENTS.md` §6.1.1 が唯一の正。
+  現時点で登録済みの主な Issue:
+  - #28 `.shiftalarm` セマンティックバリデーション層（P0-5 / 参照切れ preset による
+    アラーム沈黙バグ）→ §P0-5
+  - #29 AlarmKit/ActivityKit 実機検証 & Xcode 更新時 API 再確認（P0-1）→ §P0-1
+  - #30 実 signing / entitlement 値の設定（P0-2）→ §P0-2
+  - #31 ゴールデンパス手動検証（P0-3）→ §P0-3
+  - #32 開発環境ハードニング backlog（P3-6〜P3-14 追跡）→ §5
 - マージ済み主要 PR:
   - #1 初期スキャフォールド（救出は #5）/ #2 EventKit 祝日 / #3 DayEditor 状態漏れ修正
   - #5 PR #1 残差救出 / #6 Swift 6・CI 安定化
@@ -49,8 +58,11 @@
   signing override 導線は入っている。実 Team ID / bundle id / App Group の値は未設定。
 - 実機 / 実 iOS 26 シミュレータでのゴールデンパス通し検証は未実施。
 - P2 拡張案 A2 / A3 / A4 + P2-β / P2-γ / P2-δ は未着手。
-- A1 ドリフト検出アルゴリズム (`ShiftPatternDetector.detectDrift`) は実装済み、
-  `RotationListView` への UI 統合は未着手。
+- A1 ドリフト検出アルゴリズム (`ShiftPatternDetector.detectDrift`) は実装済み。
+  **UI 統合も `RotationListView` に実装済み**（`detectDriftOrPattern` で drift を検出し
+  `PatternSuggestionView` の提案カードとして表示、snooze 判定 `isSuggestionVisible` 込み。
+  2026-05-29 監査で確認）。専用の `PatternDriftSuggestionView.swift` は作らず既存カードに
+  統合する形を採用。実機 / ビルドでの最終 UI 検証は Mac で要実施（§P1（追補）参照）。
 - 第三者レビュー(2026-05-22)で挙がった開発環境ハードニング項目（依存固定 /
   AlarmScheduler テスト容易性 / `.shiftalarm` import バリデーション / 構造化
   ログ / CI ガードレール 等）は **§5 P3 配下 (P3-6 〜 P3-14) で追跡**する。
@@ -88,6 +100,8 @@
 
 ### P0-1. AlarmKit / ActivityKit シグネチャ再確認（着手中: SDK 26.5 コード対応済み / 実機確認待ち）
 
+> 追跡 Issue: #29
+
 - **目的**: iOS 26 SDK 最終版の AlarmKit / ActivityKit API と現コードの差分を解消する。
 - **対象ファイル**:
   - `Sources/Services/AlarmKit/AlarmConfigurationBuilder.swift` (63 行)
@@ -123,6 +137,8 @@
 
 ### P0-2. AlarmKit エンタイトルメント取得 & プロビジョニング（着手中: ローカル設定導線追加済み）
 
+> 追跡 Issue: #30
+
 - **対象**: `Config/SigningDefaults.xcconfig`, `Config/LocalSigning.xcconfig.example`,
   `project.yml`, `App/ShiftAlarm.entitlements`, `Widget/ShiftAlarmWidget.entitlements`,
   App Group.
@@ -153,6 +169,8 @@
   - 実 App Group が App と Widget の両方で共有されている。
 
 ### P0-3. ゴールデンパス手動検証（未着手: ローカル build/test のみ緑）
+
+> 追跡 Issue: #31
 
 - **シナリオ**: README §"Testing manually" の 1〜8 を実機で完走。
 - **追加で確認**:
@@ -323,7 +341,9 @@
     `MigrationPlan` を使うように切り替え）
   - 変更 `App/AppDependencies.swift`
   - 新規 `Tests/Support/FakeAlarmSchedulingClient.swift`
-  - 新規 `Tests/ServicesTests/AlarmSchedulerTests.swift`
+  - **変更（既存ファイル）** `Tests/ServicesTests/AlarmSchedulerTests.swift`
+    — 既に `buildResolverInput` を検証する `@Test` 1 件が存在する。新規作成ではなく、
+    このファイルへ AS-U1〜AS-U9 / AS-I1 を**追記**する。
 - **注意**: Swift 6 strict concurrency 下で actor → protocol 化する際の
   `Sendable` 制約、`@MainActor` な `AlarmScheduler` と fake client の相性。
 - **DoD**:
@@ -336,6 +356,8 @@
   - Swift 6 strict concurrency 下で `Sendable` 警告が増えない。
 
 ### P0-5. `.shiftalarm` バリデーション層（未着手）
+
+> 追跡 Issue: #28（参照切れ preset によるアラーム沈黙バグを含む。別セッションで実装予定）
 
 > 2026-05-27 提案書取り込みにより **§P3-9 から昇格**。本文は当セクションを正とし、
 > §P3-9 はアンカー兼履歴として最小化する。データモデル詳細は
@@ -614,11 +636,15 @@
 
 > 詳細は §P2-α A1（[L389-407](#p2-α-シフトパターン自動検出--プリセット--ローテ提案--コア実装済み-pr-19)）を参照。
 > アルゴリズムは PR #19 で実装済み (`ShiftPatternDetector.detectDrift()`)。
-> 残作業は **UI 統合のみ**。
+> **2026-05-29 監査で UI 統合も実装済みであることを確認**: `RotationListView` の
+> `detectDriftOrPattern(...)` が drift を検出し `PatternSuggestionView` の提案カードとして
+> 表示する（専用 View は作らず既存カードに統合）。残作業は **実機 / ビルドでの UI 最終検証
+> と DRIFT-* テストの整備のみ**。
 
-- **追加実装**:
-  - 新規 `Sources/Features/Rotation/PatternDriftSuggestionView.swift`
-  - 変更 `Sources/Features/Rotation/RotationListView.swift`
+- **実装状況**:
+  - 実装済み: `Sources/Features/Rotation/RotationListView.swift`（`detectDriftOrPattern`）
+    + 既存 `PatternSuggestionView`（専用 `PatternDriftSuggestionView.swift` は不要と判断）
+  - 要確認: DRIFT-* テストの有無と Mac でのビルド / UI 検証
 - **snooze 設計の精緻化（2026-05-27 追加）**:
   - `AppSettings.patternDriftSnoozedUntil: Date?`
   - `AppSettings.patternDriftSnoozedFingerprint: String?` に **algorithm version
@@ -1138,6 +1164,9 @@
 
 ## 5. P3 — 品質・運用
 
+> 開発環境ハードニング backlog（P3-6〜P3-14）の進捗追跡は umbrella Issue #32 に集約。
+> 各タスクの詳細仕様は以下の各節が引き続き唯一の正。
+
 ### P3-1. テスト拡充 ✅ 完了 (PR #7 / #10 / #11)
 
 - 追加済み:
@@ -1148,7 +1177,7 @@
   - `Tests/ServicesTests/SleepIntentHelperTests.swift` — App Intents 用 sleep window 取得。
   - `Tests/ServicesTests/SleepSampleWriterTests.swift` — HealthKit 書込み対象 window 抽出。
   - `Tests/DomainTests/SleepWindowResolverTests.swift` — bedtime 計算 / 端境ケース。
-- 現状: 16 テストクラス / 85 テスト緑（うち 5 件 snapshot は通常 verify では skip）。
+- 現状: Swift Testing で 16 スイート / 91 テスト緑（うち 5 件 snapshot は通常 verify では skip）。
 
 ### P3-2. UI / スナップショットテスト（一部着手）
 
@@ -1170,31 +1199,23 @@
 - 軽量に: `os.Logger` のサブシステム整理 + MetricKit 取り込み。
 - 外部 SDK は避ける（プライバシー / AlarmKit のバックグラウンド要件のため）。
 
-### P3-5. Swift Testing 移行（未着手 / Mac 作業）
+### P3-5. Swift Testing 移行（✅ 完了 — 既に Swift Testing 採用済み）
 
-- **目的**: 既存の XCTest テストを Apple の Swift Testing（`@Test`）へ移行し、
+> 2026-05-29 監査で判明: `Tests/` 配下は **既に全件 Apple Swift Testing
+> （`import Testing` / `@Test` / `#expect`）で記述済み**であり、XCTest は使用していない。
+> 本タスクは実質完了。以下は移行内容の履歴注記。
+
+- **目的（達成済み）**: XCTest 相当のテストを Apple の Swift Testing（`@Test`）で記述し、
   `#expect` / `#require` ベースの表現力と並列実行を得る。
-- **対象**: `Tests/` 配下 18 ファイル / 16 テストクラス / 85 テストメソッド。
-  `@testable import ShiftAlarm` は維持。`project.yml` のテストターゲット定義は
-  変更不要（Swift Testing はツールチェーン同梱）。
-- **機械的変換**:
+- **現状**: `Tests/` 配下 18 ファイル / 16 テストスイート（`struct` + `@Test`） /
+  91 テスト関数。`XCTestCase` サブクラスは 0。`@testable import ShiftAlarm` を維持。
+  `project.yml` のテストターゲット定義は変更不要（Swift Testing はツールチェーン同梱）。
+- **採用済みの対応**:
   - `XCTestCase` サブクラス → `struct` + `@Test` 関数。
-  - `XCTAssertEqual` / `XCTAssertTrue` 等 → `#expect(...)`。
-  - `XCTUnwrap` → `#require(...)`。
-  - `@MainActor` / `async` テストはそのまま移行可。
-- **注意が必要な箇所**:
-  - `Tests/SnapshotTests/SnapshotTestSupport.swift` の `SnapshotTestGate`:
-    `XCTSkipUnless` を Swift Testing の条件付きスキップ
-    （`@Test(.enabled(if:))` 等）へ書き換える。影響は
-    `DayCellViewSnapshotTests` の 5 テスト。
-  - `Tests/ServicesTests/SleepIntentHelperTests.swift` の `tearDown`
-    （`containerFactory` リセット）→ per-test フィクスチャ / `deinit` へ。
-- **難易度**: 大半（約 13 ファイル）は easy。`tearDown` / snapshot 系が
-  medium〜hard。
-- **進め方**: 専用ブランチ・単独 PR で実施し、swift-format 一括整形 PR とは
-  混在させない。検証は macOS + Xcode 26 が必須。
-- **DoD**: `bash scripts/verify.sh` がビルド・テストとも緑。snapshot ゲートが
-  従来どおり `SNAPSHOT_TESTING_ENABLED=1` でのみ有効になる。
+  - `XCTAssertEqual` / `XCTAssertTrue` 等 → `#expect(...)`、`XCTUnwrap` → `#require(...)`。
+  - snapshot ゲートは `SNAPSHOT_TESTING_ENABLED=1` 指定時のみ有効（`DayCellViewSnapshotTests`
+    の 5 テスト）。`@MainActor` / `async` テストもそのまま動作。
+- **残作業**: なし（新規テストも Swift Testing で書くこと）。
 
 ### P3-6. 依存バージョン固定（`Package.resolved` 追跡）（未着手）
 
@@ -1599,7 +1620,7 @@ TDD 的に最初に **赤いテスト** として並べてから実装すると�
 > で、`docs/p2-algorithms.md §4` の test execution map にも残っている。2026-05-27
 > 提案書取り込み以降の **canonical な ID は VAC-U* / VAC-I*** に統一する。
 > 既存 β-U1〜β-I4 はそのまま消さず、対応関係（β-U1 ↔ VAC-U1 など番号順）として
-> 解釈する。実装着手時は VAC-* を `XCTest` メソッド名に採用し、β-* は当面
+> 解釈する。実装着手時は VAC-* を Swift Testing の `@Test` 関数名に採用し、β-* は当面
 > ドキュメント上の旧名称として残置するに留める（将来の docs 整理 PR で
 > 段階的に削除）。VAC-U10 は β 系には対応物が無い新規（domain factory invariant）。
 

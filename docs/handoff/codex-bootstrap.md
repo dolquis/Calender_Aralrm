@@ -17,6 +17,8 @@
 - `Config/LocalSigning.xcconfig` は git 管理外。**作成・編集・コミットしない**。
 - `ShiftAlarm.xcodeproj` は **XcodeGen 生成物**。直接編集せず、`project.yml` を編集して
   `bash scripts/regen.sh` で再生成する。
+- セッション内で修正しないバグ・pending 問題は **GitHub Issue として登録**して
+  ハンドオフする（doc に埋め込まない。手順は `AGENTS.md` §6.1.1）。
 - 既存の Claude Code 用設定(`.claude/` `.mcp.json` `CLAUDE.md`)は **触らない**。Codex 用は独立で構築する。
 
 ## 1. プロジェクト現状サマリー
@@ -35,7 +37,7 @@
   - `scripts/` — `bootstrap.sh`, `regen.sh`, `verify.sh`, `lint.sh`, `p0-readiness.sh`
   - `Sources/Domain/` — SwiftData `@Model` + 純粋ロジック
   - `Sources/Services/` — AlarmKit, Background, LiveActivity, Sharing, Holidays
-  - `Tests/` — XCTest 85 ケース / 16 クラス、`SNAPSHOT_TESTING_ENABLED=1` で snapshot 5 件追加
+  - `Tests/` — Swift Testing 91 ケース / 16 スイート、`SNAPSHOT_TESTING_ENABLED=1` で snapshot 5 件追加
 - 既存メタファイル：`CLAUDE.md`(Claude Code 用)、`AGENTS.md`(Codex CLI および人間用)
 
 ## 2. Codex CLI と Claude Code の設定差(復習)
@@ -196,7 +198,7 @@ precedence: `manual > holiday > rotation > none`。`AlarmScheduler` は `DayReso
 ```bash
 bash scripts/bootstrap.sh         # 初回のみ
 bash scripts/regen.sh             # project.yml 編集後
-bash scripts/verify.sh            # ビルド + テスト 85 件(snapshot 5 件は既定スキップ)
+bash scripts/verify.sh            # ビルド + テスト 91 件(snapshot 5 件は既定スキップ)
 bash scripts/verify.sh test       # テストのみ
 
 # Snapshot テストも回す場合
@@ -297,7 +299,7 @@ bash scripts/verify.sh test
 ## 守るべきこと
 
 - `ShiftAlarm.xcodeproj` を **直接編集しない**。`project.yml` を編集して `regen.sh`。
-- `project.yml` を編集したら必ず `verify.sh` を回す(ビルド成功・テスト 85 件パスを確認)。
+- `project.yml` を編集したら必ず `verify.sh` を回す(ビルド成功・テスト 91 件パスを確認)。
 - Snapshot テスト 5 件は既定でスキップ。動かしたい場合は `SNAPSHOT_TESTING_ENABLED=1`。
 - XcodeBuildMCP を入れている場合でも、CI と乖離しないよう `scripts/verify.sh` を一次手段とする。
 
