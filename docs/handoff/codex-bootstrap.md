@@ -440,7 +440,7 @@ description: Sources/Domain/ の SwiftData @Model を追加・変更・削除す
    - `codex mcp list` で `context7` / `xcodebuild` の2つが見える
    - Codex CLI を起動し、`/skills`(or `$` メンション)で3スキルが見える
    - `project.yml` を軽く触って `xcodegen-regen` が自動発動するか確認
-   - `bash scripts/verify.sh` で 85 テストが既存通りパスする
+   - `bash scripts/verify.sh` で 91 テストが既存通りパスする
 7. PR 作成：
    ```bash
    gh pr create \
@@ -479,7 +479,7 @@ description: Sources/Domain/ の SwiftData @Model を追加・変更・削除す
 - [ ] `codex mcp list` で 2 MCP サーバーが認識されている。
 - [ ] Codex CLI 起動時に `AGENTS.md` が読み込まれる(`/init` で出力が確認できる)。
 - [ ] スキルの自動発動が確認できる(`project.yml` 編集で `xcodegen-regen` が発動)。
-- [ ] `bash scripts/verify.sh` で 85 テストが既存通りパスする。
+- [ ] `bash scripts/verify.sh` で 91 テストが既存通りパスする。
 - [ ] Draft PR が `dolquis/Calender_Aralrm` 宛で作成されている。
 - [ ] Claude Code 用ファイル(`.claude/` `.mcp.json` `CLAUDE.md`)が変更されていない。
 

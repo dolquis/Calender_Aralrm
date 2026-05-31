@@ -386,7 +386,7 @@ allowed-tools: Read, Edit, Grep, Glob
       作成され、実コードに即した `references/` も整備されている。
 - [ ] `CLAUDE.md` に swift-format・Widget の2セクションが追記されている。
 - [ ] `claude mcp list` / `/plugin list` で全てが認識されている。
-- [ ] `bash scripts/verify.sh` で 85 テストが既存通りパスする。
+- [ ] `bash scripts/verify.sh` で 91 テストが既存通りパスする。
 - [ ] Draft PR が `dolquis/Calender_Aralrm` 宛で作成されている。
 
 ## 9. 参考リソース
