@@ -5,7 +5,8 @@
 **目的 / 対象ファイル / 完了条件 (DoD)** を明記しています。
 
 最終更新: 2026-05-27
-対象ブランチ運用: タスクごとに `feature/<topic>` を切り、main へ PR。
+対象ブランチ運用: Linear issue から生成されるブランチ名 `dolquis/dev-xx-*` を基本とし、
+main へ PR（Linear issue が無い緊急時のみ `feature/<topic>`）。
 
 ---
 
@@ -22,15 +23,19 @@
   18 ファイル) 緑。通常の `scripts/verify.sh` では 5 件の snapshot test は
   `SNAPSHOT_TESTING_ENABLED=1` 未指定のため skip。
   CI は `macos-26` / Xcode 26+ で `scripts/verify.sh` を実行。
-- 既知のバグ・既知の不安要素は **GitHub Issue で追跡**する（一覧はリポジトリの
-  Issues タブ）。doc に埋め込まず Issue 化する方針は `AGENTS.md` §6.1.1 が唯一の正。
-  現時点で登録済みの主な Issue:
-  - #28 `.shiftalarm` セマンティックバリデーション層（P0-5 / 参照切れ preset による
-    アラーム沈黙バグ）→ §P0-5
-  - #29 AlarmKit/ActivityKit 実機検証 & Xcode 更新時 API 再確認（P0-1）→ §P0-1
-  - #30 実 signing / entitlement 値の設定（P0-2）→ §P0-2
-  - #31 ゴールデンパス手動検証（P0-3）→ §P0-3
-  - #32 開発環境ハードニング backlog（P3-6〜P3-14 追跡）→ §5
+- **状態・進捗・優先度の正典は Linear**（team `Dev` / project **Shift Alarm /
+  Calender_Aralrm**）。各項目の**詳細仕様・DoD は本 `ROADMAP.md` §P0-x が正典**で、
+  Linear issue は要約＋本 doc へのリンクに留める。GitHub Issue はミラー（`Migrated`
+  ラベル＋相互リンク）。運用ルールは `AGENTS.md` §6.1.1 / §6.1.2「Linear 運用（管制塔）」が
+  唯一の正。
+  現時点で登録済みの主な Linear issue（GitHub ミラー）:
+  - **DEV-17**（GH #28）`.shiftalarm` セマンティックバリデーション層（P0-5 / 参照切れ
+    preset によるアラーム沈黙バグ）→ §P0-5
+  - **DEV-18**（GH #29）AlarmKit/ActivityKit 実機検証 & Xcode 更新時 API 再確認（P0-1）→ §P0-1
+  - **DEV-19**（GH #30）実 signing / entitlement 値の設定（P0-2）→ §P0-2
+  - **DEV-20**（GH #31）ゴールデンパス手動検証（P0-3）→ §P0-3
+  - **DEV-21**（GH #32）開発環境ハードニング backlog（P3-6〜P3-14 追跡）→ §5
+  - umbrella: **DEV-22**（P0 release readiness）/ 週次監査: **DEV-23**
 - マージ済み主要 PR:
   - #1 初期スキャフォールド（救出は #5）/ #2 EventKit 祝日 / #3 DayEditor 状態漏れ修正
   - #5 PR #1 残差救出 / #6 Swift 6・CI 安定化
@@ -100,7 +105,7 @@
 
 ### P0-1. AlarmKit / ActivityKit シグネチャ再確認（着手中: SDK 26.5 コード対応済み / 実機確認待ち）
 
-> 追跡 Issue: #29
+> 追跡: Linear DEV-18（GitHub #29 ミラー）
 
 - **目的**: iOS 26 SDK 最終版の AlarmKit / ActivityKit API と現コードの差分を解消する。
 - **対象ファイル**:
@@ -137,7 +142,7 @@
 
 ### P0-2. AlarmKit エンタイトルメント取得 & プロビジョニング（着手中: ローカル設定導線追加済み）
 
-> 追跡 Issue: #30
+> 追跡: Linear DEV-19（GitHub #30 ミラー）
 
 - **対象**: `Config/SigningDefaults.xcconfig`, `Config/LocalSigning.xcconfig.example`,
   `project.yml`, `App/ShiftAlarm.entitlements`, `Widget/ShiftAlarmWidget.entitlements`,
@@ -170,7 +175,7 @@
 
 ### P0-3. ゴールデンパス手動検証（未着手: ローカル build/test のみ緑）
 
-> 追跡 Issue: #31
+> 追跡: Linear DEV-20（GitHub #31 ミラー）
 
 - **シナリオ**: README §"Testing manually" の 1〜8 を実機で完走。
 - **追加で確認**:
@@ -357,7 +362,7 @@
 
 ### P0-5. `.shiftalarm` バリデーション層（未着手）
 
-> 追跡 Issue: #28（参照切れ preset によるアラーム沈黙バグを含む。別セッションで実装予定）
+> 追跡: Linear DEV-17（GitHub #28 ミラー）。参照切れ preset によるアラーム沈黙バグを含む。別セッションで実装予定。
 
 > 2026-05-27 提案書取り込みにより **§P3-9 から昇格**。本文は当セクションを正とし、
 > §P3-9 はアンカー兼履歴として最小化する。データモデル詳細は
@@ -1164,7 +1169,7 @@
 
 ## 5. P3 — 品質・運用
 
-> 開発環境ハードニング backlog（P3-6〜P3-14）の進捗追跡は umbrella Issue #32 に集約。
+> 開発環境ハードニング backlog（P3-6〜P3-14）の進捗追跡は Linear DEV-21（GitHub #32 ミラー）に集約。
 > 各タスクの詳細仕様は以下の各節が引き続き唯一の正。
 
 ### P3-1. テスト拡充 ✅ 完了 (PR #7 / #10 / #11)
@@ -1449,7 +1454,8 @@
 
 ## 7. ブランチ / PR 運用ルール（エージェント共通）
 
-1. `main` に直接 push しない。`feature/<topic>` または `fix/<topic>` を切る。
+1. `main` に直接 push しない。Linear issue から生成されるブランチ名 `dolquis/dev-xx-*`
+   を基本とする（Linear issue が無い緊急時のみ `feature/<topic>` / `fix/<topic>`）。
 2. PR は **draft で作成**。CI（`scripts/verify.sh`）が緑になってから ready for review。
 3. `.xcodeproj` は commit 対象（XcodeGen で再生成されても）。
 4. AlarmKit / ActivityKit の API 変更を伴う PR は、変更箇所を

@@ -21,9 +21,10 @@
 
 ## 2. 開発状況
 
-開発フェーズ・完了済み PR・既知の不安要素の**最新状況は `ROADMAP.md` §0
-「現状サマリ」が唯一の正**。作業前に必ず参照すること（重複を避けるため本ファイルに
-PR 一覧は再掲しない）。
+**状態・進捗・優先度の正典は Linear**（team `Dev` / project **Shift Alarm /
+Calender_Aralrm**。管制塔モデルの全体像は §6.1.2）。開発フェーズ・完了済み PR・
+仕様サマリ・既知の不安要素は `ROADMAP.md` §0「現状サマリ」を参照する（重複を避けるため
+本ファイルに PR 一覧は再掲しない）。状態と仕様の正典分担は §6.1.2 の正典マトリクスが唯一の正。
 
 概況（2026-05-21 時点）: P1 群（P1-1〜P1-4）と P2-2（Sleep / Bedtime / HealthKit /
 App Intents）完了。P2-α（シフトパターン自動検出）と P2-η（`.ics` エクスポート）も
@@ -106,7 +107,8 @@ CI は `.github/workflows/ios.yml` が `macos-26` / Xcode 26+ で実行する。
 
 ## 6. ブランチ / PR 運用
 
-1. `feature/<topic>` または `fix/<topic>` を `main` から切る。
+1. Linear issue から生成されるブランチ名 `dolquis/dev-xx-*` を `main` から切る
+   （Linear issue が無い緊急時のみ `feature/<topic>` / `fix/<topic>`）。
 2. PR は **draft で作成**。`scripts/verify.sh` が緑になってから ready for review。
 3. ローカライズ追加時は `Resources/Localizable.xcstrings` の **ja / en 両方** を埋める。
 4. AlarmKit / ActivityKit の API 差分対応は
@@ -140,31 +142,68 @@ CI は `.github/workflows/ios.yml` が `macos-26` / Xcode 26+ で実行する。
 セルフレビューで問題が見つかった場合は、プッシュ前に修正すること。
 発見したバグや P1 / P2 レベルの問題は、当該変更のスコープ内であれば
 本 PR で修正する。**スコープ外で当該セッション内に修正しないものは、§6.1.1 に従い
-GitHub Issue として登録**してハンドオフする（大きな設計変更を伴う場合は登録前に
-`AskUserQuestion` 等でユーザーに確認する）。
+Linear に起票**してハンドオフする（必要なら GitHub Issue にミラーする。大きな設計変更を
+伴う場合は起票前に `AskUserQuestion` 等でユーザーに確認する）。
 
-### 6.1.1 発見したバグ・Pending 問題の GitHub Issue 化
+### 6.1.1 発見したバグ・Pending 問題の Linear 起票
 
-**既知のバグ・修正待ちの問題は、ドキュメント（`ROADMAP.md` 等）に埋め込まず
-GitHub Issue で追跡する**のが本リポジトリの方針。セッション中に発見したが
-当該セッション内では修正しない問題は、以下に従って Issue 化すること。
+**タスク・既知のバグ・修正待ちの問題は、まず Linear に起票して追跡する**のが本
+リポジトリの方針（状態・進捗・優先度の正典は Linear。管制塔モデルの全体像は §6.1.2）。
+セッション中に発見したが当該セッション内では修正しない問題は、以下に従って Linear に
+起票すること。
 
-1. **対象リポジトリ**: `dolquis/calender_aralrm`。
-2. **登録内容**: Issue を作成し、本文に以下を含める。
+1. **起票先**: Linear team **Dev** / project **Shift Alarm / Calender_Aralrm**
+   に起票する（利用可能な Linear アクセス手段で。Linear はリポジトリ同梱の MCP 設定には
+   含めず、実行環境 / アカウント側のコネクタまたは Linear Web UI で扱う — §9 参照）。
+2. **登録内容**: issue を作成し、本文に以下を含める。
    - 問題の要約（タイトル）と再現手順（可能な場合）
    - 影響範囲（クラッシュ / データ不整合 / アラーム沈黙 など。P0〜P3 のどれ相当か）
    - 発見経緯と、当該セッションで直さない理由（スコープ外 / 別タスク化 等）
    - 関連コード・ドキュメント箇所（`file:line` 形式）
-   - ラベル（存在すれば `bug` / `enhancement` / `task` 等。無ければ省略可）
-3. **PR との関連付け**: 修正を伴わない参照は PR 本文に `References #N`（`Closes #N`
-   は実際に閉じる場合のみ）で記す。
-4. **ドキュメントとの整合**: 既存の `ROADMAP.md` 等の本文は**残したまま**、該当節に
-   `→ #N` の Issue リンクを追記する（本文の詳細仕様を Issue に移して削除しない）。
-   §0「現状サマリ」の Issue リンク集も必要に応じて更新する。
+   - **詳細仕様・DoD は `ROADMAP.md` §P0-x / `docs/` に残し**、issue 本文は要約＋リンクに留める。
+3. **ラベル（必須）**: `repo:Calender_Aralrm` ＋ 技術領域 `area:*` ＋ 想定担当 `agent:*`
+   （人手検証が要るものは `gate:human-required`）＋ 種別 `Bug` / `Improvement` / `Feature`。
+4. **優先度**: 重要度を Linear priority にマップする — **P0→Urgent / P1→High /
+   P2→Medium / P3→Low**。
+5. **GitHub ミラー（任意）**: 外部可視性が必要なら GitHub Issue にもミラーし、Linear 側に
+   `Migrated` ラベルと GitHub への link 添付、GitHub Issue 側に Linear へのコメントを付けて
+   **双方向リンク**にする。
+6. **ドキュメントとの整合**: 既存の `ROADMAP.md` 等の本文は**残したまま**、該当節の
+   `追跡:` 行を Linear issue（必要なら GitHub ミラー）に更新する（本文の詳細仕様を
+   issue に移して削除しない）。§0「現状サマリ」の issue 一覧も必要に応じて更新する。
 
 **理由**: known bug / pending をドキュメントだけに書くとセッション間で追跡が途切れ、
-重複実装や見落としを招く。GitHub Issue に一元化することで複数セッション・複数
-エージェント間のハンドオフが確実になる。
+重複実装や見落としを招く。状態・進捗・優先度・エージェント・ルーティングを Linear に
+一元化することで、複数セッション・複数エージェント間のハンドオフが確実になる。
+
+### 6.1.2 Linear 運用（管制塔）
+
+タスク管理は Linear を管制塔（control tower）とするハイブリッドモデルで運用する。
+
+**正典マトリクス**
+
+| 対象 | 正典 |
+|---|---|
+| 状態 / 進捗 / 優先度 / エージェント・ルーティング / 計画 | **Linear**（project Shift Alarm / Calender_Aralrm） |
+| 仕様 / DoD / アルゴリズム詳細 | **repo docs**（`ROADMAP.md` §P0-x / `docs/`） |
+| ビルド / テスト / 運用ルール | 本 `AGENTS.md` |
+| 外部可視の課題ミラー | **GitHub Issue**（`Migrated` ラベル＋双方向リンク） |
+
+**ラベル規約**: `repo:Calender_Aralrm`（リポジトリ識別）/ `area:*`（技術領域）/
+`agent:*`（AI 担当）/ `gate:human-required`（人手検証要）/ `Migrated`（GitHub 由来）/
+種別 `Bug` / `Improvement` / `Feature`。
+
+**状態ライフサイクル**: Backlog → Todo → In Progress → In Review → Done
+（中止は Canceled、重複は Duplicate）。ブランチ作成・PR で In Progress / In Review へ、
+PR マージで Done へ遷移させる。
+
+**ブランチ命名**: Linear issue が自動生成する `dolquis/dev-xx-*` を基本とする。
+
+**週次監査**: Linear の recurring issue **DEV-23**「Linear control tower audit」で、
+project / repo / area / agent ラベル欠落、`Migrated` issue の GitHub link 欠落、
+`gate:human-required` 欠落、tracking issue の子リンク欠落、Done issue の検証メモ欠落を
+点検する。監査は Linear の routing / handoff のみを対象とし、GitHub docs の仕様本文は
+書き換えない。
 
 **新規タスク群のレビュー観点（2026-05-27 仕様提案書取り込みで追加）**
 
@@ -199,9 +238,10 @@ PR 前に以下を確認する。
   古くなっていないか。
 - `docs/` 配下の仕様・architecture note が実装と矛盾していないか
   （`docs/archive/` の歴史的記録は対象外）。
-- 完了した Issue があれば PR 本文で `Closes #N` を使う。参照のみで閉じない Issue は
-  `References #N` に留める（§6.1.1）。
-- セッション内で修正しない新規バグ / pending は §6.1.1 に従って Issue 化する。
+- 完了したタスクは Linear issue を **Done** に遷移させる（ブランチ / PR で自動遷移する
+  場合も状態を確認する）。GitHub ミラーがある場合のみ PR 本文に `Closes #N`、参照のみは
+  `References #N` を併記する（§6.1.1 / §6.1.2）。
+- セッション内で修正しない新規バグ / pending は §6.1.1 に従って Linear に起票する。
 
 特に `ROADMAP.md` 上で「未着手」「設計済み」「実装予定」と書かれている項目を
 実装した場合は、同じ PR で `ROADMAP.md` を更新すること。
@@ -292,6 +332,12 @@ rg '85|91|XCTest|Swift Testing|Xcode 26|iOS 26|verify\.sh|lint\.sh|xcodebuildmcp
 macOS + Xcode 26 前提。Linux / Windows では `xcodebuild` MCP が起動失敗するが
 想定動作（`context7` は全 OS で動く）。シークレットは設定ファイルに直書きせず、
 必要なら `${ENV_VAR}` 経由で渡す。
+
+> **Linear（管制塔）はこのリポジトリ同梱の MCP 設定には含めない**。repo bootstrap で
+> 提供されるのは上表の `context7` / `xcodebuild` のみ。Linear へのアクセスは実行環境 /
+> アカウント側のコネクタ（Claude Code / Codex の Linear 連携）または Linear Web UI で
+> 行う想定で、特定の MCP ツール名（`save_issue` 等）に依存しない。§6.1.1 の起票は
+> その時点で利用可能な Linear アクセス手段を使う。
 
 ## 10. 二重管理ルール（Claude Code 用と Codex 用）
 
