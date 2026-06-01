@@ -153,7 +153,8 @@ Linear に起票**してハンドオフする（必要なら GitHub Issue にミ
 起票すること。
 
 1. **起票先**: Linear team **Dev** / project **Shift Alarm / Calender_Aralrm**
-   （MCP の `save_issue` を使用）。
+   に起票する（利用可能な Linear アクセス手段で。Linear はリポジトリ同梱の MCP 設定には
+   含めず、実行環境 / アカウント側のコネクタまたは Linear Web UI で扱う — §9 参照）。
 2. **登録内容**: issue を作成し、本文に以下を含める。
    - 問題の要約（タイトル）と再現手順（可能な場合）
    - 影響範囲（クラッシュ / データ不整合 / アラーム沈黙 など。P0〜P3 のどれ相当か）
@@ -331,6 +332,12 @@ rg '85|91|XCTest|Swift Testing|Xcode 26|iOS 26|verify\.sh|lint\.sh|xcodebuildmcp
 macOS + Xcode 26 前提。Linux / Windows では `xcodebuild` MCP が起動失敗するが
 想定動作（`context7` は全 OS で動く）。シークレットは設定ファイルに直書きせず、
 必要なら `${ENV_VAR}` 経由で渡す。
+
+> **Linear（管制塔）はこのリポジトリ同梱の MCP 設定には含めない**。repo bootstrap で
+> 提供されるのは上表の `context7` / `xcodebuild` のみ。Linear へのアクセスは実行環境 /
+> アカウント側のコネクタ（Claude Code / Codex の Linear 連携）または Linear Web UI で
+> 行う想定で、特定の MCP ツール名（`save_issue` 等）に依存しない。§6.1.1 の起票は
+> その時点で利用可能な Linear アクセス手段を使う。
 
 ## 10. 二重管理ルール（Claude Code 用と Codex 用）
 
