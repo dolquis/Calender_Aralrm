@@ -1,5 +1,11 @@
 # Claude Code 引き継ぎ：`.claude/` セットアップ(ハイブリッド版)
 
+> **【アーカイブ】bootstrap（初期セットアップ）完了後の歴史的記録。**
+> `.codex/` / `.agents/` / `.claude/` / `.mcp.json` / `AGENTS.md` および各 `SKILL.md` は
+> 既に導入済み。**運用ルールの正は `AGENTS.md`、スキル本文の正は各 `SKILL.md`** にあり、
+> 本ファイル内に転記された設定・SKILL 断片は当時のスナップショット（最新ではない）。
+> 鮮度チェック（`AGENTS.md` §8.3）の対象外。
+
 > このファイルは、`dolquis/Calender_Aralrm`(iOS 26+ シフトワーカー向けアラームアプリ、
 > Swift 6 / SwiftUI / SwiftData / AlarmKit)に Claude Code 用の共有設定を導入するための、
 > Claude Code への作業指示書です。

@@ -197,7 +197,8 @@ PR 前に以下を確認する。
   一致しているか。
 - `README.md` / `README.ja.md` の機能一覧・ビルド手順・手動テスト手順が
   古くなっていないか。
-- `docs/` 配下の仕様・handoff 文書・architecture note が実装と矛盾していないか。
+- `docs/` 配下の仕様・architecture note が実装と矛盾していないか
+  （`docs/archive/` の歴史的記録は対象外）。
 - 完了した Issue があれば PR 本文で `Closes #N` を使う。参照のみで閉じない Issue は
   `References #N` に留める（§6.1.1）。
 - セッション内で修正しない新規バグ / pending は §6.1.1 に従って Issue 化する。
@@ -267,14 +268,14 @@ diff -qr .claude/skills .agents/skills || true
 
 ### 8.3 ドキュメント・スキル鮮度チェック
 
-`README*.md` / `ROADMAP.md` / `AGENTS.md` / `docs/` / handoff 文書を更新した場合は、
-`.claude/skills/**/SKILL.md` と `.agents/skills/**/SKILL.md` も stale 化していないか
-確認する。特にテスト件数・ビルド手順・Xcode / iOS バージョン・MCP / plugin 設定は
+`README*.md` / `ROADMAP.md` / `AGENTS.md` / `docs/`（`docs/archive/` を除く）を更新した
+場合は、`.claude/skills/**/SKILL.md` と `.agents/skills/**/SKILL.md` も stale 化していな
+いか確認する。特にテスト件数・ビルド手順・Xcode / iOS バージョン・MCP / plugin 設定は
 skill 側に古い値が残りやすいため、PR 前に grep すること。
 
 ```sh
 rg '85|91|XCTest|Swift Testing|Xcode 26|iOS 26|verify\.sh|lint\.sh|xcodebuildmcp|Context7' \
-  README*.md AGENTS.md ROADMAP.md docs .claude .agents
+  -g '!docs/archive/**' README*.md AGENTS.md ROADMAP.md docs .claude .agents
 ```
 
 古いテスト件数（現状は Swift Testing 91 件 / 16 スイート / 18 ファイル）、古いビルド
@@ -305,6 +306,7 @@ macOS + Xcode 26 前提。Linux / Windows では `xcodebuild` MCP が起動失�
    更新する（用途と起動方式が一致するように）。
 3. ビルド / swift-format / Widget の運用ルールはこの `AGENTS.md`（§4 / §5 / §6）が
    唯一の正。`CLAUDE.md` はポインタのみで重複させない。
-4. Claude Code 起動プロンプトと bootstrap ドキュメントは `docs/handoff/` に保管
-   （`claude-code-bootstrap.md` / `codex-bootstrap.md`）。setup 完了後は
-   `docs/archive/` への移動または削除を検討してよい。
+4. Claude Code / Codex の bootstrap ドキュメントは setup 完了済みのため
+   `docs/archive/`（`claude-code-bootstrap.md` / `codex-bootstrap.md`）へアーカイブ済み。
+   歴史的記録であり、運用ルールの正は本 `AGENTS.md`、スキル本文の正は各 `SKILL.md`。
+   アーカイブは凍結扱いで鮮度チェック（§8.3）の対象外。
