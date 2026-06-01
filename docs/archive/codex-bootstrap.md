@@ -1,5 +1,11 @@
 # Codex CLI 引き継ぎ：`.codex/` `.agents/` セットアップ
 
+> **【アーカイブ】bootstrap（初期セットアップ）完了後の歴史的記録。**
+> `.codex/` / `.agents/` / `.claude/` / `.mcp.json` / `AGENTS.md` および各 `SKILL.md` は
+> 既に導入済み。**運用ルールの正は `AGENTS.md`、スキル本文の正は各 `SKILL.md`** にあり、
+> 本ファイル内に転記された設定・SKILL 断片は当時のスナップショット（最新ではない）。
+> 鮮度チェック（`AGENTS.md` §8.3）の対象外。
+
 > このファイルは、`dolquis/Calender_Aralrm`(iOS 26+ シフトワーカー向けアラームアプリ、
 > Swift 6 / SwiftUI / SwiftData / AlarmKit)に **OpenAI Codex CLI** 用の共有設定を
 > 導入するための、Codex CLI への作業指示書です。
@@ -440,7 +446,7 @@ description: Sources/Domain/ の SwiftData @Model を追加・変更・削除す
    - `codex mcp list` で `context7` / `xcodebuild` の2つが見える
    - Codex CLI を起動し、`/skills`(or `$` メンション)で3スキルが見える
    - `project.yml` を軽く触って `xcodegen-regen` が自動発動するか確認
-   - `bash scripts/verify.sh` で 85 テストが既存通りパスする
+   - `bash scripts/verify.sh` で 91 テストが既存通りパスする
 7. PR 作成：
    ```bash
    gh pr create \
@@ -479,7 +485,7 @@ description: Sources/Domain/ の SwiftData @Model を追加・変更・削除す
 - [ ] `codex mcp list` で 2 MCP サーバーが認識されている。
 - [ ] Codex CLI 起動時に `AGENTS.md` が読み込まれる(`/init` で出力が確認できる)。
 - [ ] スキルの自動発動が確認できる(`project.yml` 編集で `xcodegen-regen` が発動)。
-- [ ] `bash scripts/verify.sh` で 85 テストが既存通りパスする。
+- [ ] `bash scripts/verify.sh` で 91 テストが既存通りパスする。
 - [ ] Draft PR が `dolquis/Calender_Aralrm` 宛で作成されている。
 - [ ] Claude Code 用ファイル(`.claude/` `.mcp.json` `CLAUDE.md`)が変更されていない。
 

@@ -133,6 +133,9 @@ CI は `.github/workflows/ios.yml` が `macos-26` / Xcode 26+ で実行する。
 6. 変更箇所およびその周辺に**バグや P1 / P2 レベルの問題**（クラッシュ、
    データ不整合、回帰、アクセシビリティ欠落、`ROADMAP.md` で P1 / P2 と
    位置づけられる品質課題など）がないかを能動的に確認する。
+7. コード変更（機能実装・バグ修正・設計変更）を伴う場合は、`ROADMAP.md` /
+   `README*.md` / `docs/` の記述と Issue 参照が実態と一致するよう更新したか確認する
+   （詳細は §6.2）。
 
 セルフレビューで問題が見つかった場合は、プッシュ前に修正すること。
 発見したバグや P1 / P2 レベルの問題は、当該変更のスコープ内であれば
@@ -185,6 +188,24 @@ GitHub Issue で追跡する**のが本リポジトリの方針。セッショ�
   ユーザに確認させる導線になっているかを確認する（spec proposal の
   "Preview before mutation" 原則）。
 
+### 6.2 コード変更時の進捗反映
+
+機能実装・バグ修正・設計変更を行った場合は、コード差分だけで完了扱いにしない。
+PR 前に以下を確認する。
+
+- `ROADMAP.md` の該当タスクのステータス・DoD・対象ファイル・進捗メモが実態と
+  一致しているか。
+- `README.md` / `README.ja.md` の機能一覧・ビルド手順・手動テスト手順が
+  古くなっていないか。
+- `docs/` 配下の仕様・architecture note が実装と矛盾していないか
+  （`docs/archive/` の歴史的記録は対象外）。
+- 完了した Issue があれば PR 本文で `Closes #N` を使う。参照のみで閉じない Issue は
+  `References #N` に留める（§6.1.1）。
+- セッション内で修正しない新規バグ / pending は §6.1.1 に従って Issue 化する。
+
+特に `ROADMAP.md` 上で「未着手」「設計済み」「実装予定」と書かれている項目を
+実装した場合は、同じ PR で `ROADMAP.md` を更新すること。
+
 ---
 
 ## 7. 困ったときの参照順
@@ -199,7 +220,7 @@ GitHub Issue で追跡する**のが本リポジトリの方針。セッショ�
 ## 8. スキル（`.agents/skills/` / `.claude/skills/`）
 
 Codex CLI は `.agents/skills/`、Claude Code は `.claude/skills/` を参照する。本文は
-**「意図的非対称を除いて」同一**（同期・例外規定は §10.1 参照、将来 symlink 統合の
+**「意図的非対称を除いて」同一**（同期・例外規定は §8.2 参照、将来 symlink 統合の
 余地は残す）。
 
 | name | 自動発動条件（概略） |
@@ -224,6 +245,43 @@ Codex CLI は `.agents/skills/`、Claude Code は `.claude/skills/` を参照す
 同期時はこの表の左右を**フィールド単位で個別に維持**する。「単純な丸ごとコピー」で
 上書きすると Claude 固有の `allowed-tools` 等が消えてプラグイン挙動が壊れるので注意。
 
+### 8.2 skills 同期ルール
+
+`.claude/skills/` と `.agents/skills/` は、プロジェクト固有の仕様・禁止事項・
+確認手順が**意味的に一致**した状態を保つ。ただし §8.1 の意図的非対称
+（`allowed-tools` frontmatter、`swift-lsp` 言及、`Context7` / `xcodebuild` の表記差）は
+維持する。
+
+- 同期時に片方をもう片方へ**丸ごとコピーして上書きしない**。
+- `SKILL.md` 本文は「完全一致」ではなく**内容同等**を目標とする。
+- `references/` 配下は原則として**完全一致**を確認する。
+
+同期後は次で差分を確認する。
+
+```sh
+diff -qr .claude/skills .agents/skills || true
+```
+
+`SKILL.md` が差分として出るのは frontmatter 等の意図的非対称によるもので想定内。
+差分が出た場合は、それが §8.1 の意図的非対称なのか単なる更新漏れなのかを判断し、
+更新漏れなら同じ PR で修正する。
+
+### 8.3 ドキュメント・スキル鮮度チェック
+
+`README*.md` / `ROADMAP.md` / `AGENTS.md` / `docs/`（`docs/archive/` を除く）を更新した
+場合は、`.claude/skills/**/SKILL.md` と `.agents/skills/**/SKILL.md` も stale 化していな
+いか確認する。特にテスト件数・ビルド手順・Xcode / iOS バージョン・MCP / plugin 設定は
+skill 側に古い値が残りやすいため、PR 前に grep すること。
+
+```sh
+rg '85|91|XCTest|Swift Testing|Xcode 26|iOS 26|verify\.sh|lint\.sh|xcodebuildmcp|Context7' \
+  -g '!docs/archive/**' README*.md AGENTS.md ROADMAP.md docs .claude .agents
+```
+
+古いテスト件数（現状は Swift Testing 91 件 / 16 スイート / 18 ファイル）、古いビルド
+手順、古い Xcode / iOS バージョン、古い MCP / plugin 設定が見つかった場合は、該当
+文書を同じ PR で更新する（`0.85` などのしきい値は対象外）。
+
 ## 9. MCP サーバー（`.codex/config.toml` / `.mcp.json`）
 
 | name | 用途 | 起動方式 |
@@ -241,15 +299,14 @@ macOS + Xcode 26 前提。Linux / Windows では `xcodebuild` MCP が起動失�
 以下を守ること：
 
 1. スキル本文（`xcodegen-regen` / `alarmkit-scheduling` / `swiftdata-migration` の
-   `SKILL.md` 共通部および `references/`）を変更したら、`.claude/skills/` と
-   `.agents/skills/` の **両方** を同時に更新する。**ただし §8.1 の意図的非対称
-   （`allowed-tools` frontmatter、`swift-lsp` 言及、ツール表記）はフィールド単位で
-   個別に維持し、丸ごとコピーで上書きしない**。同期後は `diff -q` で `references/`
-   配下が完全一致していることを確認すること。
+   `SKILL.md` および `references/`）を変更したら、`.claude/skills/` と
+   `.agents/skills/` の **両方** を同時に更新する。同期の具体的手順・意図的非対称の
+   扱い・`diff -qr` 確認は **§8.2 が正**（重複定義を避けるためここでは再掲しない）。
 2. MCP サーバー定義を増減した場合、`.mcp.json` と `.codex/config.toml` の両方を
    更新する（用途と起動方式が一致するように）。
 3. ビルド / swift-format / Widget の運用ルールはこの `AGENTS.md`（§4 / §5 / §6）が
    唯一の正。`CLAUDE.md` はポインタのみで重複させない。
-4. Claude Code 起動プロンプトと bootstrap ドキュメントは `docs/handoff/` に保管
-   （`claude-code-bootstrap.md` / `codex-bootstrap.md`）。setup 完了後は
-   `docs/archive/` への移動または削除を検討してよい。
+4. Claude Code / Codex の bootstrap ドキュメントは setup 完了済みのため
+   `docs/archive/`（`claude-code-bootstrap.md` / `codex-bootstrap.md`）へアーカイブ済み。
+   歴史的記録であり、運用ルールの正は本 `AGENTS.md`、スキル本文の正は各 `SKILL.md`。
+   アーカイブは凍結扱いで鮮度チェック（§8.3）の対象外。
