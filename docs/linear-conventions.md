@@ -174,8 +174,8 @@ GitHub docs remain canonical.
 - **Ready for Claude Design**: `agent:claude-design` + Backlog/Todo
 - **Ready for Codex Implementation**: `agent:codex-impl` + Backlog/Todo + 非ブロック
 - **Ready for Review**: (`agent:claude-review` か `agent:codex-pr-review`) + In Review
-- **Needs Human Verification**: `gate:human-required`
-- **Missing Metadata**: repo / area / agent ラベルまたは GitHub リンク欠落（移行期の旧 repo/area ラベルと `gate:human-required` / 旧 `type:human-gate` 人間専任タスクの `agent:*` 免除を考慮）
+- **Needs Human Verification**: `gate:human-required` または旧 `type:human-gate`
+- **Missing Metadata**: repo / area / agent ラベル欠落、または Migrated Issue の GitHub リンク欠落（移行期の旧 repo/area ラベルと `gate:human-required` / 旧 `type:human-gate` 人間専任タスクの `agent:*` 免除を考慮）
 
 ビューはレーダー画面であって仕様ではない。曖昧なら GitHub docs と連携 GitHub Issue を見てから動く。
 
@@ -255,7 +255,7 @@ Delta として各 repo 個別に保持する文書（共有コアには入れ�
 - REPO: dolquis/Calender_Aralrm
 - REPO_LABEL: repo:Calender_Aralrm
 - CANONICAL_DOCS: AGENTS.md, ROADMAP.md, README.md, docs/*
-- AREA_LABELS: area:alarmkit, area:signing, area:import-export
+- AREA_LABELS: current focus examples only, not exhaustive: area:alarmkit, area:signing, area:import-export. Other active areas include SwiftData/domain, Widget/Live Activity, HealthKit/App Intents, localization, and onboarding; confirm or create the corresponding `area:*` label before routing.
 - LABEL_MIGRATION_COMPATIBILITY: Phase 4 までは `AGENTS.md` の `Bug` / `Improvement` / `Feature` も有効。`kind:*` は移行後の収束先。
 - STAGE_MAP:
   - P0 実機ビルド・署名・権限確認
