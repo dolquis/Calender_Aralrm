@@ -8,11 +8,21 @@ import WidgetKit
 @MainActor
 public final class AlarmScheduler {
     private let modelContainer: ModelContainer
-    private let service: AlarmService
+    private let alarmClient: any AlarmSchedulingClient
+    private let saveContext: @MainActor (ModelContext) throws -> Void
 
-    public init(modelContainer: ModelContainer, service: AlarmService) {
+    public init(
+        modelContainer: ModelContainer,
+        alarmClient: any AlarmSchedulingClient,
+        saveContext: @escaping @MainActor (ModelContext) throws -> Void = { try $0.save() }
+    ) {
         self.modelContainer = modelContainer
-        self.service = service
+        self.alarmClient = alarmClient
+        self.saveContext = saveContext
+    }
+
+    public convenience init(modelContainer: ModelContainer, service: AlarmService) {
+        self.init(modelContainer: modelContainer, alarmClient: service)
     }
 
     /// One concrete alarm that the scheduler wants to be present in AlarmKit.
@@ -23,6 +33,7 @@ public final class AlarmScheduler {
         let fireDate: Date
         let label: String
         let soundID: String
+        let kind: ScheduledAlarmKind
     }
 
     /// Recompute the expected set of alarms for the lookahead window and reconcile with AlarmKit.
@@ -39,10 +50,14 @@ public final class AlarmScheduler {
         let expectedBedtime = Self.buildExpectedBedtime(
             days: days, input: input, settings: settings)
 
-        let (existingWakeByDay, existingBedtimeByFireDate) = Self.partitionExisting(
-            (try? context.fetch(FetchDescriptor<ShiftAlarm>())) ?? [],
-            calendar: calendar
-        )
+        let existingAlarms = (try? context.fetch(FetchDescriptor<ShiftAlarm>())) ?? []
+        await cancelOrphanedLiveAlarms(knownAlarms: existingAlarms)
+
+        let (existingWakeByDay, existingBedtimeByFireDate) =
+            Self.partitionExisting(
+                existingAlarms,
+                calendar: calendar
+            )
 
         await diffSync(
             expected: expectedWake,
@@ -56,9 +71,6 @@ public final class AlarmScheduler {
             isBedtimeReminder: true,
             context: context
         )
-
-        try? context.save()
-
         #if canImport(WidgetKit)
         WidgetCenter.shared.reloadAllTimelines()
         #endif
@@ -86,7 +98,8 @@ public final class AlarmScheduler {
                 key: day,
                 fireDate: fireDate,
                 label: preset?.name ?? String(localized: "alarm.default_label"),
-                soundID: preset?.soundID ?? settings.defaultSoundID
+                soundID: preset?.soundID ?? settings.defaultSoundID,
+                kind: .main
             )
         }
     }
@@ -110,7 +123,8 @@ public final class AlarmScheduler {
                     key: reminderDate,
                     fireDate: reminderDate,
                     label: "\(String(localized: "sleep.reminder_label")) \(window.presetName)",
-                    soundID: settings.defaultSoundID
+                    soundID: settings.defaultSoundID,
+                    kind: .bedtime
                 )
             }
     }
@@ -142,7 +156,7 @@ public final class AlarmScheduler {
         let expectedKeys = Set(expected.map(\.key))
         for entry in expected {
             if let existingAlarm = existingByKey[entry.key] {
-                await reschedule(existingAlarm, to: entry)
+                await reschedule(existingAlarm, to: entry, context: context)
             } else {
                 await scheduleNew(entry, isBedtimeReminder: isBedtimeReminder, context: context)
             }
@@ -152,29 +166,70 @@ public final class AlarmScheduler {
         }
     }
 
-    private func reschedule(_ existing: ShiftAlarm, to entry: ExpectedAlarm) async {
-        guard
+    private func cancelOrphanedLiveAlarms(knownAlarms: [ShiftAlarm]) async {
+        guard let liveIDs = try? await alarmClient.scheduledIDs() else { return }
+        let knownIDs = Set(
+            knownAlarms.flatMap { alarm -> [UUID] in
+                var ids = alarm.pendingCancelIDs
+                if let current = alarm.currentAlarmKitID {
+                    ids.append(current)
+                }
+                return ids
+            }
+        )
+        for orphanID in liveIDs.subtracting(knownIDs) {
+            try? await alarmClient.cancel(id: orphanID)
+        }
+    }
+
+    private func reschedule(
+        _ existing: ShiftAlarm,
+        to entry: ExpectedAlarm,
+        context: ModelContext
+    ) async {
+        let needsReplacement =
             existing.fireDate != entry.fireDate
-                || existing.label != entry.label
-                || existing.soundID != entry.soundID
-        else { return }
+            || existing.label != entry.label
+            || existing.soundID != entry.soundID
+            || existing.currentAlarmKitID == nil
+
+        guard needsReplacement else {
+            await cancelPendingIDs(for: existing, context: context)
+            return
+        }
+        let previousFireDate = existing.fireDate
+        let previousLabel = existing.label
+        let previousSoundID = existing.soundID
+        let previousCurrentID = existing.currentAlarmKitID
+        let previousPendingIDs = existing.pendingCancelIDs
         let newID = UUID()
         do {
-            try await service.schedule(
+            try await alarmClient.schedule(
                 id: newID,
                 fireDate: entry.fireDate,
                 label: entry.label,
-                soundID: entry.soundID
+                soundID: entry.soundID,
+                kind: entry.kind
             )
-            // Cancel old alarm only after the replacement is confirmed scheduled,
-            // so a transient failure never leaves the user with no active alarm.
-            if let kitID = existing.alarmKitID {
-                try? await service.cancel(id: kitID)
+            if let previousCurrentID {
+                existing.appendPendingCancelID(previousCurrentID)
             }
             existing.fireDate = entry.fireDate
             existing.label = entry.label
             existing.soundID = entry.soundID
-            existing.alarmKitID = newID
+            existing.currentAlarmKitID = newID
+            do {
+                try saveContext(context)
+            } catch {
+                existing.fireDate = previousFireDate
+                existing.label = previousLabel
+                existing.soundID = previousSoundID
+                existing.currentAlarmKitID = previousCurrentID
+                existing.pendingCancelIDs = previousPendingIDs
+                try? await alarmClient.cancel(id: newID)
+                return
+            }
+            await cancelPendingIDs(for: existing, context: context)
         } catch {
             // Schedule failed: old alarm is still active; next refresh will retry.
         }
@@ -185,36 +240,60 @@ public final class AlarmScheduler {
     ) async {
         let newID = UUID()
         do {
-            try await service.schedule(
+            try await alarmClient.schedule(
                 id: newID,
                 fireDate: entry.fireDate,
                 label: entry.label,
-                soundID: entry.soundID
+                soundID: entry.soundID,
+                kind: entry.kind
             )
-            context.insert(
-                ShiftAlarm(
-                    fireDate: entry.fireDate,
-                    label: entry.label,
-                    soundID: entry.soundID,
-                    isEnabled: true,
-                    alarmKitID: newID,
-                    isBedtimeReminder: isBedtimeReminder
-                ))
+            let alarm = ShiftAlarm(
+                fireDate: entry.fireDate,
+                label: entry.label,
+                soundID: entry.soundID,
+                isEnabled: true,
+                alarmKitID: newID,
+                isBedtimeReminder: isBedtimeReminder
+            )
+            context.insert(alarm)
+            do {
+                try saveContext(context)
+            } catch {
+                context.delete(alarm)
+                try? await alarmClient.cancel(id: newID)
+            }
         } catch {
             // Schedule failed: skip persisting; the next refresh will retry.
         }
     }
 
     private func cancel(_ alarm: ShiftAlarm, context: ModelContext) async {
-        if let kitID = alarm.alarmKitID {
+        if let kitID = alarm.currentAlarmKitID {
+            alarm.appendPendingCancelID(kitID)
+            alarm.currentAlarmKitID = nil
             do {
-                try await service.cancel(id: kitID)
+                try saveContext(context)
             } catch {
-                // Cancel failed; leave the DB row so the next refresh can retry.
                 return
             }
         }
-        context.delete(alarm)
+        await cancelPendingIDs(for: alarm, context: context)
+        if alarm.currentAlarmKitID == nil, alarm.pendingCancelIDs.isEmpty {
+            context.delete(alarm)
+            try? saveContext(context)
+        }
+    }
+
+    private func cancelPendingIDs(for alarm: ShiftAlarm, context: ModelContext) async {
+        for pendingID in alarm.pendingCancelIDs {
+            do {
+                try await alarmClient.cancel(id: pendingID)
+                alarm.removePendingCancelID(pendingID)
+                try saveContext(context)
+            } catch {
+                // Leave the ID in pending so the next refresh can retry.
+            }
+        }
     }
 
     static func buildResolverInput(

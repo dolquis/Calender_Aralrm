@@ -69,8 +69,8 @@ CI は `.github/workflows/ios.yml` が `macos-26` / Xcode 26+ で実行する。
 `build-test` ジョブが `scripts/verify.sh`、`lint` ジョブが `scripts/lint.sh check`
 （`swift-format`、設定は `.swift-format`）を並列に走らせる。
 **CI 緑 = ローカルで `verify.sh` と `lint.sh check` がともに緑** が前提。
-テストは Apple の Swift Testing（`@Test` / `#expect`）で記述。現状は 91 件のテスト
-（16 テストスイート / 18 ファイル、うち DayCell snapshot 5 件は通常 verify で skip）を確認する。
+テストは Apple の Swift Testing（`@Test` / `#expect`）で記述。現状は 103 件のテスト
+（16 テストスイート / 19 ファイル、うち DayCell snapshot 5 件は通常 verify で skip）を確認する。
 実機向け P0 確認は `bash scripts/p0-readiness.sh`、実機 build 入口は
 `bash scripts/p0-device-build.sh`。
 
@@ -314,11 +314,11 @@ diff -qr .claude/skills .agents/skills || true
 skill 側に古い値が残りやすいため、PR 前に grep すること。
 
 ```sh
-rg '85|91|XCTest|Swift Testing|Xcode 26|iOS 26|verify\.sh|lint\.sh|xcodebuildmcp|Context7' \
+rg '85|103|XCTest|Swift Testing|Xcode 26|iOS 26|verify\.sh|lint\.sh|xcodebuildmcp|Context7' \
   -g '!docs/archive/**' README*.md AGENTS.md ROADMAP.md docs .claude .agents
 ```
 
-古いテスト件数（現状は Swift Testing 91 件 / 16 スイート / 18 ファイル）、古いビルド
+古いテスト件数（現状は Swift Testing 103 件 / 16 スイート / 19 ファイル）、古いビルド
 手順、古い Xcode / iOS バージョン、古い MCP / plugin 設定が見つかった場合は、該当
 文書を同じ PR で更新する（`0.85` などのしきい値は対象外）。
 

@@ -5,7 +5,14 @@ import Testing
 @testable import ShiftAlarm
 
 @MainActor
+@Suite(.serialized)
 struct AlarmSchedulerTests {
+    private enum SaveFailure: Error {
+        case failed
+    }
+
+    private var calendar: Calendar { Calendar.current }
+
     @Test
     func testResolverInputCapturesAllSources() async throws {
         let container = SharedPersistence.makeContainer(inMemory: true)
@@ -43,5 +50,412 @@ struct AlarmSchedulerTests {
         #expect(input.holidays.count == 1)
         #expect(input.rotations.count == 1)
         #expect((input.rotations.first?.slots.first ?? nil) == preset.id)
+    }
+
+    @Test
+    func testASU1NewAlarmSchedulesOnly() async throws {
+        let container = seededWakeContainer(hour: 8)
+        let fake = FakeAlarmSchedulingClient()
+        let scheduler = AlarmScheduler(modelContainer: container, alarmClient: fake)
+
+        await scheduler.refreshScheduledAlarms()
+
+        let operations = await fake.recordedOperations()
+        #expect(scheduleCalls(in: operations).count == 1)
+        #expect(cancelIDs(in: operations).isEmpty)
+        let alarms = try fetchAlarms(in: container)
+        #expect(alarms.count == 1)
+        #expect(alarms.first?.currentAlarmKitID != nil)
+        #expect(alarms.first?.pendingCancelIDs.isEmpty == true)
+    }
+
+    @Test
+    func testASU2NoChangeDoesNotScheduleOrCancel() async throws {
+        let oldID = UUID()
+        let container = seededWakeContainer(hour: 8)
+        try seedExistingAlarm(container: container, hour: 8, alarmKitID: oldID)
+        let fake = FakeAlarmSchedulingClient(scheduledIDs: [oldID])
+        let scheduler = AlarmScheduler(modelContainer: container, alarmClient: fake)
+
+        await scheduler.refreshScheduledAlarms()
+
+        let operations = await fake.recordedOperations()
+        #expect(scheduleCalls(in: operations).isEmpty)
+        #expect(cancelIDs(in: operations).isEmpty)
+        let alarms = try fetchAlarms(in: container)
+        #expect(alarms.first?.currentAlarmKitID == oldID)
+    }
+
+    @Test
+    func testASU3TimeChangeSavesPendingBeforeCancelingOldID() async throws {
+        let oldID = UUID()
+        let container = seededWakeContainer(hour: 8)
+        try seedExistingAlarm(container: container, hour: 7, alarmKitID: oldID)
+        let fake = FakeAlarmSchedulingClient(scheduledIDs: [oldID])
+        var saveSnapshots: [[UUID]] = []
+        let scheduler = AlarmScheduler(
+            modelContainer: container,
+            alarmClient: fake,
+            saveContext: { context in
+                let alarms = (try? context.fetch(FetchDescriptor<ShiftAlarm>())) ?? []
+                saveSnapshots.append(alarms.flatMap(\.pendingCancelIDs))
+                try context.save()
+            }
+        )
+
+        await scheduler.refreshScheduledAlarms()
+
+        let operations = await fake.recordedOperations()
+        #expect(scheduleCalls(in: operations).count == 1)
+        #expect(cancelIDs(in: operations) == [oldID])
+        #expect(saveSnapshots.contains([oldID]))
+        let alarms = try fetchAlarms(in: container)
+        #expect(alarms.first?.currentAlarmKitID != oldID)
+        #expect(alarms.first?.pendingCancelIDs.isEmpty == true)
+    }
+
+    @Test
+    func testASU4ScheduleFailureKeepsOldAlarmAndRow() async throws {
+        let oldID = UUID()
+        let container = seededWakeContainer(hour: 8)
+        try seedExistingAlarm(container: container, hour: 7, alarmKitID: oldID)
+        let fake = FakeAlarmSchedulingClient(scheduledIDs: [oldID], shouldFailSchedule: true)
+        let scheduler = AlarmScheduler(modelContainer: container, alarmClient: fake)
+
+        await scheduler.refreshScheduledAlarms()
+
+        let operations = await fake.recordedOperations()
+        #expect(scheduleCalls(in: operations).count == 1)
+        #expect(cancelIDs(in: operations).isEmpty)
+        let alarms = try fetchAlarms(in: container)
+        #expect(alarms.first?.currentAlarmKitID == oldID)
+        #expect(calendar.component(.hour, from: alarms.first!.fireDate) == 7)
+    }
+
+    @Test
+    func testASU5CancelFailureLeavesPendingForNextRefresh() async throws {
+        let oldID = UUID()
+        let container = seededWakeContainer(hour: 8)
+        try seedExistingAlarm(container: container, hour: 7, alarmKitID: oldID)
+        let fake = FakeAlarmSchedulingClient(scheduledIDs: [oldID], cancelFailures: [oldID])
+        let scheduler = AlarmScheduler(modelContainer: container, alarmClient: fake)
+
+        await scheduler.refreshScheduledAlarms()
+
+        var alarms = try fetchAlarms(in: container)
+        #expect(alarms.first?.currentAlarmKitID != oldID)
+        #expect(alarms.first?.pendingCancelIDs == [oldID])
+
+        await fake.setCancelFailures([])
+        await scheduler.refreshScheduledAlarms()
+
+        alarms = try fetchAlarms(in: container)
+        #expect(alarms.first?.pendingCancelIDs.isEmpty == true)
+        let operations = await fake.recordedOperations()
+        #expect(cancelIDs(in: operations).filter { $0 == oldID }.count == 2)
+    }
+
+    @Test
+    func testASU6BedtimeAndWakeOnSameCalendarDayDoNotCollide() async throws {
+        let container = seededWakeContainer(
+            hour: 23,
+            targetSleepDuration: 60 * 60,
+            bedtimeLeadMinutes: 30
+        )
+        let fake = FakeAlarmSchedulingClient()
+        let scheduler = AlarmScheduler(modelContainer: container, alarmClient: fake)
+
+        await scheduler.refreshScheduledAlarms()
+
+        let alarms = try fetchAlarms(in: container)
+        #expect(alarms.count == 2)
+        #expect(alarms.filter(\.isBedtimeReminder).count == 1)
+        #expect(alarms.filter { !$0.isBedtimeReminder }.count == 1)
+        let operations = await fake.recordedOperations()
+        let kinds = scheduleCalls(in: operations).map(\.kind)
+        #expect(kinds.contains(.main))
+        #expect(kinds.contains(.bedtime))
+    }
+
+    @Test
+    func testASU7SkipAlarmCancelsThroughPendingPath() async throws {
+        let oldID = UUID()
+        let container = seededWakeContainer(hour: 8, skipAlarm: true)
+        try seedExistingAlarm(container: container, hour: 8, alarmKitID: oldID)
+        let fake = FakeAlarmSchedulingClient(scheduledIDs: [oldID])
+        var saveSnapshots: [[UUID]] = []
+        let scheduler = AlarmScheduler(
+            modelContainer: container,
+            alarmClient: fake,
+            saveContext: { context in
+                let alarms = (try? context.fetch(FetchDescriptor<ShiftAlarm>())) ?? []
+                saveSnapshots.append(alarms.flatMap(\.pendingCancelIDs))
+                try context.save()
+            }
+        )
+
+        await scheduler.refreshScheduledAlarms()
+
+        #expect(saveSnapshots.contains([oldID]))
+        #expect(cancelIDs(in: await fake.recordedOperations()) == [oldID])
+        #expect(try fetchAlarms(in: container).isEmpty)
+    }
+
+    @Test
+    func testASU8HolidayOverrideExcludesExpectedAlarmAndCancelsPendingFirst() async throws {
+        let oldID = UUID()
+        let container = seededWakeContainer(hour: 8, useRotation: true, holidaySkip: true)
+        try seedExistingAlarm(container: container, hour: 8, alarmKitID: oldID)
+        let inputContext = ModelContext(container)
+        let input = await AlarmScheduler.buildResolverInput(
+            context: inputContext,
+            calendar: calendar
+        )
+        #expect(DayResolver.resolve(date: day(offset: 1), input: input).skipsAlarm)
+        let fake = FakeAlarmSchedulingClient(scheduledIDs: [oldID])
+        let scheduler = AlarmScheduler(modelContainer: container, alarmClient: fake)
+
+        await scheduler.refreshScheduledAlarms()
+
+        let operations = await fake.recordedOperations()
+        #expect(scheduleCalls(in: operations).isEmpty)
+        #expect(cancelIDs(in: operations) == [oldID])
+        #expect(try fetchAlarms(in: container).isEmpty)
+    }
+
+    @Test
+    func testASU9SaveFailureRollsBackNewScheduledID() async throws {
+        let container = seededWakeContainer(hour: 8)
+        let fake = FakeAlarmSchedulingClient()
+        var shouldFailSave = true
+        let scheduler = AlarmScheduler(
+            modelContainer: container,
+            alarmClient: fake,
+            saveContext: { context in
+                if shouldFailSave {
+                    shouldFailSave = false
+                    throw SaveFailure.failed
+                }
+                try context.save()
+            }
+        )
+
+        await scheduler.refreshScheduledAlarms()
+
+        let operations = await fake.recordedOperations()
+        let schedules = scheduleCalls(in: operations)
+        #expect(schedules.count == 1)
+        #expect(cancelIDs(in: operations) == schedules.map(\.id))
+        #expect(try fetchAlarms(in: container).isEmpty)
+    }
+
+    @Test
+    func testASU9RollbackCancelFailureIsRecoveredAsOrphan() async throws {
+        let container = seededWakeContainer(hour: 8)
+        let fake = FakeAlarmSchedulingClient(shouldFailCancel: true)
+        var shouldFailSave = true
+        let scheduler = AlarmScheduler(
+            modelContainer: container,
+            alarmClient: fake,
+            saveContext: { context in
+                if shouldFailSave {
+                    shouldFailSave = false
+                    throw SaveFailure.failed
+                }
+                try context.save()
+            }
+        )
+
+        await scheduler.refreshScheduledAlarms()
+
+        let orphanID = try #require(await fake.scheduledIDSet().first)
+        #expect(try fetchAlarms(in: container).isEmpty)
+
+        await fake.setShouldFailCancel(false)
+        await scheduler.refreshScheduledAlarms()
+
+        let liveIDs = await fake.scheduledIDSet()
+        let operations = await fake.recordedOperations()
+        #expect(cancelIDs(in: operations).filter { $0 == orphanID }.count == 2)
+        #expect(!liveIDs.contains(orphanID))
+        #expect(liveIDs.count == 1)
+        #expect(try fetchAlarms(in: container).count == 1)
+    }
+
+    @Test
+    func testASI1RefreshOperationSequenceUsesFakeClient() async throws {
+        let oldID = UUID()
+        let container = seededWakeContainer(hour: 8)
+        try seedExistingAlarm(container: container, hour: 7, alarmKitID: oldID)
+        let fake = FakeAlarmSchedulingClient(scheduledIDs: [oldID])
+        let scheduler = AlarmScheduler(modelContainer: container, alarmClient: fake)
+
+        await scheduler.refreshScheduledAlarms()
+
+        let operations = await fake.recordedOperations()
+        guard case .scheduledIDs = operations.first else {
+            Issue.record("refresh should inspect live AlarmKit IDs before diff-sync")
+            return
+        }
+        #expect(scheduleCalls(in: operations).count == 1)
+        #expect(cancelIDs(in: operations) == [oldID])
+    }
+
+    @Test
+    func testASM1SchemaV1StoreMigratesAlarmKitIDAndPendingDefaults() throws {
+        let alarmKitID = UUID()
+        let fileManager = FileManager.default
+        let directory = fileManager.temporaryDirectory.appendingPathComponent(
+            "ShiftAlarmMigration-\(UUID().uuidString)",
+            isDirectory: true
+        )
+        try fileManager.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? fileManager.removeItem(at: directory) }
+        let storeURL = directory.appendingPathComponent(SharedPersistence.storeFileName)
+
+        do {
+            let oldSchema = Schema(versionedSchema: SchemaV1.self)
+            let oldConfiguration = ModelConfiguration(
+                "MigrationTest",
+                schema: oldSchema,
+                url: storeURL
+            )
+            let oldContainer = try ModelContainer(
+                for: oldSchema,
+                configurations: [oldConfiguration]
+            )
+            let oldContext = ModelContext(oldContainer)
+            oldContext.insert(
+                SchemaV1.ShiftAlarm(
+                    fireDate: fireDate(offset: 1, hour: 8, minute: 0),
+                    label: "Day",
+                    alarmKitID: alarmKitID
+                ))
+            try oldContext.save()
+        }
+
+        let newSchema = Schema(versionedSchema: SchemaV2.self)
+        let newConfiguration = ModelConfiguration(
+            "MigrationTest",
+            schema: newSchema,
+            url: storeURL
+        )
+        let newContainer = try ModelContainer(
+            for: newSchema,
+            migrationPlan: ShiftAlarmMigrationPlan.self,
+            configurations: [newConfiguration]
+        )
+        let newContext = ModelContext(newContainer)
+        let alarms = try newContext.fetch(FetchDescriptor<ShiftAlarm>())
+
+        #expect(alarms.count == 1)
+        #expect(alarms.first?.currentAlarmKitID == alarmKitID)
+        #expect(alarms.first?.alarmKitID == alarmKitID)
+        #expect(alarms.first?.pendingCancelIDs.isEmpty == true)
+    }
+
+    private func seededWakeContainer(
+        hour: Int,
+        minute: Int = 0,
+        targetSleepDuration: Double = 8 * 3600,
+        bedtimeLeadMinutes: Int = 0,
+        skipAlarm: Bool = false,
+        useRotation: Bool = false,
+        holidaySkip: Bool = false
+    ) -> ModelContainer {
+        let container = SharedPersistence.makeContainer(inMemory: true)
+        let context = ModelContext(container)
+        context.insert(AppSettings(lookaheadDays: 5))
+        let preset = ShiftPreset(
+            name: "Day",
+            colorHex: "#1E88E5",
+            defaultAlarmHour: hour,
+            defaultAlarmMinute: minute,
+            targetSleepDuration: targetSleepDuration,
+            bedtimeLeadMinutes: bedtimeLeadMinutes
+        )
+        context.insert(preset)
+        if useRotation {
+            context.insert(
+                RotationPattern(
+                    name: "r",
+                    anchorDate: day(offset: 1),
+                    cycleLength: 1,
+                    slots: [preset.id],
+                    startDate: day(offset: 1),
+                    endDate: day(offset: 1)
+                ))
+        } else {
+            context.insert(
+                DayAssignment(
+                    date: day(offset: 1),
+                    preset: skipAlarm ? nil : preset,
+                    skipAlarm: skipAlarm
+                ))
+        }
+        if holidaySkip {
+            context.insert(
+                HolidayOverride(
+                    date: day(offset: 1),
+                    kind: .publicHoliday,
+                    label: "Holiday",
+                    skipAlarm: true
+                ))
+        }
+        try! context.save()
+        return container
+    }
+
+    private func seedExistingAlarm(
+        container: ModelContainer,
+        hour: Int,
+        minute: Int = 0,
+        alarmKitID: UUID,
+        isBedtimeReminder: Bool = false
+    ) throws {
+        let context = ModelContext(container)
+        context.insert(
+            ShiftAlarm(
+                fireDate: fireDate(offset: 1, hour: hour, minute: minute),
+                label: "Day",
+                soundID: AlarmSound.systemDefault.id,
+                alarmKitID: alarmKitID,
+                isBedtimeReminder: isBedtimeReminder
+            ))
+        try context.save()
+    }
+
+    private func fetchAlarms(in container: ModelContainer) throws -> [ShiftAlarm] {
+        let context = ModelContext(container)
+        let alarms = try context.fetch(FetchDescriptor<ShiftAlarm>())
+        return alarms.sorted { $0.fireDate < $1.fireDate }
+    }
+
+    private func day(offset: Int) -> Date {
+        calendar.date(byAdding: .day, value: offset, to: calendar.startOfDay(for: .now))!
+    }
+
+    private func fireDate(offset: Int, hour: Int, minute: Int) -> Date {
+        day(offset: offset).combining(hour: hour, minute: minute, in: calendar)!
+    }
+
+    private func scheduleCalls(
+        in operations: [FakeAlarmSchedulingClient.Operation]
+    ) -> [FakeAlarmSchedulingClient.ScheduleCall] {
+        operations.compactMap { operation in
+            if case .schedule(let call) = operation {
+                return call
+            }
+            return nil
+        }
+    }
+
+    private func cancelIDs(in operations: [FakeAlarmSchedulingClient.Operation]) -> [UUID] {
+        operations.compactMap { operation in
+            if case .cancel(let id) = operation {
+                return id
+            }
+            return nil
+        }
     }
 }

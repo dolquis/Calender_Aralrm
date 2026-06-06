@@ -20,7 +20,7 @@ public final class AppDependencies {
         self.alarmAuthorization = AlarmAuthorization(service: service)
         self.alarmScheduler = AlarmScheduler(
             modelContainer: container,
-            service: service
+            alarmClient: service
         )
         self.liveActivityController = LiveActivityController(modelContainer: container)
         self.sleepSampleWriter = SleepSampleWriter()

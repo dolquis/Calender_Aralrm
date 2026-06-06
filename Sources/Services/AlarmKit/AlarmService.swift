@@ -48,6 +48,23 @@ public actor AlarmService {
         label: String,
         soundID: String
     ) async throws -> UUID {
+        try await schedule(
+            id: id,
+            fireDate: fireDate,
+            label: label,
+            soundID: soundID,
+            kind: .main
+        )
+    }
+
+    @discardableResult
+    public func schedule(
+        id: UUID,
+        fireDate: Date,
+        label: String,
+        soundID: String,
+        kind _: ScheduledAlarmKind
+    ) async throws -> UUID {
         #if canImport(AlarmKit)
         let configuration = AlarmConfigurationBuilder.build(
             fireDate: fireDate,
@@ -75,14 +92,20 @@ public actor AlarmService {
         #endif
     }
 
-    public func listScheduled() async -> [UUID] {
+    public func scheduledIDs() async throws -> Set<UUID> {
         #if canImport(AlarmKit)
-        return ((try? AlarmManager.shared.alarms) ?? []).map(\.id)
+        return Set(try AlarmManager.shared.alarms.map(\.id))
         #else
         return []
         #endif
     }
+
+    public func listScheduled() async -> [UUID] {
+        (try? await scheduledIDs().map { $0 }) ?? []
+    }
 }
+
+extension AlarmService: AlarmSchedulingClient {}
 
 public enum AlarmAuthorizationState: Sendable, Equatable {
     case notDetermined
