@@ -335,6 +335,8 @@ main へ PR（Linear issue が無い緊急時のみ `feature/<topic>`）。
     新 ID 引数で呼ばれることを assert）
   - AS-U9b rollback cancel 失敗: `cancel(newID)` も失敗した場合、次回 refresh の
     `live \ known` orphan 検出で新 ID が回収される
+  - AS-U10 既存 `ShiftAlarm` fetch 失敗時: store を読めない状態では orphan sweep /
+    diff-sync を行わず、live AlarmKit ID を cancel しない
   - AS-I1 `refreshScheduledAlarms` の操作列を fake で検証
   - AS-M1 pre-P0-4 V1 store migration: 旧 top-level V1 モデルで作成した fixture store の
     既存 `alarmKitID` が `currentAlarmKitID` に引き継がれ、`pendingCancelIDs` は空配列として読める
@@ -358,12 +360,12 @@ main へ PR（Linear issue が無い緊急時のみ `feature/<topic>`）。
   - 新規 `Tests/Support/FakeAlarmSchedulingClient.swift`
   - **変更（既存ファイル）** `Tests/ServicesTests/AlarmSchedulerTests.swift`
     — 既に `buildResolverInput` を検証する `@Test` 1 件が存在する。新規作成ではなく、
-    このファイルへ AS-U1〜AS-U9 / AS-I1 を**追記**する。
+    このファイルへ AS-U1〜AS-U10 / AS-I1 を**追記**する。
 - **注意**: Swift 6 strict concurrency 下で actor → protocol 化する際の
   `Sendable` 制約、`@MainActor` な `AlarmScheduler` と fake client の相性。
 - **DoD**:
   - **AS-U1 / AS-U2 / AS-U3 / AS-U4 / AS-U5 / AS-U6 / AS-U7 / AS-U8 / AS-U9 /
-    AS-I1 / AS-M1 の全 12 件**（AS-U9 は rollback 成功 / rollback cancel 失敗の
+    AS-U10 / AS-I1 / AS-M1 の全 13 件**（AS-U9 は rollback 成功 / rollback cancel 失敗の
     2 ケース、AS-M1 は SwiftData migration）が `scripts/verify.sh` で緑。
     特に AS-I1 は `refreshScheduledAlarms` の操作列を fake で検証する
     integration テストで、unit のみ緑でも DoD は満たさない（unit と

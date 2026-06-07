@@ -10,15 +10,20 @@ public final class AlarmScheduler {
     private let modelContainer: ModelContainer
     private let alarmClient: any AlarmSchedulingClient
     private let saveContext: @MainActor (ModelContext) throws -> Void
+    private let fetchExistingAlarms: @MainActor (ModelContext) throws -> [ShiftAlarm]
 
     public init(
         modelContainer: ModelContainer,
         alarmClient: any AlarmSchedulingClient,
-        saveContext: @escaping @MainActor (ModelContext) throws -> Void = { try $0.save() }
+        saveContext: @escaping @MainActor (ModelContext) throws -> Void = { try $0.save() },
+        fetchExistingAlarms: @escaping @MainActor (ModelContext) throws -> [ShiftAlarm] = {
+            try $0.fetch(FetchDescriptor<ShiftAlarm>())
+        }
     ) {
         self.modelContainer = modelContainer
         self.alarmClient = alarmClient
         self.saveContext = saveContext
+        self.fetchExistingAlarms = fetchExistingAlarms
     }
 
     public convenience init(modelContainer: ModelContainer, service: AlarmService) {
@@ -43,6 +48,13 @@ public final class AlarmScheduler {
         let settings = (try? context.fetch(FetchDescriptor<AppSettings>()).first) ?? AppSettings()
         let lookahead = max(1, settings.lookaheadDays)
         let days = Array(DayRange(start: .now, dayCount: lookahead, calendar: calendar))
+        let existingAlarms: [ShiftAlarm]
+        do {
+            existingAlarms = try fetchExistingAlarms(context)
+        } catch {
+            // Without persisted rows, live AlarmKit IDs cannot be distinguished from real alarms.
+            return
+        }
 
         let input = await Self.buildResolverInput(context: context, calendar: calendar)
         let expectedWake = Self.buildExpectedWake(
@@ -50,7 +62,6 @@ public final class AlarmScheduler {
         let expectedBedtime = Self.buildExpectedBedtime(
             days: days, input: input, settings: settings)
 
-        let existingAlarms = (try? context.fetch(FetchDescriptor<ShiftAlarm>())) ?? []
         await cancelOrphanedLiveAlarms(knownAlarms: existingAlarms)
 
         let (existingWakeByDay, existingBedtimeByFireDate) =

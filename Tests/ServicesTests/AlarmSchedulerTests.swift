@@ -11,6 +11,10 @@ struct AlarmSchedulerTests {
         case failed
     }
 
+    private enum FetchFailure: Error {
+        case failed
+    }
+
     private var calendar: Calendar { Calendar.current }
 
     @Test
@@ -280,6 +284,25 @@ struct AlarmSchedulerTests {
         #expect(!liveIDs.contains(orphanID))
         #expect(liveIDs.count == 1)
         #expect(try fetchAlarms(in: container).count == 1)
+    }
+
+    @Test
+    func testASU10FetchFailureSkipsOrphanSweepAndDiffSync() async throws {
+        let liveID = UUID()
+        let container = seededWakeContainer(hour: 8)
+        let fake = FakeAlarmSchedulingClient(scheduledIDs: [liveID])
+        let scheduler = AlarmScheduler(
+            modelContainer: container,
+            alarmClient: fake,
+            fetchExistingAlarms: { _ in throw FetchFailure.failed }
+        )
+
+        await scheduler.refreshScheduledAlarms()
+
+        let operations = await fake.recordedOperations()
+        let liveIDs = await fake.scheduledIDSet()
+        #expect(operations.isEmpty)
+        #expect(liveIDs == Set([liveID]))
     }
 
     @Test
