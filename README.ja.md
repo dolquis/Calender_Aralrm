@@ -75,7 +75,7 @@ bash scripts/verify.sh test
 ```
 
 テストは Apple の [Swift Testing](https://developer.apple.com/documentation/testing)
-（`@Test` / `#expect`）で記述しており、現在は 91 件のテスト（16 テストスイート / 18 ファイル）
+（`@Test` / `#expect`）で記述しており、現在は 103 件のテスト（16 テストスイート / 19 ファイル）
 で Domain / Services / App Intents / HealthKit 補助ロジック / Background refresh / Deep link /
 Sharing / Snapshot をカバーしています。DayCell の snapshot test 5 件は通常 `verify.sh` では
 skip され、`SNAPSHOT_TESTING_ENABLED=1` 指定時に記録 / 検証されます。

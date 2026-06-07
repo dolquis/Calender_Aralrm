@@ -35,9 +35,11 @@ public static func storeURL() -> URL {
 - 解決できない場合（テストや開発用ビルドで entitlement 無し）は Documents 配下に
   ローカルストアを置く。テストでは `makeContainer(inMemory: true)` を使うのが既定。
 
-`makeContainer(inMemory:)` は `Schema(SchemaV1.models)` を一次源として
-`ModelConfiguration("ShiftAlarmStore", schema:, url:)` を組み立てる。マイグレーション時に
-新 schema へ切り替えるのはこの 1 箇所。
+`makeContainer(inMemory:)` は現行の versioned schema
+（例: `Schema(versionedSchema: SchemaV2.self)`）を一次源として
+`ModelConfiguration("ShiftAlarmStore", schema:, url:)` を組み立て、
+`ModelContainer(for:, migrationPlan:, configurations:)` に migration plan を渡す。
+マイグレーション時に新 schema へ切り替えるのはこの 1 箇所。
 
 ## Widget 側の共有点
 
@@ -45,8 +47,9 @@ public static func storeURL() -> URL {
 - Widget の TimelineProvider は `SharedPersistence.makeContainer()` を通じて
   同じ store URL を開く（**別プロセスで同一ファイルを読み書き**）。
 - アプリ本体側で `@Model` を変更したら Widget Extension のビルドターゲットでも
-  同じ Domain ソースをコンパイルしているため、`SchemaV1.models` に追加するだけで
-  Widget も自動追従する。逆に追加し忘れると Widget が起動しない。
+  同じ Domain ソースをコンパイルしているため、現行 `SchemaVN.models` と
+  migration plan に追加するだけで Widget も自動追従する。逆に追加し忘れると
+  Widget が起動しない。
 
 ## 変更時の checklist
 

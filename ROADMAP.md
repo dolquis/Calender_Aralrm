@@ -4,13 +4,13 @@
 **開発仕様兼ロードマップ**です。タスクは優先度（P0 → P3）順、各項目に
 **目的 / 対象ファイル / 完了条件 (DoD)** を明記しています。
 
-最終更新: 2026-05-27
+最終更新: 2026-06-07
 対象ブランチ運用: Linear issue から生成されるブランチ名 `dolquis/dev-xx-*` を基本とし、
 main へ PR（Linear issue が無い緊急時のみ `feature/<topic>`）。
 
 ---
 
-## 0. 現状サマリ（2026-05-27 時点）
+## 0. 現状サマリ（2026-06-07 時点）
 
 - iOS 26+ / Swift 6 / SwiftUI + SwiftData / AlarmKit ベースのシフト勤務向けアラームアプリ。
 - 主要レイヤー（Domain / Services / Features / Widget / Live Activity / Sharing / Deep link / ja-en ローカライズ）は実装済み。
@@ -19,8 +19,8 @@ main へ PR（Linear issue が無い緊急時のみ `feature/<topic>`）。
 - P0-1 は Xcode 26.5 / iOS 26.5 SDK でコードレベル検証に着手済み。
   `AlarmPresentation.Alert.stopButton` の iOS 26.1 deprecation を回避し、
   `AlarmManager.AlarmConfiguration.alarm(...)` に寄せた。実機確認は未完了。
-- テストは Apple の Swift Testing（`@Test` / `#expect`）で記述。91 件 (16 スイート /
-  18 ファイル) 緑。通常の `scripts/verify.sh` では 5 件の snapshot test は
+- テストは Apple の Swift Testing（`@Test` / `#expect`）で記述。103 件 (16 スイート /
+  19 ファイル) 緑。通常の `scripts/verify.sh` では 5 件の snapshot test は
   `SNAPSHOT_TESTING_ENABLED=1` 未指定のため skip。
   CI は `macos-26` / Xcode 26+ で `scripts/verify.sh` を実行。
 - **状態・進捗・優先度の正典は Linear**（team `Dev` / project **Shift Alarm /
@@ -35,6 +35,7 @@ main へ PR（Linear issue が無い緊急時のみ `feature/<topic>`）。
   - **DEV-19**（GH #30）実 signing / entitlement 値の設定（P0-2）→ §P0-2
   - **DEV-20**（GH #31）ゴールデンパス手動検証（P0-3）→ §P0-3
   - **DEV-21**（GH #32）開発環境ハードニング backlog（P3-6〜P3-14 追跡）→ §5
+  - **DEV-34** AlarmScheduler protocol / fake 化（P0-4）→ §P0-4
   - umbrella: **DEV-22**（P0 release readiness）/ 週次監査: **DEV-23**
 - マージ済み主要 PR:
   - #1 初期スキャフォールド（救出は #5）/ #2 EventKit 祝日 / #3 DayEditor 状態漏れ修正
@@ -187,11 +188,13 @@ main へ PR（Linear issue が無い緊急時のみ `feature/<topic>`）。
   （レビュー#2 §3.1）。当面は本セクションを実機検証時に Issue に貼る運用を継続。
 - **DoD**: 上記すべて OK のチェックリストを Issue に貼り closed。
 
-### P0-4. AlarmScheduler を protocol / fake 注入可能にする（未着手）
+### P0-4. AlarmScheduler を protocol / fake 注入可能にする（実装中: DEV-34）
 
 > 2026-05-27 提案書取り込みにより **§P3-7 から昇格**。本文は当セクションを正とし、
 > §P3-7 はアンカー兼履歴として最小化する。アルゴリズム / モデル詳細は
 > [docs/p2-algorithms.md §7](docs/p2-algorithms.md#7-横断-changepreview-抽象--アラーム診断--shiftalarm-validator) に集約。
+>
+> 追跡: Linear DEV-34
 
 - **目的**: `AlarmScheduler` の diff-sync 副作用（schedule / cancel の順序、失敗時の
   DB 整合性）をユニットテストで検証可能にし、「新規アラーム登録に失敗したのに古い
@@ -283,15 +286,16 @@ main へ PR（Linear issue が無い緊急時のみ `feature/<topic>`）。
       できず、`@Attribute(originalName:)` rename のメタデータと既存値の対応が
       崩れる。具体的には:
       - `Sources/Domain/Persistence/SchemaV2.swift` を新規追加し、`SchemaV1.models`
-        を継承したうえで `ShiftAlarm` を本変更後の形に差し替える。
+        と同じモデル群を履歴版と分離した `SchemaV2.*` として定義したうえで、
+        `ShiftAlarm` を本変更後の形に差し替える。
       - `Sources/Domain/Persistence/MigrationPlan.swift`（または等価ファイル）に
         `SchemaV1 → SchemaV2` の lightweight migration stage を登録。
         `@Attribute(originalName: "alarmKitID")` を持つ `current_alarm_kit_id`
         と、`Data` デフォルト値（`Data([0x5b, 0x5d])` = `"[]"`）の
         `pendingCancelData` で SwiftData が自動的に値を引き継ぐ。
-      - `SharedPersistence.makeContainer()` は `Schema(SchemaV2.models)` を渡し、
-        `MigrationPlan` をコンテナ生成オプションに付与する。
-      - 履歴版 `SchemaV1` 自体は **変更しない**（migration baseline 維持）。
+      - `SharedPersistence.makeContainer()` は `Schema(versionedSchema: SchemaV2.self)`
+        を渡し、`MigrationPlan` をコンテナ生成オプションに付与する。
+      - 履歴版 `SchemaV1` の列構成は **変更しない**（migration baseline 維持）。
         以降の P2-β / P2-γ が更にスキーマを足す場合は SchemaV2 → SchemaV3
         と段階的に追加する。
       - `/swiftdata-migration` skill を必ず起動し、Widget ターゲットでも V2
@@ -329,7 +333,13 @@ main へ PR（Linear issue が無い緊急時のみ `feature/<topic>`）。
     直前の新 ID が `alarmClient.cancel()` され、pending-cancel ループに入らない
     （fake client で `save()` を意図的に throw させ、`cancel` が 1 回だけ
     新 ID 引数で呼ばれることを assert）
+  - AS-U9b rollback cancel 失敗: `cancel(newID)` も失敗した場合、次回 refresh の
+    `live \ known` orphan 検出で新 ID が回収される
+  - AS-U10 既存 `ShiftAlarm` fetch 失敗時: store を読めない状態では orphan sweep /
+    diff-sync を行わず、live AlarmKit ID を cancel しない
   - AS-I1 `refreshScheduledAlarms` の操作列を fake で検証
+  - AS-M1 pre-P0-4 V1 store migration: 旧 top-level V1 モデルで作成した fixture store の
+    既存 `alarmKitID` が `currentAlarmKitID` に引き継がれ、`pendingCancelIDs` は空配列として読める
 - **対象ファイル**:
   - 新規 `Sources/Services/AlarmKit/AlarmSchedulingClient.swift`
   - 変更 `Sources/Services/AlarmKit/AlarmService.swift`
@@ -337,23 +347,26 @@ main へ PR（Linear issue が無い緊急時のみ `feature/<topic>`）。
   - 変更 `Sources/Domain/Models/ShiftAlarm.swift`（`pendingCancelData: Data` 列
     追加 / `alarmKitID` → `current_alarm_kit_id` に
     `@Attribute(originalName: "alarmKitID")` 付き rename）
-  - 新規 `Sources/Domain/Persistence/SchemaV2.swift`（`SchemaV1` を継承し
-    `ShiftAlarm` を新形式に差し替えた `models` を公開）
+  - 変更 `Sources/Domain/Persistence/SchemaV1.swift`（履歴版モデルを `SchemaV1.*`
+    として固定し、V2 の新列と混線しない migration baseline を維持）
+  - 新規 `Sources/Domain/Persistence/SchemaV2.swift`（現行モデルを `SchemaV2.*`
+    として公開）
   - 新規 / 変更 `Sources/Domain/Persistence/MigrationPlan.swift`（`SchemaV1 →
     SchemaV2` の lightweight migration stage を登録）
   - 変更 `Sources/Domain/Persistence/ModelContainer+Shared.swift`
-    （`SharedPersistence.makeContainer()` が `Schema(SchemaV2.models)` と
+    （`SharedPersistence.makeContainer()` が `Schema(versionedSchema: SchemaV2.self)` と
     `MigrationPlan` を使うように切り替え）
   - 変更 `App/AppDependencies.swift`
   - 新規 `Tests/Support/FakeAlarmSchedulingClient.swift`
   - **変更（既存ファイル）** `Tests/ServicesTests/AlarmSchedulerTests.swift`
     — 既に `buildResolverInput` を検証する `@Test` 1 件が存在する。新規作成ではなく、
-    このファイルへ AS-U1〜AS-U9 / AS-I1 を**追記**する。
+    このファイルへ AS-U1〜AS-U10 / AS-I1 を**追記**する。
 - **注意**: Swift 6 strict concurrency 下で actor → protocol 化する際の
   `Sendable` 制約、`@MainActor` な `AlarmScheduler` と fake client の相性。
 - **DoD**:
   - **AS-U1 / AS-U2 / AS-U3 / AS-U4 / AS-U5 / AS-U6 / AS-U7 / AS-U8 / AS-U9 /
-    AS-I1 の全 10 件**（unit 9 + integration 1）が `scripts/verify.sh` で緑。
+    AS-U10 / AS-I1 / AS-M1 の全 13 件**（AS-U9 は rollback 成功 / rollback cancel 失敗の
+    2 ケース、AS-M1 は SwiftData migration）が `scripts/verify.sh` で緑。
     特に AS-I1 は `refreshScheduledAlarms` の操作列を fake で検証する
     integration テストで、unit のみ緑でも DoD は満たさない（unit と
     integration を両方明記して落とし穴を塞ぐ）。
@@ -1182,7 +1195,7 @@ main へ PR（Linear issue が無い緊急時のみ `feature/<topic>`）。
   - `Tests/ServicesTests/SleepIntentHelperTests.swift` — App Intents 用 sleep window 取得。
   - `Tests/ServicesTests/SleepSampleWriterTests.swift` — HealthKit 書込み対象 window 抽出。
   - `Tests/DomainTests/SleepWindowResolverTests.swift` — bedtime 計算 / 端境ケース。
-- 現状: Swift Testing で 16 スイート / 91 テスト緑（うち 5 件 snapshot は通常 verify では skip）。
+- 現状: Swift Testing で 16 スイート / 103 テスト緑（うち 5 件 snapshot は通常 verify では skip）。
 
 ### P3-2. UI / スナップショットテスト（一部着手）
 
@@ -1212,8 +1225,8 @@ main へ PR（Linear issue が無い緊急時のみ `feature/<topic>`）。
 
 - **目的（達成済み）**: XCTest 相当のテストを Apple の Swift Testing（`@Test`）で記述し、
   `#expect` / `#require` ベースの表現力と並列実行を得る。
-- **現状**: `Tests/` 配下 18 ファイル / 16 テストスイート（`struct` + `@Test`） /
-  91 テスト関数。`XCTestCase` サブクラスは 0。`@testable import ShiftAlarm` を維持。
+- **現状**: `Tests/` 配下 19 ファイル / 16 テストスイート（`struct` + `@Test`） /
+  103 テスト関数。`XCTestCase` サブクラスは 0。`@testable import ShiftAlarm` を維持。
   `project.yml` のテストターゲット定義は変更不要（Swift Testing はツールチェーン同梱）。
 - **採用済みの対応**:
   - `XCTestCase` サブクラス → `struct` + `@Test` 関数。

@@ -48,6 +48,26 @@ public actor AlarmService {
         label: String,
         soundID: String
     ) async throws -> UUID {
+        try await schedule(
+            id: id,
+            fireDate: fireDate,
+            label: label,
+            soundID: soundID,
+            kind: .main
+        )
+    }
+
+    @discardableResult
+    public func schedule(
+        id: UUID,
+        fireDate: Date,
+        label: String,
+        soundID: String,
+        kind: ScheduledAlarmKind
+    ) async throws -> UUID {
+        // Main and bedtime alarms intentionally share today's AlarmKit configuration;
+        // `kind` stays in the client contract for diagnostics and future presentation splits.
+        _ = kind
         #if canImport(AlarmKit)
         let configuration = AlarmConfigurationBuilder.build(
             fireDate: fireDate,
@@ -75,14 +95,20 @@ public actor AlarmService {
         #endif
     }
 
-    public func listScheduled() async -> [UUID] {
+    public func scheduledIDs() async throws -> Set<UUID> {
         #if canImport(AlarmKit)
-        return ((try? AlarmManager.shared.alarms) ?? []).map(\.id)
+        return Set(try AlarmManager.shared.alarms.map(\.id))
         #else
         return []
         #endif
     }
+
+    public func listScheduled() async -> [UUID] {
+        (try? await scheduledIDs().map { $0 }) ?? []
+    }
 }
+
+extension AlarmService: AlarmSchedulingClient {}
 
 public enum AlarmAuthorizationState: Sendable, Equatable {
     case notDetermined

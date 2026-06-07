@@ -16,7 +16,7 @@ public enum SharedPersistence {
     }
 
     public static func makeContainer(inMemory: Bool = false) -> ModelContainer {
-        let schema = Schema(SchemaV1.models)
+        let schema = Schema(versionedSchema: SchemaV2.self)
         let configuration: ModelConfiguration
         if inMemory {
             configuration = ModelConfiguration(isStoredInMemoryOnly: true)
@@ -28,11 +28,18 @@ public enum SharedPersistence {
             )
         }
         do {
-            return try ModelContainer(for: schema, configurations: [configuration])
+            return try ModelContainer(
+                for: schema,
+                migrationPlan: ShiftAlarmMigrationPlan.self,
+                configurations: [configuration]
+            )
         } catch {
             assertionFailure("Failed to create ModelContainer: \(error)")
             return try! ModelContainer(
-                for: schema, configurations: [ModelConfiguration(isStoredInMemoryOnly: true)])
+                for: schema,
+                migrationPlan: ShiftAlarmMigrationPlan.self,
+                configurations: [ModelConfiguration(isStoredInMemoryOnly: true)]
+            )
         }
     }
 }
