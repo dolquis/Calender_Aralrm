@@ -336,8 +336,8 @@ main へ PR（Linear issue が無い緊急時のみ `feature/<topic>`）。
   - AS-U9b rollback cancel 失敗: `cancel(newID)` も失敗した場合、次回 refresh の
     `live \ known` orphan 検出で新 ID が回収される
   - AS-I1 `refreshScheduledAlarms` の操作列を fake で検証
-  - AS-M1 V1 store migration: 既存 `alarmKitID` が `currentAlarmKitID` に引き継がれ、
-    `pendingCancelIDs` は空配列として読める
+  - AS-M1 pre-P0-4 V1 store migration: 旧 top-level V1 モデルで作成した fixture store の
+    既存 `alarmKitID` が `currentAlarmKitID` に引き継がれ、`pendingCancelIDs` は空配列として読める
 - **対象ファイル**:
   - 新規 `Sources/Services/AlarmKit/AlarmSchedulingClient.swift`
   - 変更 `Sources/Services/AlarmKit/AlarmService.swift`

@@ -63,8 +63,11 @@ public actor AlarmService {
         fireDate: Date,
         label: String,
         soundID: String,
-        kind _: ScheduledAlarmKind
+        kind: ScheduledAlarmKind
     ) async throws -> UUID {
+        // Main and bedtime alarms intentionally share today's AlarmKit configuration;
+        // `kind` stays in the client contract for diagnostics and future presentation splits.
+        _ = kind
         #if canImport(AlarmKit)
         let configuration = AlarmConfigurationBuilder.build(
             fireDate: fireDate,

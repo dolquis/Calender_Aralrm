@@ -302,8 +302,8 @@ struct AlarmSchedulerTests {
     }
 
     @Test
-    func testASM1SchemaV1StoreMigratesAlarmKitIDAndPendingDefaults() throws {
-        let alarmKitID = UUID()
+    func testASM1PreP04V1StoreMigratesAlarmKitIDAndPendingDefaults() throws {
+        let alarmKitID = UUID(uuidString: "00000000-0000-0000-0000-00000000A141")!
         let fileManager = FileManager.default
         let directory = fileManager.temporaryDirectory.appendingPathComponent(
             "ShiftAlarmMigration-\(UUID().uuidString)",
@@ -311,28 +311,7 @@ struct AlarmSchedulerTests {
         )
         try fileManager.createDirectory(at: directory, withIntermediateDirectories: true)
         defer { try? fileManager.removeItem(at: directory) }
-        let storeURL = directory.appendingPathComponent(SharedPersistence.storeFileName)
-
-        do {
-            let oldSchema = Schema(versionedSchema: SchemaV1.self)
-            let oldConfiguration = ModelConfiguration(
-                "MigrationTest",
-                schema: oldSchema,
-                url: storeURL
-            )
-            let oldContainer = try ModelContainer(
-                for: oldSchema,
-                configurations: [oldConfiguration]
-            )
-            let oldContext = ModelContext(oldContainer)
-            oldContext.insert(
-                SchemaV1.ShiftAlarm(
-                    fireDate: fireDate(offset: 1, hour: 8, minute: 0),
-                    label: "Day",
-                    alarmKitID: alarmKitID
-                ))
-            try oldContext.save()
-        }
+        let storeURL = try copyPreP04V1StoreFixture(to: directory)
 
         let newSchema = Schema(versionedSchema: SchemaV2.self)
         let newConfiguration = ModelConfiguration(
@@ -349,6 +328,7 @@ struct AlarmSchedulerTests {
         let alarms = try newContext.fetch(FetchDescriptor<ShiftAlarm>())
 
         #expect(alarms.count == 1)
+        #expect(alarms.first?.label == "Legacy alarm")
         #expect(alarms.first?.currentAlarmKitID == alarmKitID)
         #expect(alarms.first?.alarmKitID == alarmKitID)
         #expect(alarms.first?.pendingCancelIDs.isEmpty == true)
@@ -429,6 +409,24 @@ struct AlarmSchedulerTests {
         let context = ModelContext(container)
         let alarms = try context.fetch(FetchDescriptor<ShiftAlarm>())
         return alarms.sorted { $0.fireDate < $1.fireDate }
+    }
+
+    private func copyPreP04V1StoreFixture(to directory: URL) throws -> URL {
+        let fixtureDirectory = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .appending(path: "Support/Fixtures/PreP04V1Store", directoryHint: .isDirectory)
+        for fileName in [
+            SharedPersistence.storeFileName,
+            "\(SharedPersistence.storeFileName)-shm",
+            "\(SharedPersistence.storeFileName)-wal",
+        ] {
+            try FileManager.default.copyItem(
+                at: fixtureDirectory.appending(path: fileName),
+                to: directory.appendingPathComponent(fileName)
+            )
+        }
+        return directory.appendingPathComponent(SharedPersistence.storeFileName)
     }
 
     private func day(offset: Int) -> Date {
