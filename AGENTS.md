@@ -162,7 +162,8 @@ Linear に起票**してハンドオフする（必要なら GitHub Issue にミ
    - 関連コード・ドキュメント箇所（`file:line` 形式）
    - **詳細仕様・DoD は `ROADMAP.md` §P0-x / `docs/` に残し**、issue 本文は要約＋リンクに留める。
 3. **ラベル（必須）**: `repo:Calender_Aralrm` ＋ 技術領域 `area:*` ＋ 想定担当 `agent:*`
-   （人手検証が要るものは `gate:human-required`）＋ 種別 `Bug` / `Improvement` / `Feature`。
+   （人手検証が要るものは `gate:human-required`）＋ 種別 `kind:bug` / `kind:improvement` / `kind:feature`（旧 `Bug` / `Improvement` / `Feature` は廃止）。
+   - **Codex 実行ポリシー**: `agent:codex-*` は候補（ルーティング）ラベルで Codex 実行許可ではない。Codex Cloud の起動（assign / delegate / `@Codex`）は人間の明示許可があるときのみで、Claude は行わない。正典は `docs/linear-conventions.md` §2.1。
 4. **優先度**: 重要度を Linear priority にマップする — **P0→Urgent / P1→High /
    P2→Medium / P3→Low**。
 5. **GitHub ミラー（任意）**: 外部可視性が必要なら GitHub Issue にもミラーし、Linear 側に
