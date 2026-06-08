@@ -202,9 +202,10 @@ PR マージで Done へ遷移させる。
 
 **週次監査**: Linear の recurring issue **DEV-23**「Linear control tower audit」で、
 project / repo / area / agent ラベル欠落、`Migrated` issue の GitHub link 欠落、
-`gate:human-required` 欠落、tracking issue の子リンク欠落、Done issue の検証メモ欠落を
-点検する。監査は Linear の routing / handoff のみを対象とし、GitHub docs の仕様本文は
-書き換えない。
+`gate:human-required` 欠落、tracking issue の子リンク欠落、Done issue の検証メモ欠落、
+および Codex safety checks（無許可の Codex delegate / mention、放置された delegate 済み
+課題など。`docs/linear-conventions.md` §11）を点検する。監査は Linear の routing / handoff
+のみを対象とし、GitHub docs の仕様本文は書き換えない。
 
 **新規タスク群のレビュー観点（2026-05-27 仕様提案書取り込みで追加）**
 
