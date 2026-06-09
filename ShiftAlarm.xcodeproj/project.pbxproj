@@ -34,6 +34,7 @@
 		432B9C14583C512397DCF488 /* ShiftAlarm.store-wal in Resources */ = {isa = PBXBuildFile; fileRef = 11BF3297B350F41CF2486DDC /* ShiftAlarm.store-wal */; };
 		46045A6FA1E4545493700D67 /* RotationExpander.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0DE13B9D3287B1416F5A8E7 /* RotationExpander.swift */; };
 		47BCB8CE39BFD3E8D6B877CF /* NextAlarmTimelineProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 625E7CC86536529ACA657B37 /* NextAlarmTimelineProvider.swift */; };
+		47C3348EA3730101C94FDF73 /* ShiftBundleValidatorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 67263117617C1CDCCAB3C087 /* ShiftBundleValidatorTests.swift */; };
 		48D9A4D6A5B89234DCE0AA1D /* AlarmSchedulerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44A558A859D64ED35D3CDBDC /* AlarmSchedulerTests.swift */; };
 		4AF4B70277A466A66A7BB27C /* PresetEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C225FB49C8AC78F1CFE806C /* PresetEditorView.swift */; };
 		4BED736D108F38EE3C7339C8 /* ShiftPatternDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0BD8459A156DE552C6D27A01 /* ShiftPatternDetector.swift */; };
@@ -52,6 +53,7 @@
 		5C7030B898B9580DCE2D12CA /* ShiftAlarm.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18F14DAB503EF5551F43C60A /* ShiftAlarm.swift */; };
 		5F5B012597E124236B6C80C6 /* ShareImporterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6F3F7A3FCC6C7B97F57BC23 /* ShareImporterTests.swift */; };
 		5FE572458982245B0FFBBB2E /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 962E4F1AA089D96922581BBE /* SettingsView.swift */; };
+		642752C3B32772C1B17F15A8 /* ShiftBundleValidator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29DD6D6BCA7D699818B96005 /* ShiftBundleValidator.swift */; };
 		651A752EFBF0A55BA5C9716E /* FakeAlarmSchedulingClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 73A9019F34A732E83D802506 /* FakeAlarmSchedulingClient.swift */; };
 		65744F30B5FB98E138CAA895 /* HolidaysJP.json in Resources */ = {isa = PBXBuildFile; fileRef = E6966462FDD7CC0A26D6C5CF /* HolidaysJP.json */; };
 		66D04F9FBFAF82893B9DF58B /* ShiftBundleCodec.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3E0AC7231CD3545E0E4F37BE /* ShiftBundleCodec.swift */; };
@@ -188,6 +190,7 @@
 		21BED0E1FBAD7F09A5AA8DE0 /* SnapshotTestSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SnapshotTestSupport.swift; sourceTree = "<group>"; };
 		238742057ED564017D6B0BD7 /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
 		25EF6E612249CDD90B0DF266 /* AppSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppSettings.swift; sourceTree = "<group>"; };
+		29DD6D6BCA7D699818B96005 /* ShiftBundleValidator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShiftBundleValidator.swift; sourceTree = "<group>"; };
 		2DC4F0D51E132D85E2AF2883 /* RotationListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RotationListView.swift; sourceTree = "<group>"; };
 		35017C9D5FB36DA39CD9EC30 /* DayResolver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DayResolver.swift; sourceTree = "<group>"; };
 		35D13566B54208E503CFBB27 /* DayCellView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DayCellView.swift; sourceTree = "<group>"; };
@@ -215,6 +218,7 @@
 		5EEDC6043940812D023C62FC /* DeepLinkRouterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeepLinkRouterTests.swift; sourceTree = "<group>"; };
 		60156AC0A2670B38EC572EAF /* README.ja.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.ja.md; sourceTree = "<group>"; };
 		625E7CC86536529ACA657B37 /* NextAlarmTimelineProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NextAlarmTimelineProvider.swift; sourceTree = "<group>"; };
+		67263117617C1CDCCAB3C087 /* ShiftBundleValidatorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShiftBundleValidatorTests.swift; sourceTree = "<group>"; };
 		673C606ED6BA23FE6B6938A2 /* ShiftAlarm.store */ = {isa = PBXFileReference; path = ShiftAlarm.store; sourceTree = "<group>"; };
 		6A15CFD2D5D45A1C0701F7D3 /* EventKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = EventKit.framework; path = System/Library/Frameworks/EventKit.framework; sourceTree = SDKROOT; };
 		6FED4227C112BBB2ED2E01C3 /* AppIntents.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppIntents.framework; path = System/Library/Frameworks/AppIntents.framework; sourceTree = SDKROOT; };
@@ -483,6 +487,7 @@
 				928D40B936D542854FCC6380 /* ShareExporter.swift */,
 				160C6B232ACAFA66D4BF9A70 /* ShareImporter.swift */,
 				3E0AC7231CD3545E0E4F37BE /* ShiftBundleCodec.swift */,
+				29DD6D6BCA7D699818B96005 /* ShiftBundleValidator.swift */,
 			);
 			path = Sharing;
 			sourceTree = "<group>";
@@ -550,6 +555,7 @@
 				5B9A56B5CB8BC65C024F6709 /* ICSExportDateRangeTests.swift */,
 				11E8D2A64477D09713A87A66 /* ICSExporterTests.swift */,
 				D6F3F7A3FCC6C7B97F57BC23 /* ShareImporterTests.swift */,
+				67263117617C1CDCCAB3C087 /* ShiftBundleValidatorTests.swift */,
 				F826880AB3E9631FE7905EA4 /* SleepIntentHelperTests.swift */,
 				059A391B8DFBD9D78DF1E522 /* SleepSampleWriterTests.swift */,
 			);
@@ -916,6 +922,7 @@
 				D4CDC0B8C3557D54B63419A4 /* RotationExpanderTests.swift in Sources */,
 				5F5B012597E124236B6C80C6 /* ShareImporterTests.swift in Sources */,
 				BA6498C6496DB7B7CA011551 /* ShiftBundleCodecTests.swift in Sources */,
+				47C3348EA3730101C94FDF73 /* ShiftBundleValidatorTests.swift in Sources */,
 				1AF0CB961721667FB6A16D1F /* ShiftPatternDetectorTests.swift in Sources */,
 				C7F62952D8212BE0130B79DC /* SleepIntentHelperTests.swift in Sources */,
 				DDC572A572EFD4828440ADB8 /* SleepSampleWriterTests.swift in Sources */,
@@ -984,6 +991,7 @@
 				88B5287B1ECD5E14F61F228C /* ShiftAlarmAttributes.swift in Sources */,
 				EA7B5A2C535ED25F0E403F9B /* ShiftAlarmShortcutsProvider.swift in Sources */,
 				66D04F9FBFAF82893B9DF58B /* ShiftBundleCodec.swift in Sources */,
+				642752C3B32772C1B17F15A8 /* ShiftBundleValidator.swift in Sources */,
 				4BED736D108F38EE3C7339C8 /* ShiftPatternDetector.swift in Sources */,
 				54DCA27615376194E3668B8E /* ShiftPreset.swift in Sources */,
 				E4677219743EEA60364CBB9C /* ShortcutsOnboardingView.swift in Sources */,

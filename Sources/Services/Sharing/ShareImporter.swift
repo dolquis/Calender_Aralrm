@@ -10,10 +10,15 @@ public struct ImportPreview: Sendable {
     public var updatedAssignments: Int
     public var addedOverrides: Int
     public var updatedOverrides: Int
+    public var validation: ShiftBundleValidationResult = .valid
 
     public var hasChanges: Bool {
         addedPresets + updatedPresets + addedPatterns + updatedPatterns + addedAssignments
             + updatedAssignments + addedOverrides + updatedOverrides > 0
+    }
+
+    public var canApply: Bool {
+        hasChanges && validation.isValid
     }
 }
 
@@ -22,6 +27,7 @@ public enum ShareImporter {
     public static func preview(
         bundle: ShiftBundle, container: ModelContainer, calendar: Calendar = .current
     ) -> ImportPreview {
+        let validation = ShiftBundleValidator.validate(bundle)
         let context = ModelContext(container)
         let existingPresets: [UUID: ShiftPreset] =
             ((try? context.fetch(FetchDescriptor<ShiftPreset>())) ?? [])
@@ -72,12 +78,17 @@ public enum ShareImporter {
                 p.updatedOverrides += 1
             }
         }
+        p.validation = validation
         return p
     }
 
     public static func apply(
         bundle: ShiftBundle, container: ModelContainer, calendar: Calendar = .current
     ) throws {
+        let validation = ShiftBundleValidator.validate(bundle)
+        guard validation.isValid else {
+            throw ShiftBundleValidationError(result: validation)
+        }
         let context = ModelContext(container)
         let presets = applyPresets(bundle.presets, context: context)
         applyPatterns(bundle.patterns, context: context, calendar: calendar)

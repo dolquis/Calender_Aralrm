@@ -75,7 +75,7 @@ bash scripts/verify.sh test
 ```
 
 テストは Apple の [Swift Testing](https://developer.apple.com/documentation/testing)
-（`@Test` / `#expect`）で記述しており、現在は 103 件のテスト（16 テストスイート / 19 ファイル）
+（`@Test` / `#expect`）で記述しており、現在は 121 件のテスト（17 テストスイート / 20 ファイル）
 で Domain / Services / App Intents / HealthKit 補助ロジック / Background refresh / Deep link /
 Sharing / Snapshot をカバーしています。DayCell の snapshot test 5 件は通常 `verify.sh` では
 skip され、`SNAPSHOT_TESTING_ENABLED=1` 指定時に記録 / 検証されます。
@@ -132,6 +132,9 @@ readiness script が意図的に失敗します。device build script は同じ 
   登録しませんか？」と提案する。単純な昼夜交互週から多週の複雑パターンまでカバー。
 - **家族向けカレンダー（`.ics`）エクスポート** — 割当を標準の `.ics` ファイルとして
   書き出し、家族が自分のカレンダーアプリから購読できる。
+- **`.shiftalarm` 入力バリデーション** — Codable を超えた時刻範囲・周期長・重複 ID /
+  日付・件数上限・参照切れ preset の検査により、壊れた共有ファイルや URL import が
+  ローカルストアを壊さないようにする。
 
 設計済み（未実装）:
 

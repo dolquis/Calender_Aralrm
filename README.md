@@ -94,7 +94,7 @@ bash scripts/verify.sh test
 ```
 
 The Tests target is written with Apple's [Swift Testing](https://developer.apple.com/documentation/testing)
-(`@Test` / `#expect`) and currently runs 103 tests across 16 test suites (19 files) covering domain,
+(`@Test` / `#expect`) and currently runs 121 tests across 17 test suites (20 files) covering domain,
 services, App Intents, HealthKit helpers, background refresh, deep links, sharing, and snapshot
 coverage. Five DayCell snapshot tests are skipped by default unless `SNAPSHOT_TESTING_ENABLED=1` is
 set.
@@ -155,15 +155,15 @@ Recently shipped:
   is detected.
 - **Family calendar export (`.ics`)** — export assignments as a standard `.ics` file so family
   members can subscribe from their own calendar app.
+- **`.shiftalarm` input validation** — semantic checks beyond Codable (hour / minute /
+  cycle length / duplicate IDs / size limits / missing preset references) prevent malformed
+  share files or URL imports from corrupting the local store.
 
 Designed, not yet implemented:
 
 - **Alarm reliability diagnostics** — a settings screen that shows at a glance whether the
   next alarm will actually fire (permissions, scheduler sync, App Group, BG refresh,
   Live Activity, HealthKit), with one-tap recovery actions when something is off.
-- **`.shiftalarm` input validation** — semantic checks beyond Codable (hour / minute /
-  cycle length / duplicate IDs / size limits / missing preset references) so that a
-  malformed share or URL import can never corrupt the local store.
 - **Unified diff preview** — a shared change-preview abstraction reused by `.shiftalarm`
   import, image import, pattern-drift suggestions, and day-of-week rule expansion, so
   every destructive change is reviewed before it lands.

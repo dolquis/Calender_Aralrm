@@ -4,23 +4,26 @@
 **開発仕様兼ロードマップ**です。タスクは優先度（P0 → P3）順、各項目に
 **目的 / 対象ファイル / 完了条件 (DoD)** を明記しています。
 
-最終更新: 2026-06-07
+最終更新: 2026-06-09
 対象ブランチ運用: Linear issue から生成されるブランチ名 `dolquis/dev-xx-*` を基本とし、
 main へ PR（Linear issue が無い緊急時のみ `feature/<topic>`）。
 
 ---
 
-## 0. 現状サマリ（2026-06-07 時点）
+## 0. 現状サマリ（2026-06-09 時点）
 
 - iOS 26+ / Swift 6 / SwiftUI + SwiftData / AlarmKit ベースのシフト勤務向けアラームアプリ。
 - 主要レイヤー（Domain / Services / Features / Widget / Live Activity / Sharing / Deep link / ja-en ローカライズ）は実装済み。
 - **P1 群（オンボーディング / a11y / 空状態 UX / Widget タイムライン）と P2-2（Bedtime reminder, Sleep schedule, HealthKit, App Intents）まで完了**。
 - **P2-α（ShiftPatternDetector + RotationListView 提案カード）および P2-η（ICSExporter + ICSExportView）を実装済み（PR #19）**。
+- **P0-5（`.shiftalarm` セマンティックバリデーション層）を実装済み**。decode 後 / preview
+  前 / apply 前に `ShiftBundleValidator` を通し、重大 error は apply 不可、warning は preview
+  に表示する。
 - P0-1 は Xcode 26.5 / iOS 26.5 SDK でコードレベル検証に着手済み。
   `AlarmPresentation.Alert.stopButton` の iOS 26.1 deprecation を回避し、
   `AlarmManager.AlarmConfiguration.alarm(...)` に寄せた。実機確認は未完了。
-- テストは Apple の Swift Testing（`@Test` / `#expect`）で記述。103 件 (16 スイート /
-  19 ファイル) 緑。通常の `scripts/verify.sh` では 5 件の snapshot test は
+- テストは Apple の Swift Testing（`@Test` / `#expect`）で記述。121 件 (17 スイート /
+  20 ファイル) 緑。通常の `scripts/verify.sh` では 5 件の snapshot test は
   `SNAPSHOT_TESTING_ENABLED=1` 未指定のため skip。
   CI は `macos-26` / Xcode 26+ で `scripts/verify.sh` を実行。
 - **状態・進捗・優先度の正典は Linear**（team `Dev` / project **Shift Alarm /
@@ -30,7 +33,7 @@ main へ PR（Linear issue が無い緊急時のみ `feature/<topic>`）。
   唯一の正。
   現時点で登録済みの主な Linear issue（GitHub ミラー）:
   - **DEV-17**（GH #28）`.shiftalarm` セマンティックバリデーション層（P0-5 / 参照切れ
-    preset によるアラーム沈黙バグ）→ §P0-5
+    preset によるアラーム沈黙バグ、実装済み）→ §P0-5
   - **DEV-18**（GH #29）AlarmKit/ActivityKit 実機検証 & Xcode 更新時 API 再確認（P0-1）→ §P0-1
   - **DEV-19**（GH #30）実 signing / entitlement 値の設定（P0-2）→ §P0-2
   - **DEV-20**（GH #31）ゴールデンパス手動検証（P0-3）→ §P0-3
@@ -373,9 +376,11 @@ main へ PR（Linear issue が無い緊急時のみ `feature/<topic>`）。
   - 既存 `AlarmService` 公開 API 非破壊。
   - Swift 6 strict concurrency 下で `Sendable` 警告が増えない。
 
-### P0-5. `.shiftalarm` バリデーション層（未着手）
+### P0-5. `.shiftalarm` バリデーション層 ✅ 実装済み (DEV-17)
 
-> 追跡: Linear DEV-17（GitHub #28 ミラー）。参照切れ preset によるアラーム沈黙バグを含む。別セッションで実装予定。
+> 追跡: Linear DEV-17（GitHub #28 ミラー）。参照切れ preset によるアラーム沈黙バグを含む。
+> 2026-06-09 実装: `ShiftBundleValidator` を追加し、`ShareImporter.preview` / `apply` 前段で
+> 再検証する。
 
 > 2026-05-27 提案書取り込みにより **§P3-9 から昇格**。本文は当セクションを正とし、
 > §P3-9 はアンカー兼履歴として最小化する。データモデル詳細は
@@ -454,7 +459,7 @@ main へ PR（Linear issue が無い緊急時のみ `feature/<topic>`）。
 - **検査項目（ignore）**: unknown fields（forward compatibility）。
 - **UI**: 既存 `ShareImporter` の preview / apply 前段で呼び出し、error がある場合は
   Apply ボタンを disabled にする。`ImportPreviewView` への抽出は §P1-6 で実施。
-- **追加テスト** (`Tests/ServicesTests/ShiftBundleValidatorTests.swift` 新規):
+- **追加テスト** (`Tests/ServicesTests/ShiftBundleValidatorTests.swift`):
   - SBV-U1 正常 bundle は valid
   - SBV-U2 unsupported version は error
   - SBV-U3 preset.defaultAlarmHour 24 は error
@@ -476,13 +481,14 @@ main へ PR（Linear issue が無い緊急時のみ `feature/<topic>`）。
   - SBV-I1 Import preview 前に validator が呼ばれる
   - SBV-I2 error ありで Apply ボタン disabled
 - **対象ファイル**:
-  - 新規 `Sources/Services/Sharing/ShiftBundleValidator.swift`
+  - `Sources/Services/Sharing/ShiftBundleValidator.swift`
   - 変更 `Sources/Services/Sharing/ShareImporter.swift`
-  - 新規 `Tests/ServicesTests/ShiftBundleValidatorTests.swift`
+  - `Tests/ServicesTests/ShiftBundleValidatorTests.swift`
   - 変更 `Resources/Localizable.xcstrings`（ja / en の error / warning メッセージ）
 - **DoD**:
   - 壊れた bundle を apply できない。
   - 警告は preview で読める。
+  - `bash scripts/verify.sh test` で SBV-U1〜U14 / SBV-I1〜I2 を含む 121 tests が緑。
   - 既存正常系 `ShareImporterTests` が壊れない。
   - 参照切れ presetID でクラッシュしない。
   - ja / en ローカライズ済み。
@@ -1195,7 +1201,7 @@ main へ PR（Linear issue が無い緊急時のみ `feature/<topic>`）。
   - `Tests/ServicesTests/SleepIntentHelperTests.swift` — App Intents 用 sleep window 取得。
   - `Tests/ServicesTests/SleepSampleWriterTests.swift` — HealthKit 書込み対象 window 抽出。
   - `Tests/DomainTests/SleepWindowResolverTests.swift` — bedtime 計算 / 端境ケース。
-- 現状: Swift Testing で 16 スイート / 103 テスト緑（うち 5 件 snapshot は通常 verify では skip）。
+- 現状: Swift Testing で 17 スイート / 121 テスト緑（うち 5 件 snapshot は通常 verify では skip）。
 
 ### P3-2. UI / スナップショットテスト（一部着手）
 
@@ -1225,8 +1231,8 @@ main へ PR（Linear issue が無い緊急時のみ `feature/<topic>`）。
 
 - **目的（達成済み）**: XCTest 相当のテストを Apple の Swift Testing（`@Test`）で記述し、
   `#expect` / `#require` ベースの表現力と並列実行を得る。
-- **現状**: `Tests/` 配下 19 ファイル / 16 テストスイート（`struct` + `@Test`） /
-  103 テスト関数。`XCTestCase` サブクラスは 0。`@testable import ShiftAlarm` を維持。
+- **現状**: `Tests/` 配下 20 ファイル / 17 テストスイート（`struct` + `@Test`） /
+  121 テスト関数。`XCTestCase` サブクラスは 0。`@testable import ShiftAlarm` を維持。
   `project.yml` のテストターゲット定義は変更不要（Swift Testing はツールチェーン同梱）。
 - **採用済みの対応**:
   - `XCTestCase` サブクラス → `struct` + `@Test` 関数。
@@ -1306,7 +1312,7 @@ main へ PR（Linear issue が無い緊急時のみ `feature/<topic>`）。
 ### P3-9. `.shiftalarm` import バリデーション層 → **§P0-5 へ昇格 (2026-05-27)**
 
 > 2026-05-27 仕様提案書取り込みにより **§2 P0-5 に昇格**。本項は履歴アンカーとして
-> 残す。実装着手は §P0-5 を正とする（`ShiftBundleValidationCode` enum / error vs
+> 残す。実装内容は §P0-5 を正とする（`ShiftBundleValidationCode` enum / error vs
 > warning 区分 / テスト ID が確定している）。
 >
 > 根拠: 第三者レビュー#1 §4.5
@@ -1451,7 +1457,7 @@ main へ PR（Linear issue が無い緊急時のみ `feature/<topic>`）。
 | `Sources/Domain/Logic/DayResolver.swift` | 優先度: 手動 > 祝日 > ローテ > なし | PR #5 で削除済み preset のフォールバックを復元済み |
 | `Sources/Domain/Logic/RotationExpander.swift` | アンカー基準の周期展開（負オフセット可） | 不正な cycle/slot 数はスキップ |
 | `Sources/Services/Sharing/ShiftBundleCodec.swift` | `.shiftalarm` JSON | 日付は `CalendarDay`（PR #5）。legacy `exportedAt` 文字列受け入れ済み |
-| `Sources/Services/Sharing/ShiftBundleValidator.swift` (新規予定 / P3-9) | `.shiftalarm` 入力の意味検査 | `ShiftBundleCodec` decode 後、`ShareImporter.preview` / `apply` の前に挟む |
+| `Sources/Services/Sharing/ShiftBundleValidator.swift` | `.shiftalarm` 入力の意味検査 | `ShiftBundleCodec` decode 後、`ShareImporter.preview` / `apply` の前に挟む |
 | `Sources/Services/Holidays/EventKitHolidayProvider.swift` | actor、終日イベント取得 | `NSCalendarsFullAccessUsageDescription` 必須 |
 | `App/AppDependencies.swift` | DI ハブ / pendingImport / settings singleton | PR #5 で `ensureSettingsSingleton()` 復元 |
 | `Sources/Shared/URLScheme/DeepLinkRouter.swift` | `shiftalarm://import?payload=…` | `AppDependencies.pendingImport` 経由で ImportView を表示 |
@@ -1491,9 +1497,9 @@ main へ PR（Linear issue が無い緊急時のみ `feature/<topic>`）。
    `AlarmService` を準拠、`AlarmScheduler` を protocol ベースに変更。
    `FakeAlarmSchedulingClient` で AS-U1〜U9 / AS-I1 を緑にする。
 
-3. **P0-5 `.shiftalarm` バリデーション**: `ShiftBundleValidator` 新設、
-   `ShareImporter` の preview / apply 前段で呼び出し、SBV-U1〜U8 / SBV-I1〜I2 を
-   緑にする。ja / en メッセージ整備。
+3. **P0-5 `.shiftalarm` バリデーション**: DEV-17 で実装済み。`ShiftBundleValidator`、
+   `ShareImporter` の preview / apply 前段再検証、SBV-U1〜U14 / SBV-I1〜I2、
+   ja / en メッセージ整備まで完了。
 
 4. **A1 ドリフト検出 UI 統合（P1 相当）**: `ShiftPatternDetector.detectDrift()` は
    実装済みのため、`RotationListView` にドリフト検出カードを追加し、受入で旧
