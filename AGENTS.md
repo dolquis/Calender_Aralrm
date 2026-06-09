@@ -162,7 +162,8 @@ Linear に起票**してハンドオフする（必要なら GitHub Issue にミ
    - 関連コード・ドキュメント箇所（`file:line` 形式）
    - **詳細仕様・DoD は `ROADMAP.md` §P0-x / `docs/` に残し**、issue 本文は要約＋リンクに留める。
 3. **ラベル（必須）**: `repo:Calender_Aralrm` ＋ 技術領域 `area:*` ＋ 想定担当 `agent:*`
-   （人手検証が要るものは `gate:human-required`）＋ 種別 `Bug` / `Improvement` / `Feature`。
+   （人手検証が要るものは `gate:human-required`）＋ 種別 `Bug` / `Improvement` / `Feature`（`kind:*` への統一は Phase 4。移行ルールは `docs/linear-conventions.md` §4）。
+   - **Codex 実行ポリシー**: `agent:codex-*` は候補（ルーティング）ラベルで Codex 実行許可ではない。Codex Cloud の起動（assign / delegate / mention）は人間の明示許可があるときのみで、Claude は行わない。正典は `docs/linear-conventions.md` §2.1。
 4. **優先度**: 重要度を Linear priority にマップする — **P0→Urgent / P1→High /
    P2→Medium / P3→Low**。
 5. **GitHub ミラー（任意）**: 外部可視性が必要なら GitHub Issue にもミラーし、Linear 側に
@@ -201,9 +202,10 @@ PR マージで Done へ遷移させる。
 
 **週次監査**: Linear の recurring issue **DEV-23**「Linear control tower audit」で、
 project / repo / area / agent ラベル欠落、`Migrated` issue の GitHub link 欠落、
-`gate:human-required` 欠落、tracking issue の子リンク欠落、Done issue の検証メモ欠落を
-点検する。監査は Linear の routing / handoff のみを対象とし、GitHub docs の仕様本文は
-書き換えない。
+`gate:human-required` 欠落、tracking issue の子リンク欠落、Done issue の検証メモ欠落、
+および Codex safety checks（無許可の Codex delegate / mention、放置された delegate 済み
+課題など。`docs/linear-conventions.md` §11）を点検する。監査は Linear の routing / handoff
+のみを対象とし、GitHub docs の仕様本文は書き換えない。
 
 **新規タスク群のレビュー観点（2026-05-27 仕様提案書取り込みで追加）**
 
