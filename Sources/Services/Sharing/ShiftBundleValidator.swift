@@ -76,7 +76,13 @@ public struct ShiftBundleValidationError: Error, LocalizedError, Equatable, Send
 }
 
 public enum ShiftBundleValidator {
+    public static let fallbackColorHex = "#1E88E5"
     public static let supportedVersion = 1
+
+    public static func normalizedColorHex(_ value: String) -> String {
+        let text = value.trimmingCharacters(in: .whitespacesAndNewlines)
+        return isValidColorHex(text) ? text : fallbackColorHex
+    }
 
     private enum Limits {
         static let presets = 100
@@ -126,6 +132,7 @@ public enum ShiftBundleValidator {
             },
             errors: &errors)
         checkDuplicateAssignmentDates(bundle.assignments, errors: &errors)
+        checkDuplicateOverrideDates(bundle.overrides, errors: &errors)
 
         for (index, preset) in bundle.presets.enumerated() {
             let path = "presets[\(index)]"
@@ -229,6 +236,18 @@ public enum ShiftBundleValidator {
         for (index, assignment) in assignments.enumerated() {
             if !seen.insert(assignment.date).inserted {
                 errors.append(issue(.duplicateDate, path: "assignments[\(index)].date"))
+            }
+        }
+    }
+
+    private static func checkDuplicateOverrideDates(
+        _ overrides: [ShiftBundle.OverrideDTO],
+        errors: inout [ShiftBundleValidationIssue]
+    ) {
+        var seen = Set<CalendarDay>()
+        for (index, override) in overrides.enumerated() {
+            if !seen.insert(override.date).inserted {
+                errors.append(issue(.duplicateDate, path: "overrides[\(index)].date"))
             }
         }
     }

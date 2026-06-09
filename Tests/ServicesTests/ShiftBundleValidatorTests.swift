@@ -121,10 +121,12 @@ struct ShiftBundleValidatorTests {
     func sbvU11_duplicateAssignmentDateIsError() {
         var bundle = makeBundle()
         bundle.assignments.append(bundle.assignments[0])
+        bundle.overrides.append(bundle.overrides[0])
 
         let result = ShiftBundleValidator.validate(bundle)
 
         #expect(hasError(result, .duplicateDate, path: "assignments[1].date"))
+        #expect(hasError(result, .duplicateDate, path: "overrides[1].date"))
     }
 
     @Test
@@ -199,6 +201,23 @@ struct ShiftBundleValidatorTests {
         #expect(throws: ShiftBundleValidationError.self) {
             try ShareImporter.apply(bundle: bundle, container: container)
         }
+    }
+
+    @Test
+    func warningOnlyInvalidColorHexAppliesDefaultColor() throws {
+        let container = SharedPersistence.makeContainer(inMemory: true)
+        var bundle = makeBundle()
+        bundle.presets[0].colorHex = "zzzzzz"
+
+        let preview = ShareImporter.preview(bundle: bundle, container: container)
+        try ShareImporter.apply(bundle: bundle, container: container)
+
+        let context = ModelContext(container)
+        let presets = try context.fetch(FetchDescriptor<ShiftPreset>())
+
+        #expect(preview.canApply)
+        #expect(hasWarning(preview.validation, .invalidColorHex, path: "presets[0].colorHex"))
+        #expect(presets.first?.colorHex == ShiftBundleValidator.fallbackColorHex)
     }
 
     private func makeBundle() -> ShiftBundle {

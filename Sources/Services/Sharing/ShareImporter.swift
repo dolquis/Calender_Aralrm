@@ -105,9 +105,10 @@ public enum ShareImporter {
         var byID: [UUID: ShiftPreset] = ((try? context.fetch(FetchDescriptor<ShiftPreset>())) ?? [])
             .reduce(into: [:]) { $0[$1.id] = $1 }
         for p in presets {
+            let colorHex = ShiftBundleValidator.normalizedColorHex(p.colorHex)
             if let existing = byID[p.id] {
                 existing.name = p.name
-                existing.colorHex = p.colorHex
+                existing.colorHex = colorHex
                 existing.defaultAlarmHour = p.defaultAlarmHour
                 existing.defaultAlarmMinute = p.defaultAlarmMinute
                 existing.soundID = p.soundID
@@ -116,7 +117,7 @@ public enum ShareImporter {
                 let new = ShiftPreset(
                     id: p.id,
                     name: p.name,
-                    colorHex: p.colorHex,
+                    colorHex: colorHex,
                     defaultAlarmHour: p.defaultAlarmHour,
                     defaultAlarmMinute: p.defaultAlarmMinute,
                     soundID: p.soundID,

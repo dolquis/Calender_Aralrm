@@ -22,7 +22,7 @@ main へ PR（Linear issue が無い緊急時のみ `feature/<topic>`）。
 - P0-1 は Xcode 26.5 / iOS 26.5 SDK でコードレベル検証に着手済み。
   `AlarmPresentation.Alert.stopButton` の iOS 26.1 deprecation を回避し、
   `AlarmManager.AlarmConfiguration.alarm(...)` に寄せた。実機確認は未完了。
-- テストは Apple の Swift Testing（`@Test` / `#expect`）で記述。121 件 (17 スイート /
+- テストは Apple の Swift Testing（`@Test` / `#expect`）で記述。122 件 (17 スイート /
   20 ファイル) 緑。通常の `scripts/verify.sh` では 5 件の snapshot test は
   `SNAPSHOT_TESTING_ENABLED=1` 未指定のため skip。
   CI は `macos-26` / Xcode 26+ で `scripts/verify.sh` を実行。
@@ -450,12 +450,12 @@ main へ PR（Linear issue が無い緊急時のみ `feature/<topic>`）。
   `overrides[N].replacementPresetID`。テスト ID **SBV-U12**（override の
   preset 参照切れ + skipAlarm=false で error）と **SBV-U13**（skipAlarm=true
   で warning）を新設。
-- **`duplicateDate` を error に昇格**: 同一 `assignments[*].date` が複数回現れる
-  bundle は §P1-6 の conflict resolution UI が出るまで一律 error として reject
-  する。現行 `ShareImporter` は new assignment では先勝ち / 既存 assignment は
-  上書きの連発で **deterministic でない部分適用** が起きる。P1-6 完了後に warning
-  へ降格し preview で「後勝ち / 先勝ち / スキップ」を選ばせる予定（その時点で
-  warning 区分に戻し、判定マトリクスを再更新する）。
+- **`duplicateDate` を error に昇格**: 同一 `assignments[*].date` または
+  `overrides[*].date` が複数回現れる bundle は §P1-6 の conflict resolution UI が出るまで
+  一律 error として reject する。現行 `ShareImporter` は new assignment では先勝ち /
+  既存 assignment / override は上書きの連発で **deterministic でない部分適用** が起きる。
+  P1-6 完了後に warning へ降格し preview で「後勝ち / 先勝ち / スキップ」を選ばせる予定
+  （その時点で warning 区分に戻し、判定マトリクスを再更新する）。
 - **検査項目（ignore）**: unknown fields（forward compatibility）。
 - **UI**: 既存 `ShareImporter` の preview / apply 前段で呼び出し、error がある場合は
   Apply ボタンを disabled にする。`ImportPreviewView` への抽出は §P1-6 で実施。
@@ -472,7 +472,7 @@ main へ PR（Linear issue が無い緊急時のみ `feature/<topic>`）。
   - SBV-U9 assignment.overrideAlarmHour 24 は error（path に
     `assignments[N].overrideAlarmHour` を含む）
   - SBV-U10 assignment.overrideAlarmMinute 60 は error（同上 path）
-  - SBV-U11 duplicate date は error（P1-6 完了までは一律 reject）
+  - SBV-U11 duplicate assignment / override date は error（P1-6 完了までは一律 reject）
   - SBV-U12 overrides[N].replacementPresetID 参照切れ + `skipAlarm == false`
     は error
   - SBV-U13 overrides[N].replacementPresetID 参照切れ + `skipAlarm == true`
@@ -488,7 +488,7 @@ main へ PR（Linear issue が無い緊急時のみ `feature/<topic>`）。
 - **DoD**:
   - 壊れた bundle を apply できない。
   - 警告は preview で読める。
-  - `bash scripts/verify.sh test` で SBV-U1〜U14 / SBV-I1〜I2 を含む 121 tests が緑。
+  - `bash scripts/verify.sh test` で SBV-U1〜U14 / SBV-I1〜I2 を含む 122 tests が緑。
   - 既存正常系 `ShareImporterTests` が壊れない。
   - 参照切れ presetID でクラッシュしない。
   - ja / en ローカライズ済み。
@@ -1201,7 +1201,7 @@ main へ PR（Linear issue が無い緊急時のみ `feature/<topic>`）。
   - `Tests/ServicesTests/SleepIntentHelperTests.swift` — App Intents 用 sleep window 取得。
   - `Tests/ServicesTests/SleepSampleWriterTests.swift` — HealthKit 書込み対象 window 抽出。
   - `Tests/DomainTests/SleepWindowResolverTests.swift` — bedtime 計算 / 端境ケース。
-- 現状: Swift Testing で 17 スイート / 121 テスト緑（うち 5 件 snapshot は通常 verify では skip）。
+- 現状: Swift Testing で 17 スイート / 122 テスト緑（うち 5 件 snapshot は通常 verify では skip）。
 
 ### P3-2. UI / スナップショットテスト（一部着手）
 
@@ -1232,7 +1232,7 @@ main へ PR（Linear issue が無い緊急時のみ `feature/<topic>`）。
 - **目的（達成済み）**: XCTest 相当のテストを Apple の Swift Testing（`@Test`）で記述し、
   `#expect` / `#require` ベースの表現力と並列実行を得る。
 - **現状**: `Tests/` 配下 20 ファイル / 17 テストスイート（`struct` + `@Test`） /
-  121 テスト関数。`XCTestCase` サブクラスは 0。`@testable import ShiftAlarm` を維持。
+  122 テスト関数。`XCTestCase` サブクラスは 0。`@testable import ShiftAlarm` を維持。
   `project.yml` のテストターゲット定義は変更不要（Swift Testing はツールチェーン同梱）。
 - **採用済みの対応**:
   - `XCTestCase` サブクラス → `struct` + `@Test` 関数。
