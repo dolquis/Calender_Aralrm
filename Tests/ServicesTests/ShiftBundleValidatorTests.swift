@@ -67,22 +67,44 @@ struct ShiftBundleValidatorTests {
     }
 
     @Test
-    func sbvU7_missingAssignmentPresetReferenceSeverityFollowsSkipAlarm() {
+    func sbvU7_missingAssignmentPresetReferenceSeverityFollowsFireability() {
         var errorBundle = makeBundle()
         errorBundle.assignments[0].presetID = Self.missingPresetID
+        errorBundle.assignments[0].overrideAlarmHour = nil
+        errorBundle.assignments[0].overrideAlarmMinute = nil
         errorBundle.assignments[0].skipAlarm = false
 
         var warningBundle = makeBundle()
         warningBundle.assignments[0].presetID = Self.missingPresetID
         warningBundle.assignments[0].skipAlarm = true
 
+        var customTimeBundle = makeBundle()
+        customTimeBundle.assignments[0].presetID = nil
+        customTimeBundle.assignments[0].overrideAlarmHour = 6
+        customTimeBundle.assignments[0].overrideAlarmMinute = 45
+        customTimeBundle.assignments[0].skipAlarm = false
+
+        var stalePresetCustomTimeBundle = makeBundle()
+        stalePresetCustomTimeBundle.assignments[0].presetID = Self.missingPresetID
+        stalePresetCustomTimeBundle.assignments[0].overrideAlarmHour = 6
+        stalePresetCustomTimeBundle.assignments[0].overrideAlarmMinute = 45
+        stalePresetCustomTimeBundle.assignments[0].skipAlarm = false
+
         let errorResult = ShiftBundleValidator.validate(errorBundle)
         let warningResult = ShiftBundleValidator.validate(warningBundle)
+        let customTimeResult = ShiftBundleValidator.validate(customTimeBundle)
+        let stalePresetCustomTimeResult = ShiftBundleValidator.validate(stalePresetCustomTimeBundle)
 
         #expect(hasError(errorResult, .missingPresetReference, path: "assignments[0].presetID"))
         #expect(warningResult.isValid)
         #expect(
             hasWarning(warningResult, .missingPresetReference, path: "assignments[0].presetID"))
+        #expect(customTimeResult == .valid)
+        #expect(stalePresetCustomTimeResult.isValid)
+        #expect(
+            hasWarning(
+                stalePresetCustomTimeResult, .missingPresetReference,
+                path: "assignments[0].presetID"))
     }
 
     @Test
@@ -155,13 +177,14 @@ struct ShiftBundleValidatorTests {
     }
 
     @Test
-    func sbvU14_missingPatternSlotPresetReferenceIsAlwaysError() {
+    func sbvU14_missingPatternSlotPresetReferenceIsWarning() {
         var bundle = makeBundle()
         bundle.patterns[0].slots[0] = Self.missingPresetID
 
         let result = ShiftBundleValidator.validate(bundle)
 
-        #expect(hasError(result, .missingPresetReference, path: "patterns[0].slots[0]"))
+        #expect(result.isValid)
+        #expect(hasWarning(result, .missingPresetReference, path: "patterns[0].slots[0]"))
     }
 
     @Test
@@ -193,6 +216,8 @@ struct ShiftBundleValidatorTests {
         let container = SharedPersistence.makeContainer(inMemory: true)
         var bundle = makeBundle()
         bundle.assignments[0].presetID = Self.missingPresetID
+        bundle.assignments[0].overrideAlarmHour = nil
+        bundle.assignments[0].overrideAlarmMinute = nil
 
         let preview = ShareImporter.preview(bundle: bundle, container: container)
 

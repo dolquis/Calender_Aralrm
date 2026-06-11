@@ -163,7 +163,7 @@ public enum ShiftBundleValidator {
             }
             for (slotIndex, presetID) in pattern.slots.enumerated() {
                 guard let presetID, !presetIDs.contains(presetID) else { continue }
-                addError(.missingPresetReference, path: "\(path).slots[\(slotIndex)]")
+                addWarning(.missingPresetReference, path: "\(path).slots[\(slotIndex)]")
             }
         }
 
@@ -181,11 +181,11 @@ public enum ShiftBundleValidator {
             if let presetID = assignment.presetID {
                 if !presetIDs.contains(presetID) {
                     let target = "\(path).presetID"
-                    assignment.skipAlarm
+                    assignment.skipAlarm || hasCompleteOverrideTime(assignment)
                         ? addWarning(.missingPresetReference, path: target)
                         : addError(.missingPresetReference, path: target)
                 }
-            } else {
+            } else if !hasCompleteOverrideTime(assignment) {
                 assignment.skipAlarm
                     ? addWarning(.missingPresetReference, path: "\(path).presetID")
                     : addError(.missingPresetReference, path: "\(path).presetID")
@@ -250,6 +250,14 @@ public enum ShiftBundleValidator {
                 errors.append(issue(.duplicateDate, path: "overrides[\(index)].date"))
             }
         }
+    }
+
+    private static func hasCompleteOverrideTime(_ assignment: ShiftBundle.AssignmentDTO) -> Bool {
+        guard
+            let hour = assignment.overrideAlarmHour,
+            let minute = assignment.overrideAlarmMinute
+        else { return false }
+        return isValidHour(hour) && isValidMinute(minute)
     }
 
     private static func issue(

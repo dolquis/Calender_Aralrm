@@ -1225,10 +1225,10 @@ assert（γ-U12）。
 - **AS-U1〜U9 / AS-I1**: AlarmScheduler fake 注入（§P0-4）。U9 は §7.1 step 4
   の save-failure rollback（save throw 時に新 ID を cancel して orphan を防ぐ）。
 - **SBV-U1〜U14 / SBV-I1〜I2**: `.shiftalarm` バリデーション（§P0-5）。U7 は
-  `skipAlarm` 真偽別 / U9・U10 は assignment override hour・minute 範囲 /
+  assignment missing preset の fire 可否境界 / U9・U10 は assignment override hour・minute 範囲 /
   U11 は duplicate date error 昇格 / U12・U13 は
   `overrides[N].replacementPresetID` の `skipAlarm` 真偽別 / U14 は
-  `patterns[N].slots[M]` の missing preset 参照。`tooManyItems` は preset /
+  `patterns[N].slots[M]` の missing preset 参照 warning。`tooManyItems` は preset /
   assignment / pattern / override の 4 種すべてを path 形式で網羅。
 - **DIAG-U1〜U6 / DIAG-I1〜I2**: アラーム診断（§P1-5）。U6 は saved
   `current_alarm_kit_id` non-nil だが `alarmClient.scheduledIDs()` に含まれない
@@ -1697,9 +1697,10 @@ public enum ShiftBundleValidationCode: String, Sendable {
 | 件数上限（preset ≤ 100 / assignment ≤ 2000 / **pattern ≤ 50** / **override ≤ 3000**） | error | 全体 reject。`ShareImporter.applyPatterns` / `applyOverrides` も配列を直接 iterate するため、preset / assignment と同じ `tooManyItems` で全 top-level コレクションを縛る |
 | preset 名 ≥ 64 文字 | error | 全体 reject |
 | note ≥ 512 文字 | warning | preview に表示、truncate 選択可 |
-| missing presetID（`skipAlarm == false`） | error | 全体 reject（manual 行が rotation を黙らせる事故を防ぐ） |
+| missing presetID（`skipAlarm == false` かつ完全な override 時刻なし） | error | 全体 reject（manual 行が rotation を黙らせる事故を防ぐ） |
 | missing presetID（`skipAlarm == true`） | warning | 該当 assignment を skip 候補に |
-| **patterns[N].slots[M] の missing preset 参照** | **error**（常に） | 全体 reject。`ShareImporter.applyPatterns` は slot を直接 persist し、`DayResolver` は高優先度の pattern slot で nil preset を引いた瞬間に fire date を返さない（アラーム沈黙）。slot 単位には `skipAlarm` の概念が無いので例外無く error。path は `patterns[N].slots[M]` |
+| missing presetID（完全な override 時刻あり） | warning または valid | `presetID == nil` なら custom-time-only alarm として valid。参照切れ UUID でも override 時刻で fire できるため warning に留める |
+| **patterns[N].slots[M] の missing preset 参照** | **warning** | `ShareImporter.applyPatterns` は slot を直接 persist するが、`DayResolver` は stale slot を低優先度 rotation への fall-through として扱うため、アプリ自身が書き出した preset 削除後の backup は round-trip 可能にする。path は `patterns[N].slots[M]` |
 | **overrides[N].replacementPresetID の missing 参照（`skipAlarm == false`）** | **error** | 全体 reject。`ShareImporter.applyOverrides` は `replacementPresetID` を nil にマップして holiday 行を上書きし、`DayResolver` は precedence を持つその行で fire date を出せず本来の祝日代替アラームが沈黙する。path は `overrides[N].replacementPresetID`。`skipAlarm == true` ならユーザ意図と一致するため warning に降格 |
 | duplicate date | error（P1-6 完了まで） | 全体 reject。P1-6 で conflict resolution UI が用意できたら warning に降格し preview で後勝ち / 先勝ち / スキップを選ばせる |
 | 不正 color hex | warning | デフォルト色 |
@@ -1710,7 +1711,9 @@ preset 参照だけが nil になった状態で apply すると、`ShareImporte
 は `preset = nil` の manual `DayAssignment` を作成する。`DayResolver.resolve` は
 manual を holiday / rotation より優先するため fire time を返さず、本来鳴るはず
 だったローテーション由来のアラームを **暗黙に黙らせる**。`skipAlarm == true` なら
-ユーザの「鳴らさない」意図と一致するため warning に留める。
+ユーザの「鳴らさない」意図と一致するため warning に留める。完全な override 時刻が
+あれば `DayResolver` が `preset?.alarmTime` なしで fire time を作れるため、custom
+time-only assignment は reject しない。
 
 **`duplicateDate` を error に昇格した理由**: 同一 `assignments[*].date` が複数回
 現れる bundle を現行 `ShareImporter` がそのまま apply すると、新規 assignment では

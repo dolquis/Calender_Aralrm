@@ -427,19 +427,20 @@ main へ PR（Linear issue が無い緊急時のみ `feature/<topic>`）。
     `assignments[N].overrideAlarmHour` の両形式を生成する。
 - **検査項目（warning 区分）**: note 512 文字超 / 不正 color hex。
 - **`missingPresetReference` を error に昇格**: `AssignmentDTO.presetID` が存在し
-  ない（参照切れ）かつ `skipAlarm == false` のアサインは error。`ShareImporter`
-  が現状 `preset = nil` の manual `DayAssignment` を素通しすると、`DayResolver`
-  はその manual 行を holiday / rotation より優先するため fire date を返さず、
+  ない（参照切れ）かつ `skipAlarm == false` で、完全な
+  `overrideAlarmHour` / `overrideAlarmMinute` も無いアサインは error。`ShareImporter`
+  が `preset = nil` かつ override 時刻なしの manual `DayAssignment` を素通しすると、
+  `DayResolver` はその manual 行を holiday / rotation より優先するため fire date を返さず、
   本来鳴るはずだったローテーション由来のアラームを **暗黙に黙らせる**。`skipAlarm
-  == true` のときは意図的に音を出さない指示なので warning に留め、apply 時に
-  `preset = nil` のままでも skip 経路として安全に扱える。
+  == true` のときは意図的に音を出さない指示なので warning に留め、`presetID == nil`
+  でも完全な override 時刻があれば custom-time-only alarm として valid にする。
+  参照切れ `presetID` でも完全な override 時刻で fire できる場合は warning に留める。
 - **`missingPresetReference` は `patterns[N].slots[M]` も対象**: ローテ slot
-  内の preset UUID が bundle 内の `presets[]` に存在しない場合も同じ理由で
-  error にする（`ShareImporter.applyPatterns` は slot を直接 persist し、
-  `DayResolver` は高優先度の pattern slot で nil preset を引いた瞬間に fire
-  date を返さない＝アラームが沈黙する）。path は `patterns[N].slots[M]`
-  を生成する。`skipAlarm` の概念は slot 単位には無いので、slot 側は
-  常に error。
+  内の preset UUID が bundle 内の `presets[]` に存在しない場合も warning として
+  preview に出す。`ShareImporter.applyPatterns` は slot を直接 persist するが、
+  `DayResolver` は stale slot を低優先度 rotation への fall-through として扱うため、
+  アプリ自身が書き出した「preset 削除後の rotation」backup は round-trip 可能にする。
+  path は `patterns[N].slots[M]` を生成する。
 - **`missingPresetReference` は `overrides[N].replacementPresetID` も対象**:
   holiday / PTO 用 override の代替 preset 参照切れ + `skipAlarm == false` は
   error。`ShareImporter.applyOverrides` は `replacementPresetID` が nil の
@@ -466,8 +467,8 @@ main へ PR（Linear issue が無い緊急時のみ `feature/<topic>`）。
   - SBV-U4 preset.defaultAlarmMinute 60 は error
   - SBV-U5 slots.count 不一致は error
   - SBV-U6 duplicate UUID は error
-  - SBV-U7 missing presetID は `skipAlarm == false` で error / `skipAlarm == true`
-    では warning（境界を両方検証）
+  - SBV-U7 missing presetID は fire 不能なら error / `skipAlarm == true`
+    または完全な override 時刻で fire 可能なら warning または valid（境界を検証）
   - SBV-U8 件数上限超過は error
   - SBV-U9 assignment.overrideAlarmHour 24 は error（path に
     `assignments[N].overrideAlarmHour` を含む）
@@ -477,7 +478,7 @@ main へ PR（Linear issue が無い緊急時のみ `feature/<topic>`）。
     は error
   - SBV-U13 overrides[N].replacementPresetID 参照切れ + `skipAlarm == true`
     は warning
-  - SBV-U14 patterns[N].slots[M] の missing preset 参照は常に error
+  - SBV-U14 patterns[N].slots[M] の missing preset 参照は warning
   - SBV-I1 Import preview 前に validator が呼ばれる
   - SBV-I2 error ありで Apply ボタン disabled
 - **対象ファイル**:
