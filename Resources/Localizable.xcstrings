@@ -1025,6 +1025,246 @@
         }
       }
     },
+    "import.validation.apply_error": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This .shiftalarm file has validation errors."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "この .shiftalarm ファイルには検証エラーがあります。"
+          }
+        }
+      }
+    },
+    "import.validation.duplicate_date": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Duplicate date at %@."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ に重複した日付があります。"
+          }
+        }
+      }
+    },
+    "import.validation.duplicate_id": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Duplicate ID at %@."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ に重複した ID があります。"
+          }
+        }
+      }
+    },
+    "import.validation.future_version": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Future bundle version at %@ is not supported yet."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ の将来バージョンはまだ対応していません。"
+          }
+        }
+      }
+    },
+    "import.validation.invalid_alarm_hour": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alarm hour at %@ must be 0 through 23."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ の時は 0 から 23 の範囲にしてください。"
+          }
+        }
+      }
+    },
+    "import.validation.invalid_alarm_minute": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alarm minute at %@ must be 0 through 59."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ の分は 0 から 59 の範囲にしてください。"
+          }
+        }
+      }
+    },
+    "import.validation.invalid_color_hex": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Color at %@ is invalid and will use the default color."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ の色が不正なため既定色を使用します。"
+          }
+        }
+      }
+    },
+    "import.validation.invalid_cycle_length": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cycle length at %@ must be 1 through 365."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ の周期は 1 から 365 の範囲にしてください。"
+          }
+        }
+      }
+    },
+    "import.validation.missing_preset_reference": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Preset reference at %@ is missing from this bundle."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ のプリセット参照がこのバンドル内にありません。"
+          }
+        }
+      }
+    },
+    "import.validation.slot_count_mismatch": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Slot count at %@ does not match the cycle length."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ のスロット数が周期と一致しません。"
+          }
+        }
+      }
+    },
+    "import.validation.text_too_long": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Text at %@ is too long."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ のテキストが長すぎます。"
+          }
+        }
+      }
+    },
+    "import.validation.too_many_items": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Too many items at %@."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ の件数が多すぎます。"
+          }
+        }
+      }
+    },
+    "import.validation.unsupported_version": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unsupported bundle version at %@."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ のバージョンには対応していません。"
+          }
+        }
+      }
+    },
+    "import.validation_errors_section": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Import errors"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "インポートエラー"
+          }
+        }
+      }
+    },
+    "import.validation_warnings_section": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Import warnings"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "インポート警告"
+          }
+        }
+      }
+    },
     "onboarding.get_started": {
       "extractionState": "manual",
       "localizations": {

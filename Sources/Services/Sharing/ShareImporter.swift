@@ -10,10 +10,15 @@ public struct ImportPreview: Sendable {
     public var updatedAssignments: Int
     public var addedOverrides: Int
     public var updatedOverrides: Int
+    public var validation: ShiftBundleValidationResult = .valid
 
     public var hasChanges: Bool {
         addedPresets + updatedPresets + addedPatterns + updatedPatterns + addedAssignments
             + updatedAssignments + addedOverrides + updatedOverrides > 0
+    }
+
+    public var canApply: Bool {
+        hasChanges && validation.isValid
     }
 }
 
@@ -22,6 +27,7 @@ public enum ShareImporter {
     public static func preview(
         bundle: ShiftBundle, container: ModelContainer, calendar: Calendar = .current
     ) -> ImportPreview {
+        let validation = ShiftBundleValidator.validate(bundle)
         let context = ModelContext(container)
         let existingPresets: [UUID: ShiftPreset] =
             ((try? context.fetch(FetchDescriptor<ShiftPreset>())) ?? [])
@@ -72,12 +78,17 @@ public enum ShareImporter {
                 p.updatedOverrides += 1
             }
         }
+        p.validation = validation
         return p
     }
 
     public static func apply(
         bundle: ShiftBundle, container: ModelContainer, calendar: Calendar = .current
     ) throws {
+        let validation = ShiftBundleValidator.validate(bundle)
+        guard validation.isValid else {
+            throw ShiftBundleValidationError(result: validation)
+        }
         let context = ModelContext(container)
         let presets = applyPresets(bundle.presets, context: context)
         applyPatterns(bundle.patterns, context: context, calendar: calendar)
@@ -94,9 +105,10 @@ public enum ShareImporter {
         var byID: [UUID: ShiftPreset] = ((try? context.fetch(FetchDescriptor<ShiftPreset>())) ?? [])
             .reduce(into: [:]) { $0[$1.id] = $1 }
         for p in presets {
+            let colorHex = ShiftBundleValidator.normalizedColorHex(p.colorHex)
             if let existing = byID[p.id] {
                 existing.name = p.name
-                existing.colorHex = p.colorHex
+                existing.colorHex = colorHex
                 existing.defaultAlarmHour = p.defaultAlarmHour
                 existing.defaultAlarmMinute = p.defaultAlarmMinute
                 existing.soundID = p.soundID
@@ -105,7 +117,7 @@ public enum ShareImporter {
                 let new = ShiftPreset(
                     id: p.id,
                     name: p.name,
-                    colorHex: p.colorHex,
+                    colorHex: colorHex,
                     defaultAlarmHour: p.defaultAlarmHour,
                     defaultAlarmMinute: p.defaultAlarmMinute,
                     soundID: p.soundID,

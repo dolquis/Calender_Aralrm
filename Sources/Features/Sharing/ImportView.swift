@@ -40,9 +40,23 @@ public struct ImportView: View {
                     row("import.overrides_added", value: preview.addedOverrides)
                     row("import.overrides_updated", value: preview.updatedOverrides)
                 }
+                if !preview.validation.errors.isEmpty {
+                    Section("import.validation_errors_section") {
+                        ForEach(preview.validation.errors) { issue in
+                            validationRow(issue)
+                        }
+                    }
+                }
+                if !preview.validation.warnings.isEmpty {
+                    Section("import.validation_warnings_section") {
+                        ForEach(preview.validation.warnings) { issue in
+                            validationRow(issue)
+                        }
+                    }
+                }
                 Section {
                     Button("import.apply", action: apply)
-                        .disabled(!preview.hasChanges || applied)
+                        .disabled(!preview.canApply || applied)
                     if applied {
                         Text("import.applied")
                             .foregroundStyle(.green)
@@ -82,6 +96,16 @@ public struct ImportView: View {
         } label: {
             Text(key)
         }
+    }
+
+    private func validationRow(_ issue: ShiftBundleValidationIssue) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(issue.message)
+            Text(issue.path)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+        .accessibilityElement(children: .combine)
     }
 
     private func handlePicker(_ result: Result<[URL], Error>) {
