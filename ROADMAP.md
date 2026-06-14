@@ -67,6 +67,8 @@ main へ PR（Linear issue が無い緊急時のみ `feature/<topic>`）。
   signing override 導線は入っている。実 Team ID / bundle id / App Group の値は未設定。
 - 実機 / 実 iOS 26 シミュレータでのゴールデンパス通し検証は未実施。
 - P2 拡張案 A2 / A3 / A4 + P2-β / P2-γ / P2-δ は未着手。
+- P2-ε（一括適用→パターン検出）/ P2-ζ（祝日アラーム制御）は **設計確定（2026-06-14）・実装未着手**
+  （仕様: `docs/p2-bulk-preset-apply.md` / `docs/p2-holiday-alarm-control.md`）。
 - A1 ドリフト検出アルゴリズム (`ShiftPatternDetector.detectDrift`) は実装済み。
   **UI 統合も `RotationListView` に実装済み**（`detectDriftOrPattern` で drift を検出し
   `PatternSuggestionView` の提案カードとして表示、snooze 判定 `isSuggestionVisible` 込み。
@@ -1184,6 +1186,35 @@ main へ PR（Linear issue が無い緊急時のみ `feature/<topic>`）。
 - **既知の不確実性**:
   - 終日イベント (`DTSTART;VALUE=DATE`) でなく 30 分イベントとして書く判断は要レビュー。
     家族側で「6 時から夜勤?」と誤読しない文面 / X-プロパティを実装時に詰める。
+
+### P2-ε. 日付一括選択 → プリセット一括適用 → パターン検出（未着手 / 設計確定 2026-06-14）
+
+> 詳細仕様・DoD・テスト ID は [docs/p2-bulk-preset-apply.md](docs/p2-bulk-preset-apply.md) が正典。
+> 追跡: Linear [DEV-200](https://linear.app/dolquis/issue/DEV-200)（team Dev / project Shift Alarm / Backlog / P2）。
+
+- **目的**: 「日付を選ぶ → 1 日ずつ適用」を逆転し、**プリセットを選んで複数日をまとめて塗り、
+  一括適用**する。塗った日列が周期を成せば「ローテとして他の日付にも適用しますか？」を提案。
+- **確定方針**: 塗る→一括適用（**プレビュー確定型**）/ 検出パターンは **ローテ登録を主＋範囲限定も選択可**。
+- **再利用**: [ShiftPatternDetector](docs/p2-algorithms.md#1-p2-α--シフトパターン自動検出)（検出）/
+  `RotationExpander` / `RotationListView` 受諾ロジック。新規アルゴリズムは増やさない。
+- **前提**: §P1-6 `ChangePreview` 共通化（一括適用は Apply 前に必ず経由）。未完時は暫定確認シートで代替。
+- **対象ファイル / 段階 / テスト ID / DoD**: docs を参照（Phase 1 一括適用 → Phase 2 検出提案 → Phase 3 選択補助）。
+
+### P2-ζ. 祝日のアラーム制御（全体／個別）＋カレンダー可視化（未着手 / 設計確定 2026-06-14）
+
+> 詳細仕様・DoD・テスト ID・マイグレーションは [docs/p2-holiday-alarm-control.md](docs/p2-holiday-alarm-control.md) が正典。
+> 追跡: Linear [DEV-201](https://linear.app/dolquis/issue/DEV-201)（team Dev / project Shift Alarm / Backlog / P2）。
+> **スキーマ変更を伴う。着手時は `/swiftdata-migration` skill を起動**（App / Widget 双方の ModelContainer 確認）。
+
+- **目的**: 祝日のアラームを **全体一括／個別**に鳴らす・鳴らさない選択。祝日と鳴動可否をカレンダーで可視化。
+- **確定方針**: 既存 `skipAlarm=true`→`inherit` 移行＋全体既定 `silence`（現挙動不変、全体トグルで全祝日鳴動）/
+  祝日表示は常時オーバーレイ、実効は明示取り込み or 先読み窓の自動 materialize。
+- **モデル**: `HolidayAlarmBehavior {inherit, ring, silence}`、`AppSettings.holidayAlarmDefaultRaw`、
+  `HolidayOverride.alarmBehaviorRaw`。**次版スキーマの追加列 + 遅延 backfill**（lightweight 維持、custom 破壊的移行は非推奨。
+  版番号は P2-β / P2-γ の SchemaV3 予定と調整し、先着が V3・後発は V4 以降）。
+- **互換**: `.shiftalarm` Override DTO に `alarmBehavior` を Codable default-nil 追加（旧 bundle は `skipAlarm` 読み替え）。
+- **解決**: `DayResolver` の祝日分岐で `inherit` を全体既定に解決。優先順位 手動 > 祝日 > ローテ は不変。
+- **対象ファイル / 段階 / テスト ID / DoD**: docs を参照（Phase 1 三値＋全体既定＋移行 → Phase 2 自動 materialize ＋ ChangePreview）。
 
 ---
 
