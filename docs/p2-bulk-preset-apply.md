@@ -52,7 +52,8 @@
    塗れる（選択集合にプリセットが混在＝パターンの素になる）。塗った日はプリセット色＋選択リングで表示。
 4. 下部バーに「N 日を選択中」＋ **「適用」**。
 5. 「適用」で **`ChangePreview`** を表示（追加 / 変更 / 競合 / 警告）。確定で `DayAssignment` を
-   一括 upsert → `AlarmScheduler.refreshScheduledAlarms()` を **1 回だけ**呼ぶ。
+   一括 upsert → `AlarmScheduler.refreshScheduledAlarms()` → **`liveActivityController.evaluate()`** を
+   **各 1 回だけ**呼ぶ（既存の単日エディタ／import フローと同じ後処理。Live Activity / Dynamic Island の更新に必須）。
 6. 確定時（またはプレビュー内）に選択集合へ `ShiftPatternDetector` を実行。周期が見つかれば
    **パターン検出ポップアップ**を出す。
    - **ローテーションとして登録**: `RotationPattern` を生成（[P2-α](p2-algorithms.md) 受諾ロジック流用）。
@@ -92,7 +93,9 @@
   - 「休み(なし)」= `preset = nil`。空レコードがローテを誤って抑止しないよう、既存の
     「全フィールド空なら行を作らない」ロジック（[DayDetailEditorView.swift](../Sources/Features/Calendar/DayDetailEditorView.swift) 保存部）に倣う。
   - 「消音」= `DayAssignment.skipAlarm = true`。
-- `refreshScheduledAlarms()` は選択全体に対し **1 回**呼ぶ（N 回呼ばない）。
+- バッチ保存後の後処理は **選択全体に対し 1 回ずつ**: `refreshScheduledAlarms()` に続けて
+  **`liveActivityController.evaluate()`** を呼ぶ（N 回呼ばない）。単日エディタ／import 同様、`evaluate()` を省くと
+  今日・次回のアラームが変わっても Live Activity / Dynamic Island が古い表示のまま残る。
 
 ## 9. ChangePreview 連携（前提依存）
 
@@ -105,7 +108,8 @@
 
 **新規**
 - `Sources/Features/Calendar/BulkApplyToolbar.swift` — パレット＋下部アクションバー。
-- `Sources/Features/Calendar/BulkApplyViewModel.swift` — 選択集合・アクティブプリセット状態、検出呼び出し。
+- `Sources/Features/Calendar/BulkApplyViewModel.swift` — 選択集合・アクティブプリセット状態、検出呼び出し、
+  バッチ保存後の `refreshScheduledAlarms()` ＋ `liveActivityController.evaluate()` 呼び出し。
 - `Sources/Features/Calendar/BulkPatternSuggestionSheet.swift`（命名要調整）— 検出ポップアップ。
 - `Tests/DomainTests/BulkApplyTests.swift` — バッチ upsert / 競合解決 / 検出連携。
 
@@ -131,6 +135,7 @@
 - BULK-U3 既存割り当てがある日は「変更／競合」として `ChangePreview` に出る。
 - BULK-U4 「休み(なし)」塗布で空レコードを作らない（ローテ抑止が起きない）。
 - BULK-U5 `refreshScheduledAlarms()` が選択全体で 1 回だけ呼ばれる。
+- BULK-U6 一括適用が今日／次回の割り当てを変える場合、保存後に `liveActivityController.evaluate()` が呼ばれ Live Activity が更新される。
 - BULK-D1 選択集合（2 周期分）から正しい周期が検出される。
 - BULK-D2 1 周期ぶんの連続塗布で「そのまま繰り返す」簡易提案が出る。
 - BULK-D3 「ローテとして登録」で `RotationPattern` が生成され、将来日に反映される。
@@ -144,6 +149,7 @@
 - 選択集合が周期を成すとき提案ポップアップが出る。
 - 「ローテとして登録」で将来日に自動反映、「選択した日だけ」で手動割り当てのみ。
 - Dynamic Type XL で崩れず、VoiceOver で選択状態・プリセット名が読める。
+- 一括適用後、AlarmKit と Live Activity / Dynamic Island の両方が最新状態になる。
 - `scripts/verify.sh` / `scripts/lint.sh check` が緑。
 
 ## 14. 既知の不確実性 / レビュー観点

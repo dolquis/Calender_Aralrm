@@ -100,21 +100,24 @@ public enum HolidayAlarmBehavior: Int, Codable, Sendable {
   - `effective == .ring` → `replacementPresetID` があればその時刻、無ければ **ローテ解決へフォールスルー**
     （= 現 `skipAlarm==false` 経路）。
 - 優先順位 **手動 > 祝日 > ローテ** は不変。
-- [AlarmScheduler.swift](../Sources/Services/AlarmKit/AlarmScheduler.swift) は変更最小（`DayResolver` 経由のため）。
-  ただし下記 §6 の自動 materialize を入れる場合は refresh フローに materialize ステップを足す。
+- [AlarmScheduler.swift](../Sources/Services/AlarmKit/AlarmScheduler.swift) は基本 `DayResolver` 経由のため変更小。
+  ただし §6 の **先読み窓 auto-materialize（Phase 1 で必須）** を refresh フロー（または起動時）に組み込む。
 
 ## 6. 祝日の表示と実効（方針 #4）
 
 - **表示（常時オーバーレイ）**: [CalendarMonthView.swift](../Sources/Features/Calendar/CalendarMonthView.swift) で
   `HolidayProvider`（同梱 JP）＋ EventKit（認可時）の既知祝日を **表示レイヤとしてマージ**。
   `HolidayOverride` 行があればそれを優先（ラベル・behavior）。取り込み前でも祝日名を確認できる。
-- **実効（鳴動可否）**: 2 経路のいずれか:
-  - **(a) 明示取り込み**（Phase 1・低リスク）: 既存「祝日を取り込む」で `HolidayOverride` 行を作成して初めて
-    アラームに効く。表示はオーバーレイ、効かせるには取り込み、と役割を分ける。
-  - **(b) 自動 materialize**（Phase 2・推奨 UX）: 先読み期間（`AppSettings.lookaheadDays`、既定 30 ＋ buffer）内の
-    既知祝日のうち **`HolidayOverride` 行が無い日**だけを `behavior=.inherit` で冪等生成。ユーザー作成行は
-    上書きしない。これで全体トグルが取り込み操作なしに効く。
+- **実効（鳴動可否）**: 表示はオーバーレイだが `DayResolver` が見るのは `HolidayOverride` 行のみ。
+  そのため **行が無い祝日には全体既定も per-row UI も効かない**（ローテのアラームがそのまま鳴る）。これを避けるため、
+  全体既定 UI と **同じ Phase 1** で先読み窓の祝日を自動 materialize する:
+  - **先読み窓の自動 materialize（Phase 1・必須）**: 先読み期間（`AppSettings.lookaheadDays`、既定 30 ＋ buffer）内の
+    既知祝日（`HolidayProvider` ＋ EventKit）のうち **`HolidayOverride` 行が無い日**だけを `behavior=.inherit` で
+    冪等生成（ユーザー作成行は上書きしない）。これで全体既定 silence が「窓内の表示済み祝日」に確実に効く。
     - **件数懸念**: 生成は先読み窓に限定し小さく保つ（P2-α A2 の大量展開懸念と同様の配慮）。
+    - **窓外の祝日**: 先読み外はそもそもアラームを組まないため materialize 不要・表示のみ（不整合は起きない）。
+  - **明示取り込み（補完）**: 既存「祝日を取り込む」は、先読み窓を越える範囲やユーザー追加の祝日を行として
+    確定する補助手段として残す（Phase 1 の実効は materialize が担う）。
 
 ## 7. カレンダー表示（鳴動インジケータ）
 
@@ -154,7 +157,7 @@ public enum HolidayAlarmBehavior: Int, Codable, Sendable {
 - `Sources/Domain/Models/AppSettings.swift`（→ V3 へ。`holidayAlarmDefaultRaw` 追加）。
 - `Sources/Domain/Persistence/SchemaV2.swift` 参照 / `MigrationPlan.swift`（V3 stage 追加）。
 - `Sources/Domain/Logic/DayResolver.swift` / `DayResolverInputBuilder.swift`（behavior + 全体既定）。
-- `Sources/Services/AlarmKit/AlarmScheduler.swift`（自動 materialize を入れる場合）。
+- `Sources/Services/AlarmKit/AlarmScheduler.swift`（先読み窓の自動 materialize ステップを追加）。
 - `Sources/Features/Calendar/CalendarMonthView.swift` / `DayCellView.swift`（オーバーレイ + 🔔/🔕）。
 - `Sources/Features/Holidays/HolidayManagerView.swift`（全体トグル + 個別三値）。
 - `Sources/Services/Sharing/ShiftBundleCodec.swift` / `ShareExporter.swift` / `ShareImporter.swift` /
@@ -164,9 +167,10 @@ public enum HolidayAlarmBehavior: Int, Codable, Sendable {
 
 ## 11. 段階的実装
 
-- **Phase 1**: 個別三値化＋全体既定＋ SchemaV3 追加列 + backfill。`DayResolver`/Scheduler 反映。
-  実効は **明示取り込み**経路 (6-a)。表示オーバーレイ＋🔔/🔕。
-- **Phase 2**: 先読み窓の **自動 materialize** (6-b)。全体トグル変更の `ChangePreview` 連携。
+- **Phase 1**: 個別三値化＋全体既定＋次版スキーマ追加列 + backfill＋**先読み窓の祝日 auto-materialize（§6）**。
+  `DayResolver`/Scheduler 反映、表示オーバーレイ＋🔔/🔕。materialize を同梱するのは、全体既定 UI を出す時点で
+  「窓内の表示済み祝日」に確実に効かせ、「設定したのに鳴る」を防ぐため（Codex review 反映）。
+- **Phase 2**: 全体トグル変更時の `ChangePreview` 連携、materialize 窓の拡張・最適化、edge 改善。
 - **Phase 3（別タスク化可）**: `skipAlarm` 廃止クリーンアップ／「同名祝日すべてに適用」等の利便機能。
 
 ## 12. テスト ID
@@ -183,13 +187,15 @@ public enum HolidayAlarmBehavior: Int, Codable, Sendable {
   読み替える（送信側の明示意図を保持。backfill の `true→inherit`〔HOL-M1〕とは別マッピングである点も検証）。
 - HOL-S2 新 bundle で `alarmBehavior` が往復する。
 - HOL-V1 カレンダーセルに祝日の 🔔/🔕 が `fireTime` と整合して出る（VoiceOver ラベル込み）。
-- HOL-X1（Phase 2）先読み窓内の既知祝日が冪等 materialize され、ユーザー行を上書きしない。
+- HOL-X1（Phase 1）先読み窓内の既知祝日が冪等 materialize され、ユーザー行を上書きしない。
+- HOL-X2（Phase 1）全体既定 silence のとき、先読み窓内の **未取り込み祝日**が materialize 経由でアラーム対象から外れる（ローテが鳴らない）。
 
 ## 13. DoD
 
 - 全体既定（**鳴らす／鳴らさない の二択**）と、祝日ごとの三値（既定／鳴らす／消音）を設定できる（「個別運用」は行単位の上書きで実現）。
 - 移行後も既存ユーザーの実効挙動が不変（祝日は既定で消音のまま）。全体を「鳴らす」にすると全祝日が鳴る。
 - カレンダーで祝日と鳴動可否（🔔/🔕）が確認できる。
+- 全体既定 silence のとき、先読み窓内の表示済み祝日（未取り込み含む）でアラームが鳴らない（自動 materialize による。手動取り込み不要）。
 - `.shiftalarm` の旧／新 bundle が破綻なく往復する。
 - `scripts/verify.sh` / `scripts/lint.sh check` 緑。スキーマ変更で `Sendable` 警告が増えない。
 
