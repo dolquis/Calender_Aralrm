@@ -1214,7 +1214,9 @@ main へ PR（Linear issue が無い緊急時のみ `feature/<topic>`）。
   版番号は P2-β / P2-γ の SchemaV3 予定と調整し、先着が V3・後発は V4 以降）。
 - **互換**: `.shiftalarm` Override DTO に `alarmBehavior` を Codable default-nil 追加（旧 bundle は `skipAlarm` 読み替え）。
 - **解決**: `DayResolver` の祝日分岐で `inherit` を全体既定に解決。優先順位 手動 > 祝日 > ローテ は不変。
-- **対象ファイル / 段階 / テスト ID / DoD**: docs を参照（Phase 1 三値＋全体既定＋移行 → Phase 2 自動 materialize ＋ ChangePreview）。
+- **対象ファイル / 段階 / テスト ID / DoD**: docs を参照（**Phase 1 = 三値＋全体既定＋移行＋先読み窓の auto-materialize**
+  〔全体既定を表示済み祝日に確実に効かせる必須ステップ。未実施だと未取り込み祝日がローテへフォールスルーして鳴る〕→
+  Phase 2 = 全体トグル変更の ChangePreview ＋ materialize 最適化）。
 
 ---
 

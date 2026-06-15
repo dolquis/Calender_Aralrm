@@ -55,8 +55,9 @@ public enum HolidayAlarmBehavior: Int, Codable, Sendable {
 
 ### 4.3 `HolidayOverride`
 - 追加: `alarmBehaviorRaw: Int?`（nil = 未移行 → backfill 対象）。算出 `alarmBehavior: HolidayAlarmBehavior`。
-- `skipAlarm: Bool` は **当面残す**（`.shiftalarm` 後方互換・旧アプリ向け）。書き込み時に
-  `alarmBehavior` から導出して同期（`silence`→true、`ring`/`inherit`→そのときの実効に応じて）。
+- `skipAlarm: Bool` は **当面残す**（`.shiftalarm` 後方互換・旧アプリ向け）。書き込み・export 時に
+  `alarmBehavior`（`inherit` の場合は全体既定）から **実効値を解決**して同期: `silence`→`skipAlarm=true`、
+  `ring`→`false`、`inherit`→全体既定の実効（§4.5 export も同じ解決で具体値を書く）。
 - `replacementPreset` は据え置き（`ring` 時の差し替え時刻として継続利用）。
 
 ### 4.4 マイグレーション（**推奨 = 追加列 + 遅延 backfill**）
@@ -87,7 +88,13 @@ public enum HolidayAlarmBehavior: Int, Codable, Sendable {
     全体既定で勝手に反転させないため `silence`。これにより全体既定が `ring` の端末でも（または後で `ring` に変えても）、
     旧 bundle で明示 skip された祝日が誤って鳴ることはない。
   - 新 bundle: 両 field を往復。`ShiftBundleValidator` は `alarmBehavior` を **正規 field** として認識。
-- export は両 field を書く（`skipAlarm` は実効から導出、旧アプリでも妥当に解釈される）。
+- **export は概念上 `inherit` を書き出さない**: 行が `inherit` の場合は **送信側の全体既定で解決した具体値（`ring`/`silence`）** を
+  `alarmBehavior` に書く（`ring`/`silence` はそのまま）。`skipAlarm` も同じ実効から導出。
+  - 理由: `holidayAlarmDefaultRaw` は device-local（§4.2）で bundle に含めないため、`inherit` を生のまま書くと
+    **受信側が自分の全体既定で再解決**してしまう（送信側 `silence` でも受信側 `ring` なら鳴る）。具体値で書けば送信側の
+    実効意図が受信側でも保たれる（§4.5 冒頭のレガシー欠落ケースとは別の、新 bundle 固有の問題）。
+  - トレードオフ: 受信側の取り込み祝日は受信側の全体トグルに追従しない（具体値）。これは「他人の予定を取り込んだら
+    その実効選択を尊重する」方針として妥当。受信側は per-row で随時変更できる。
 
 ## 5. 解決ロジック / スケジューラへの影響
 

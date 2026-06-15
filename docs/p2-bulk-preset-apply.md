@@ -46,7 +46,7 @@
 
 1. [CalendarMonthView.swift](../Sources/Features/Calendar/CalendarMonthView.swift) のツールバーに
    **「一括編集」トグル**を追加。ON で一括編集モードに入る。
-2. 上部に **プリセットパレット**（横スクロールのチップ：各 `ShiftPreset` ＋「休み(なし)」＋「消音」）。
+2. 上部に **プリセットパレット**（横スクロールのチップ：各 `ShiftPreset` ＋ **「休み（オフ）」** ＋ **「クリア（割り当て解除）」**）。
    1 つをアクティブにする。
 3. カレンダー上で日をタップ＝アクティブプリセットで「塗る」。アクティブを切り替えれば別プリセットで
    塗れる（選択集合にプリセットが混在＝パターンの素になる）。塗った日はプリセット色＋選択リングで表示。
@@ -58,6 +58,8 @@
    **パターン検出ポップアップ**を出す。
    - **ローテーションとして登録**: `RotationPattern` を生成（[P2-α](p2-algorithms.md) 受諾ロジック流用）。
      適用範囲を選択（無期限／今年いっぱい／開始・終了指定）。将来日へ自動反映。
+     受諾は選択範囲外でも次回スケジュール日を変えうるため、**受諾後も §5-5 と同じ後処理
+     （`refreshScheduledAlarms()` ＋ `liveActivityController.evaluate()`）を実行**する。
    - **選択した N 日だけに適用**: ローテ化せず手動割り当てのみで終了。
 
 ## 6. インタラクション詳細
@@ -81,6 +83,9 @@
   そのままサイクルとして繰り返す簡易提案を併設（検出に頼らず確実）。
 - 受諾時の `RotationPattern` 生成は [RotationListView.swift](../Sources/Features/Rotation/RotationListView.swift)
   の受諾ロジックと共通化（`anchorDate` 正規化・`priority` 採番・fingerprint スヌーズ）。
+  共通受諾ヘルパには **`refreshScheduledAlarms()` ＋ `liveActivityController.evaluate()` の後処理を含める**。
+  現行 `RotationListView` の受諾経路は `evaluate()` を呼んでおらず Live Activity が更新されない既存ギャップがあるため、
+  抽出時に `evaluate()` を追加する（既存画面にも裨益）。
 - **適用範囲指定**: ローテ登録時に `startDate` / `endDate` を選択（無期限／今年いっぱい／指定範囲）。
   無期限ローテの暴走を避ける。「選択した日だけ」を選んだ場合は `RotationPattern` を作らない。
 
@@ -90,9 +95,12 @@
   一括適用した日は **手動 `DayAssignment`** として残り、ローテは「他の日」を埋める層になる
   （P2-α が手動割り当てを検出の証跡として残す方針と一致）。
 - 書き込みは単日エディタと同じ upsert を **バッチ化**するだけ。新規モデルは不要。
-  - 「休み(なし)」= `preset = nil`。空レコードがローテを誤って抑止しないよう、既存の
-    「全フィールド空なら行を作らない」ロジック（[DayDetailEditorView.swift](../Sources/Features/Calendar/DayDetailEditorView.swift) 保存部）に倣う。
-  - 「消音」= `DayAssignment.skipAlarm = true`。
+  - **「休み（オフ）」= 明示オフを永続化**: `DayAssignment{ preset: nil, skipAlarm: true }` を **必ず行として作る**。
+    これがこの日だけローテを確実に上書きし（手動 > ローテ）、`ShiftPatternDetector` も **`.off` スロット**として
+    観測できる（行が無いと wildcard 扱いで off と区別できない）。**「全フィールド空なら行を作らない」ルールは
+    「クリア」専用**で、休み（オフ）には適用しない（[DayDetailEditorView.swift](../Sources/Features/Calendar/DayDetailEditorView.swift) 保存部参照）。
+  - **「クリア（割り当て解除）」= その日の `DayAssignment` を削除**（ローテ/none へ戻す）。空編集で行を作らない既存挙動はこちら。
+  - skipAlarm を保ったままプリセットを残す細かな編集は単日エディタ側に置き、一括パレットは上記 2 つに絞る。
 - バッチ保存後の後処理は **選択全体に対し 1 回ずつ**: `refreshScheduledAlarms()` に続けて
   **`liveActivityController.evaluate()`** を呼ぶ（N 回呼ばない）。単日エディタ／import 同様、`evaluate()` を省くと
   今日・次回のアラームが変わっても Live Activity / Dynamic Island が古い表示のまま残る。
@@ -133,7 +141,8 @@
 - BULK-U1 複数日に同一プリセットを一括 upsert できる。
 - BULK-U2 複数プリセット混在の塗布を一括 upsert できる。
 - BULK-U3 既存割り当てがある日は「変更／競合」として `ChangePreview` に出る。
-- BULK-U4 「休み(なし)」塗布で空レコードを作らない（ローテ抑止が起きない）。
+- BULK-U4 「休み（オフ）」塗布は `DayAssignment{preset:nil, skipAlarm:true}` を作り、ローテ日でもアラームが鳴らない（`.off` として検出にも反映）。
+- BULK-U4b 「クリア」はその日の `DayAssignment` を削除し、ローテ日はローテへ戻る（空行は作らない）。
 - BULK-U5 `refreshScheduledAlarms()` が選択全体で 1 回だけ呼ばれる。
 - BULK-U6 一括適用が今日／次回の割り当てを変える場合、保存後に `liveActivityController.evaluate()` が呼ばれ Live Activity が更新される。
 - BULK-D1 選択集合（2 周期分）から正しい周期が検出される。
@@ -141,6 +150,7 @@
 - BULK-D3 「ローテとして登録」で `RotationPattern` が生成され、将来日に反映される。
 - BULK-D4 「選択した日だけ」で `RotationPattern` を作らない。
 - BULK-D5 適用範囲（startDate/endDate）指定がローテに反映される。
+- BULK-D6 ローテ受諾後に `refreshScheduledAlarms()` ＋ `liveActivityController.evaluate()` が実行され、次回アラームと Live Activity が更新される。
 
 ## 13. DoD
 
