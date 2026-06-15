@@ -87,7 +87,12 @@ public enum HolidayAlarmBehavior: Int, Codable, Sendable {
     backfill は当端末ユーザー自身の行を全体トグルに従わせるため `inherit`、import は他端末の明示選択を受信側の
     全体既定で勝手に反転させないため `silence`。これにより全体既定が `ring` の端末でも（または後で `ring` に変えても）、
     旧 bundle で明示 skip された祝日が誤って鳴ることはない。
-  - 新 bundle: 両 field を往復。`ShiftBundleValidator` は `alarmBehavior` を **正規 field** として認識。
+  - 新 bundle: `ring`/`silence` はそのまま往復。`ShiftBundleValidator` は `alarmBehavior` を **正規 field** として認識する。
+  - **inbound `inherit` の扱い（重要）**: 正規の新 exporter は `inherit` を書かない（下記 export 規則）が、第三者製／古い／手編集の
+    bundle が `alarmBehavior: inherit` を含みうる。受信側に送信側の全体既定は無い（device-local）ため、生のまま取り込むと
+    受信側の全体既定で再解決され silent→ring に反転しうる。よって **import は bundle 内の `inherit` を `silence` に具体化**して
+    適用し（保守的・サプライズ鳴動を防ぐ）、`ShiftBundleValidator` は `alarmBehavior == inherit` を **warning** として preview に出す
+    （§P0-5 のバリデーション方針: error は apply 不可 / warning は表示）。
 - **export は概念上 `inherit` を書き出さない**: 行が `inherit` の場合は **送信側の全体既定で解決した具体値（`ring`/`silence`）** を
   `alarmBehavior` に書く（`ring`/`silence` はそのまま）。`skipAlarm` も同じ実効から導出。
   - 理由: `holidayAlarmDefaultRaw` は device-local（§4.2）で bundle に含めないため、`inherit` を生のまま書くと
@@ -129,8 +134,13 @@ public enum HolidayAlarmBehavior: Int, Codable, Sendable {
 ## 7. カレンダー表示（鳴動インジケータ）
 
 - [DayCellView.swift](../Sources/Features/Calendar/DayCellView.swift) に鳴動可否インジケータを追加。
-  既に `alarmTime(=resolved.fireTime)` と `holidayLabel` を受け取っており、`holidayLabel != nil` のとき
-  `fireTime` の有無で **🔔（鳴る）／🔕（鳴らない）**を出せる（プラミング最小）。
+  - **祝日セルの 🔔/🔕 は「実効祝日ポリシー」から算出**する（生の `fireTime` だけで判定しない）:
+    - `HolidayOverride` 行あり → `behavior` を全体既定で解決した実効（`inherit`→全体既定）。
+    - 行なしの表示専用（未 materialize）既知祝日 → materialize 後と同じ `inherit`→全体既定の実効を先取りして判定。
+    `silence` 相当なら 🔕、`ring` 相当なら 🔔。
+  - **理由**: 表示専用の祝日は `DayResolver` がローテへフォールスルーして `fireTime` が非 nil になりうるため、
+    `fireTime` だけだと全体既定 silence でも未来／窓外の祝日が「鳴る」と誤表示される。実効ポリシーで判定すれば一致する。
+  - 非祝日日のアラーム表示は従来どおり `fireTime`。窓内の祝日は materialize 済みで `fireTime` と実効が一致する。
 - **アクセシビリティ**: 色・アイコンのみに依存せず、VoiceOver ラベルに「海の日、アラーム鳴る／鳴らない」を含める。
 - 祝日番号は日本式に赤系で表示（既存表示と整合）。
 
@@ -196,8 +206,10 @@ public enum HolidayAlarmBehavior: Int, Codable, Sendable {
 - HOL-M2 backfill: `AppSettings` 既定が `silence` に設定される。
 - HOL-S1 `.shiftalarm` 旧 bundle（`alarmBehavior` 欠落）の import が `skipAlarm` を **`true→silence` / `false→ring`** に
   読み替える（送信側の明示意図を保持。backfill の `true→inherit`〔HOL-M1〕とは別マッピングである点も検証）。
-- HOL-S2 新 bundle で `alarmBehavior` が往復する。
-- HOL-V1 カレンダーセルに祝日の 🔔/🔕 が `fireTime` と整合して出る（VoiceOver ラベル込み）。
+- HOL-S2 新 bundle で `alarmBehavior`（`ring`/`silence`）が往復する。
+- HOL-S3 bundle 内の `alarmBehavior: inherit`（第三者／手編集）は import で `silence` に具体化され、validator が warning を出す（受信側既定で鳴らない）。
+- HOL-V1 カレンダーセルの祝日 🔔/🔕 が **実効祝日ポリシー**（行 behavior／全体既定で解決）と一致して出る（VoiceOver ラベル込み）。
+- HOL-V2 全体既定 silence の下、**未 materialize の表示専用祝日**がローテ上にあっても 🔕 を出す（生 `fireTime` の鳴る表示に引っ張られない）。
 - HOL-X1（Phase 1）先読み窓内の既知祝日が冪等 materialize され、ユーザー行を上書きしない。
 - HOL-X2（Phase 1）全体既定 silence のとき、先読み窓内の **未取り込み祝日**が materialize 経由でアラーム対象から外れる（ローテが鳴らない）。
 - HOL-G1（Phase 1）全体既定の変更は適用前に確認（暫定ダイアログ可）を表示し、キャンセルで反映されない／確定で初めて反映・再スケジュールされる。
