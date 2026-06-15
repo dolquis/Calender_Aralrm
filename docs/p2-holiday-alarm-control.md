@@ -163,6 +163,9 @@ public enum HolidayAlarmBehavior: Int, Codable, Sendable {
 - **段階分け**: 確認自体は **Phase 1 で必須**（P1-6 未完でも **暫定確認ダイアログ**で実装する）。
   **Phase 2** は共有 `ChangePreview` コンポーネントへの統合（フィルタ／一括操作などの共通 UI 化）のみ。
 - 個別行の三値変更は単発のため確認不要。確認は全体既定の変更（および将来の一括操作）に適用する。
+- **適用後の同期（全体既定・個別行の両方）**: 変更を確定したら `refreshScheduledAlarms()` → `liveActivityController.evaluate()`
+  を実行する（単日エディタ／import／一括適用と同じ後処理）。今日・次回アラームが変わったとき Live Activity / Dynamic Island を
+  更新するため必須。現行 `HolidayManagerView` の保存経路は `refreshScheduledAlarms()` のみで `evaluate()` を欠くため、本タスクで追加する。
 
 ## 10. 対象ファイル
 
@@ -213,6 +216,7 @@ public enum HolidayAlarmBehavior: Int, Codable, Sendable {
 - HOL-X1（Phase 1）先読み窓内の既知祝日が冪等 materialize され、ユーザー行を上書きしない。
 - HOL-X2（Phase 1）全体既定 silence のとき、先読み窓内の **未取り込み祝日**が materialize 経由でアラーム対象から外れる（ローテが鳴らない）。
 - HOL-G1（Phase 1）全体既定の変更は適用前に確認（暫定ダイアログ可）を表示し、キャンセルで反映されない／確定で初めて反映・再スケジュールされる。
+- HOL-G2（Phase 1）全体既定の変更を確定すると `refreshScheduledAlarms()` ＋ `liveActivityController.evaluate()` が実行され、今日／次回アラームと Live Activity / Dynamic Island が更新される。
 
 ## 13. DoD
 
