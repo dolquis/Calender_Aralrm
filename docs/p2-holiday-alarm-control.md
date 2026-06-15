@@ -146,10 +146,13 @@ public enum HolidayAlarmBehavior: Int, Codable, Sendable {
 - 文言は「skip alarm」中心から「この祝日にアラームを鳴らす？」へ明確化。
   `Resources/Localizable.xcstrings` に ja / en 両方を追加（片言語欠落で空表示にならないこと）。
 
-## 9. 全体トグル変更時の ChangePreview
+## 9. 全体トグル変更時の確認（preview-before-mutation）
 
-- 全体既定の変更は多数の祝日に波及するため、**`ChangePreview` で「N 件が 鳴る→鳴らない に変わる」を確認**させてから適用
-  （AGENTS.md §6.1.2「Preview before mutation」）。P1-6 未完なら暫定確認ダイアログで代替。
+- 全体既定の変更は多数の祝日（`inherit` 行）の鳴動を一括で反転させ再スケジュールするため、
+  **適用前に「N 件が 鳴る→鳴らない に変わる」確認を必須**とする（AGENTS.md §6.1.2「Preview before mutation」）。
+- **段階分け**: 確認自体は **Phase 1 で必須**（P1-6 未完でも **暫定確認ダイアログ**で実装する）。
+  **Phase 2** は共有 `ChangePreview` コンポーネントへの統合（フィルタ／一括操作などの共通 UI 化）のみ。
+- 個別行の三値変更は単発のため確認不要。確認は全体既定の変更（および将来の一括操作）に適用する。
 
 ## 10. 対象ファイル
 
@@ -174,10 +177,11 @@ public enum HolidayAlarmBehavior: Int, Codable, Sendable {
 
 ## 11. 段階的実装
 
-- **Phase 1**: 個別三値化＋全体既定＋次版スキーマ追加列 + backfill＋**先読み窓の祝日 auto-materialize（§6）**。
-  `DayResolver`/Scheduler 反映、表示オーバーレイ＋🔔/🔕。materialize を同梱するのは、全体既定 UI を出す時点で
-  「窓内の表示済み祝日」に確実に効かせ、「設定したのに鳴る」を防ぐため（Codex review 反映）。
-- **Phase 2**: 全体トグル変更時の `ChangePreview` 連携、materialize 窓の拡張・最適化、edge 改善。
+- **Phase 1**: 個別三値化＋全体既定＋次版スキーマ追加列 + backfill＋**先読み窓の祝日 auto-materialize（§6）**＋
+  **全体既定変更時の確認ダイアログ（暫定でも必須、§9）**。`DayResolver`/Scheduler 反映、表示オーバーレイ＋🔔/🔕。
+  materialize と確認を同梱するのは、全体既定 UI を出す時点で「窓内の表示済み祝日」に確実に効かせ（「設定したのに鳴る」防止）、
+  かつ多数の祝日を無確認で反転させない（preview-before-mutation）ため（Codex review 反映）。
+- **Phase 2**: 全体既定変更の確認を共有 `ChangePreview` コンポーネントへ統合（§9）、materialize 窓の拡張・最適化、edge 改善。
 - **Phase 3（別タスク化可）**: `skipAlarm` 廃止クリーンアップ／「同名祝日すべてに適用」等の利便機能。
 
 ## 12. テスト ID
@@ -196,12 +200,14 @@ public enum HolidayAlarmBehavior: Int, Codable, Sendable {
 - HOL-V1 カレンダーセルに祝日の 🔔/🔕 が `fireTime` と整合して出る（VoiceOver ラベル込み）。
 - HOL-X1（Phase 1）先読み窓内の既知祝日が冪等 materialize され、ユーザー行を上書きしない。
 - HOL-X2（Phase 1）全体既定 silence のとき、先読み窓内の **未取り込み祝日**が materialize 経由でアラーム対象から外れる（ローテが鳴らない）。
+- HOL-G1（Phase 1）全体既定の変更は適用前に確認（暫定ダイアログ可）を表示し、キャンセルで反映されない／確定で初めて反映・再スケジュールされる。
 
 ## 13. DoD
 
 - 全体既定（**鳴らす／鳴らさない の二択**）と、祝日ごとの三値（既定／鳴らす／消音）を設定できる（「個別運用」は行単位の上書きで実現）。
 - 移行後も既存ユーザーの実効挙動が不変（祝日は既定で消音のまま）。全体を「鳴らす」にすると全祝日が鳴る。
 - カレンダーで祝日と鳴動可否（🔔/🔕）が確認できる。
+- 全体既定の変更は適用前に影響件数の確認（Phase 1 は暫定ダイアログ可）を経てから反映される。
 - 全体既定 silence のとき、先読み窓内の表示済み祝日（未取り込み含む）でアラームが鳴らない（自動 materialize による。手動取り込み不要）。
 - `.shiftalarm` の旧／新 bundle が破綻なく往復する。
 - `scripts/verify.sh` / `scripts/lint.sh check` 緑。スキーマ変更で `Sendable` 警告が増えない。
