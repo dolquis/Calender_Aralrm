@@ -47,7 +47,8 @@ public enum HolidayAlarmBehavior: Int, Codable, Sendable {
 
 ### 4.2 `AppSettings`（[AppSettings.swift](../Sources/Domain/Models/AppSettings.swift) = `SchemaV2.AppSettings`）
 - 追加: `holidayAlarmDefaultRaw: Int?`（nil = 未設定 → `silence` 扱い）。
-- 算出: `effectiveHolidayAlarmDefault: HolidayAlarmBehavior`（`ring` か `silence` のみ。`inherit` は全体では非対応）。
+- 算出: `effectiveHolidayAlarmDefault: HolidayAlarmBehavior`（**`ring` か `silence` の二値のみ**。`inherit` は
+  個別行専用で、全体既定には第三状態を設けない — `inherit` は具体値へ解決される必要があるため。§8 の全体既定 UI も二択にする）。
 - **device-local 設定**であり `.shiftalarm` バンドルには含めない
   （[ShareExporter.swift](../Sources/Services/Sharing/ShareExporter.swift) は `AppSettings` を export しない）。
   → import で他人の全体ポリシーを上書きしない。
@@ -79,7 +80,12 @@ public enum HolidayAlarmBehavior: Int, Codable, Sendable {
 ### 4.5 共有フォーマット（`.shiftalarm`）後方互換
 - [ShiftBundleCodec.swift](../Sources/Services/Sharing/ShiftBundleCodec.swift) の Override DTO（現行 `skipAlarm: Bool`）に
   `alarmBehavior: HolidayAlarmBehavior?` を **Codable default-nil で追加**（P2-α A2 の DTO 拡張方針に倣う）。
-  - 旧 bundle: `alarmBehavior` 欠落 → `skipAlarm` から `inherit`/`ring` に読み替え（forward compat）。
+  - 旧 bundle: `alarmBehavior` 欠落 → `skipAlarm` から **`silence`/`ring`** に読み替え（`true→silence`、`false→ring`）。
+    旧 `skipAlarm` は binary で三値概念を持たないため、**送信側の明示的な「鳴らさない」意図を保持**する目的で
+    `true→silence`（明示）にマップする。**ローカル移行 backfill（§4.4）の `true→inherit` とは別経路・別マッピング**:
+    backfill は当端末ユーザー自身の行を全体トグルに従わせるため `inherit`、import は他端末の明示選択を受信側の
+    全体既定で勝手に反転させないため `silence`。これにより全体既定が `ring` の端末でも（または後で `ring` に変えても）、
+    旧 bundle で明示 skip された祝日が誤って鳴ることはない。
   - 新 bundle: 両 field を往復。`ShiftBundleValidator` は `alarmBehavior` を **正規 field** として認識。
 - export は両 field を書く（`skipAlarm` は実効から導出、旧アプリでも妥当に解釈される）。
 
@@ -121,8 +127,12 @@ public enum HolidayAlarmBehavior: Int, Codable, Sendable {
 ## 8. 設定 UI
 
 - [HolidayManagerView.swift](../Sources/Features/Holidays/HolidayManagerView.swift) を拡張:
-  - 先頭に **全体既定トグル**（通常どおり鳴らす／すべて鳴らさない／個別に設定）。
-  - 各祝日行に **三値コントロール**（既定／鳴らす／消音）。`既定` 行は現在の全体既定の実効値を併記（例「既定：鳴る」）。
+  - 先頭に **全体既定トグル（二択：通常どおり鳴らす／すべて鳴らさない）**。これは `inherit` 行が解決する具体値で、
+    `holidayAlarmDefaultRaw` の `ring`/`silence` に対応（§4.2）。**全体既定に第三状態「個別」は設けない**
+    （`inherit` は具体値へ解決される必要があり、設けると `inherit`＋`個別` の解決が未定義になるため）。
+  - **「個別に設定」は独立した全体状態ではなく、常時表示される各祝日行の三値コントロール（既定／鳴らす／消音）で実現**する。
+    `既定` は全体既定に従い、`鳴らす`/`消音` で行単位に上書きする。`既定` 行には全体既定の実効値を併記（例「既定：鳴る」）。
+  - 初期モックアップの 3 択トグルは、モデル整合のため本仕様で **二択＋行単位上書き**に改める（Codex review 反映）。
 - 文言は「skip alarm」中心から「この祝日にアラームを鳴らす？」へ明確化。
   `Resources/Localizable.xcstrings` に ja / en 両方を追加（片言語欠落で空表示にならないこと）。
 
@@ -169,14 +179,15 @@ public enum HolidayAlarmBehavior: Int, Codable, Sendable {
 - HOL-U6 手動割り当ては祝日より優先（既存仕様維持）。
 - HOL-M1 backfill: `skipAlarm=true`→`inherit`、`false`→`ring`。
 - HOL-M2 backfill: `AppSettings` 既定が `silence` に設定される。
-- HOL-S1 `.shiftalarm` 旧 bundle（`alarmBehavior` 欠落）が `skipAlarm` から正しく読み替えられる。
+- HOL-S1 `.shiftalarm` 旧 bundle（`alarmBehavior` 欠落）の import が `skipAlarm` を **`true→silence` / `false→ring`** に
+  読み替える（送信側の明示意図を保持。backfill の `true→inherit`〔HOL-M1〕とは別マッピングである点も検証）。
 - HOL-S2 新 bundle で `alarmBehavior` が往復する。
 - HOL-V1 カレンダーセルに祝日の 🔔/🔕 が `fireTime` と整合して出る（VoiceOver ラベル込み）。
 - HOL-X1（Phase 2）先読み窓内の既知祝日が冪等 materialize され、ユーザー行を上書きしない。
 
 ## 13. DoD
 
-- 全体既定（鳴らす／鳴らさない／個別）と、祝日ごとの三値（既定／鳴らす／消音）を設定できる。
+- 全体既定（**鳴らす／鳴らさない の二択**）と、祝日ごとの三値（既定／鳴らす／消音）を設定できる（「個別運用」は行単位の上書きで実現）。
 - 移行後も既存ユーザーの実効挙動が不変（祝日は既定で消音のまま）。全体を「鳴らす」にすると全祝日が鳴る。
 - カレンダーで祝日と鳴動可否（🔔/🔕）が確認できる。
 - `.shiftalarm` の旧／新 bundle が破綻なく往復する。
