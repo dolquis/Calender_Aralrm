@@ -94,9 +94,9 @@ bash scripts/verify.sh test
 ```
 
 The Tests target is written with Apple's [Swift Testing](https://developer.apple.com/documentation/testing)
-(`@Test` / `#expect`) and currently runs 122 tests across 17 test suites (20 files) covering domain,
+(`@Test` / `#expect`) and currently runs 131 tests across 19 test suites (22 files) covering domain,
 services, App Intents, HealthKit helpers, background refresh, deep links, sharing, and snapshot
-coverage. Five DayCell snapshot tests are skipped by default unless `SNAPSHOT_TESTING_ENABLED=1` is
+coverage. Six snapshot tests are skipped by default unless `SNAPSHOT_TESTING_ENABLED=1` is
 set.
 
 ## Code style
