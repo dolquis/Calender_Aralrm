@@ -22,8 +22,8 @@ main へ PR（Linear issue が無い緊急時のみ `feature/<topic>`）。
 - P0-1 は Xcode 26.5 / iOS 26.5 SDK でコードレベル検証に着手済み。
   `AlarmPresentation.Alert.stopButton` の iOS 26.1 deprecation を回避し、
   `AlarmManager.AlarmConfiguration.alarm(...)` に寄せた。実機確認は未完了。
-- テストは Apple の Swift Testing（`@Test` / `#expect`）で記述。122 件 (17 スイート /
-  20 ファイル) 緑。通常の `scripts/verify.sh` では 5 件の snapshot test は
+- テストは Apple の Swift Testing（`@Test` / `#expect`）で記述。132 件 (19 スイート /
+  22 ファイル) 緑。通常の `scripts/verify.sh` では 6 件の snapshot test は
   `SNAPSHOT_TESTING_ENABLED=1` 未指定のため skip。
   CI は `macos-26` / Xcode 26+ で `scripts/verify.sh` を実行。
 - **状態・進捗・優先度の正典は Linear**（team `Dev` / project **Shift Alarm /
@@ -491,7 +491,7 @@ main へ PR（Linear issue が無い緊急時のみ `feature/<topic>`）。
 - **DoD**:
   - 壊れた bundle を apply できない。
   - 警告は preview で読める。
-  - `bash scripts/verify.sh test` で SBV-U1〜U14 / SBV-I1〜I2 を含む 122 tests が緑。
+  - `bash scripts/verify.sh test` で SBV-U1〜U14 / SBV-I1〜I2 を含む 132 tests が緑。
   - 既存正常系 `ShareImporterTests` が壊れない。
   - 参照切れ presetID でクラッシュしない。
   - ja / en ローカライズ済み。
@@ -621,7 +621,7 @@ main へ PR（Linear issue が無い緊急時のみ `feature/<topic>`）。
     追記）。
   - 単体テストで状態判定 5 ケースを網羅する。
 
-### P1-6. ChangePreview 共通化（未着手 / 2026-05-27 追加）
+### P1-6. ChangePreview 共通化（実装中 / DEV-256 / 2026-06-19 更新）
 
 > 詳細モデルは
 > [docs/p2-algorithms.md §7](docs/p2-algorithms.md#7-横断-changepreview-抽象--アラーム診断--shiftalarm-validator) に集約。
@@ -658,6 +658,11 @@ main へ PR（Linear issue が無い緊急時のみ `feature/<topic>`）。
   - 選択状態を保持できる。
   - Dynamic Type XL で崩れない。
   - VoiceOver で before / after が読める。
+- **進捗 (2026-06-19 / DEV-256)**: Step 1 / Step 2 として
+  `.shiftalarm` import 経路を `ChangePreview` / `ChangePreviewView` /
+  `ImportPreviewView` に移行中。item 単位の決定論的 ID、選択適用、
+  validator warning / conflict 表示、通常 verify で gated される snapshot 入口を追加。
+  Step 3（画像 import / ドリフト UI / DOW ルール展開への横展開）は後続 issue で扱う。
 
 ### P1（追補）. A1 ドリフト検出 UI 統合（§P2-α A1 を P1 相当に昇格）
 
@@ -1235,7 +1240,7 @@ main へ PR（Linear issue が無い緊急時のみ `feature/<topic>`）。
   - `Tests/ServicesTests/SleepIntentHelperTests.swift` — App Intents 用 sleep window 取得。
   - `Tests/ServicesTests/SleepSampleWriterTests.swift` — HealthKit 書込み対象 window 抽出。
   - `Tests/DomainTests/SleepWindowResolverTests.swift` — bedtime 計算 / 端境ケース。
-- 現状: Swift Testing で 17 スイート / 122 テスト緑（うち 5 件 snapshot は通常 verify では skip）。
+- 現状: Swift Testing で 19 スイート / 131 テスト緑（うち 6 件 snapshot は通常 verify では skip）。
 
 ### P3-2. UI / スナップショットテスト（一部着手）
 
@@ -1265,8 +1270,8 @@ main へ PR（Linear issue が無い緊急時のみ `feature/<topic>`）。
 
 - **目的（達成済み）**: XCTest 相当のテストを Apple の Swift Testing（`@Test`）で記述し、
   `#expect` / `#require` ベースの表現力と並列実行を得る。
-- **現状**: `Tests/` 配下 20 ファイル / 17 テストスイート（`struct` + `@Test`） /
-  122 テスト関数。`XCTestCase` サブクラスは 0。`@testable import ShiftAlarm` を維持。
+- **現状**: `Tests/` 配下 22 ファイル / 19 テストスイート（`struct` + `@Test`） /
+  131 テスト関数。`XCTestCase` サブクラスは 0。`@testable import ShiftAlarm` を維持。
   `project.yml` のテストターゲット定義は変更不要（Swift Testing はツールチェーン同梱）。
 - **採用済みの対応**:
   - `XCTestCase` サブクラス → `struct` + `@Test` 関数。

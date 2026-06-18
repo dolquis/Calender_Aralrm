@@ -7,6 +7,7 @@ public struct ImportView: View {
     @State private var pickerPresented = false
     @State private var loadedBundle: ShiftBundle?
     @State private var preview: ImportPreview?
+    @State private var selectedItemIDs: Set<UUID> = []
     @State private var errorMessage: String?
     @State private var applied = false
 
@@ -30,33 +31,10 @@ public struct ImportView: View {
                 }
             }
             if let preview {
-                Section("import.preview_section") {
-                    row("import.presets_added", value: preview.addedPresets)
-                    row("import.presets_updated", value: preview.updatedPresets)
-                    row("import.patterns_added", value: preview.addedPatterns)
-                    row("import.patterns_updated", value: preview.updatedPatterns)
-                    row("import.assignments_added", value: preview.addedAssignments)
-                    row("import.assignments_updated", value: preview.updatedAssignments)
-                    row("import.overrides_added", value: preview.addedOverrides)
-                    row("import.overrides_updated", value: preview.updatedOverrides)
-                }
-                if !preview.validation.errors.isEmpty {
-                    Section("import.validation_errors_section") {
-                        ForEach(preview.validation.errors) { issue in
-                            validationRow(issue)
-                        }
-                    }
-                }
-                if !preview.validation.warnings.isEmpty {
-                    Section("import.validation_warnings_section") {
-                        ForEach(preview.validation.warnings) { issue in
-                            validationRow(issue)
-                        }
-                    }
-                }
+                ImportPreviewView(preview: preview, selectedItemIDs: $selectedItemIDs)
                 Section {
                     Button("import.apply", action: apply)
-                        .disabled(!preview.canApply || applied)
+                        .disabled(!preview.canApply(selectedItemIDs: selectedItemIDs) || applied)
                     if applied {
                         Text("import.applied")
                             .foregroundStyle(.green)
@@ -85,27 +63,12 @@ public struct ImportView: View {
 
     private func load(bundle: ShiftBundle) {
         loadedBundle = bundle
-        preview = ShareImporter.preview(bundle: bundle, container: dependencies.modelContainer)
+        let nextPreview = ShareImporter.preview(
+            bundle: bundle, container: dependencies.modelContainer)
+        preview = nextPreview
+        selectedItemIDs = nextPreview.changePreview.selectedItemIDs
         applied = false
         errorMessage = nil
-    }
-
-    private func row(_ key: LocalizedStringKey, value: Int) -> some View {
-        LabeledContent {
-            Text("\(value)").monospacedDigit()
-        } label: {
-            Text(key)
-        }
-    }
-
-    private func validationRow(_ issue: ShiftBundleValidationIssue) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(issue.message)
-            Text(issue.path)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-        }
-        .accessibilityElement(children: .combine)
     }
 
     private func handlePicker(_ result: Result<[URL], Error>) {
@@ -131,7 +94,11 @@ public struct ImportView: View {
     private func apply() {
         guard let bundle = loadedBundle else { return }
         do {
-            try ShareImporter.apply(bundle: bundle, container: dependencies.modelContainer)
+            try ShareImporter.apply(
+                bundle: bundle,
+                container: dependencies.modelContainer,
+                selectedItemIDs: selectedItemIDs
+            )
             applied = true
             Task {
                 await dependencies.alarmScheduler.refreshScheduledAlarms()

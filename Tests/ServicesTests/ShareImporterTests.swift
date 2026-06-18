@@ -77,7 +77,82 @@ struct ShareImporterTests {
         #expect(preview.addedOverrides == 1)
         #expect(preview.updatedOverrides == 0)
         #expect(preview.hasChanges)
+        #expect(preview.changePreview.summary.addedCount == 4)
+        #expect(preview.changePreview.selectedItemIDs.count == 4)
     }
+
+    @Test
+    func testPreviewItemIDsAreDeterministic() throws {
+        let container = SharedPersistence.makeContainer(inMemory: true)
+        let bundle = makeBundle()
+
+        let first = ShareImporter.preview(bundle: bundle, container: container)
+        let second = ShareImporter.preview(bundle: bundle, container: container)
+
+        #expect(first.changePreview.items.map(\.id) == second.changePreview.items.map(\.id))
+        #expect(
+            first.changePreview.items.map(\.sourcePath) == [
+                "shiftalarm:presets[0]",
+                "shiftalarm:patterns[0]",
+                "shiftalarm:assignments[0]",
+                "shiftalarm:overrides[0]",
+            ])
+    }
+
+    @Test
+    func testPreviewAttachesValidatorWarnings() throws {
+        let container = SharedPersistence.makeContainer(inMemory: true)
+        var bundle = makeBundle()
+        bundle.presets[0].colorHex = "blue"
+
+        let preview = ShareImporter.preview(bundle: bundle, container: container)
+        let presetItem = preview.changePreview.items.first {
+            $0.sourcePath == "shiftalarm:presets[0]"
+        }
+
+        #expect(preview.validation.warnings.count == 1)
+        #expect(preview.changePreview.summary.warningCount == 1)
+        #expect(presetItem?.warnings.count == 1)
+        #expect(preview.canApply)
+    }
+
+    @Test
+    func testPreviewShowsValidationErrorsAsConflicts() throws {
+        let container = SharedPersistence.makeContainer(inMemory: true)
+        var bundle = makeBundle()
+        bundle.assignments.append(bundle.assignments[0])
+
+        let preview = ShareImporter.preview(bundle: bundle, container: container)
+
+        #expect(!preview.validation.isValid)
+        #expect(preview.changePreview.summary.conflictCount == 1)
+        #expect(!preview.canApply)
+    }
+
+    @Test
+    func testPreviewAssignmentInheritsPresetDefaultAlarm() throws {
+        let container = SharedPersistence.makeContainer(inMemory: true)
+        var bundle = makeBundle()
+        bundle.assignments[0].overrideAlarmHour = nil
+        bundle.assignments[0].overrideAlarmMinute = nil
+
+        let preview = ShareImporter.preview(bundle: bundle, container: container)
+        let assignmentItem = try #require(
+            preview.changePreview.items.first {
+                $0.sourcePath == "shiftalarm:assignments[0]"
+            }
+        )
+        let afterText = try #require(assignmentItem.afterText)
+        let inheritedText = String(
+            format: String(localized: "change_preview.alarm.inherited"),
+            "07:00"
+        )
+
+        #expect(String(localized: afterText).contains(inheritedText))
+        #expect(
+            !String(localized: afterText).contains(String(localized: "change_preview.alarm.unset")))
+    }
+
     @Test
     func testApplyInsertsData() throws {
         let container = SharedPersistence.makeContainer(inMemory: true)
@@ -131,12 +206,71 @@ struct ShareImporterTests {
         #expect(preview.updatedPresets == 1)
         #expect(preview.addedAssignments == 0)
         #expect(preview.updatedAssignments == 1)
+        #expect(
+            preview.changePreview.items.first {
+                $0.sourcePath == "shiftalarm:assignments[0]"
+            }?.changeKind == .update
+        )
     }
+
+    @Test
+    func testApplySelectedItemsOnly() throws {
+        let container = SharedPersistence.makeContainer(inMemory: true)
+        let bundle = makeBundle()
+        let preview = ShareImporter.preview(bundle: bundle, container: container)
+        let presetID = try #require(
+            preview.changePreview.items.first {
+                $0.sourcePath == "shiftalarm:presets[0]"
+            }?.id
+        )
+
+        try ShareImporter.apply(
+            bundle: bundle,
+            container: container,
+            selectedItemIDs: [presetID]
+        )
+
+        let context = ModelContext(container)
+        #expect(try context.fetch(FetchDescriptor<ShiftPreset>()).count == 1)
+        #expect(try context.fetch(FetchDescriptor<RotationPattern>()).isEmpty)
+        #expect(try context.fetch(FetchDescriptor<DayAssignment>()).isEmpty)
+        #expect(try context.fetch(FetchDescriptor<HolidayOverride>()).isEmpty)
+    }
+
+    @Test
+    func testApplySelectedAssignmentIncludesNewPresetDependency() throws {
+        let container = SharedPersistence.makeContainer(inMemory: true)
+        let bundle = makeBundle()
+        let preview = ShareImporter.preview(bundle: bundle, container: container)
+        let assignmentID = try #require(
+            preview.changePreview.items.first {
+                $0.sourcePath == "shiftalarm:assignments[0]"
+            }?.id
+        )
+
+        try ShareImporter.apply(
+            bundle: bundle,
+            container: container,
+            selectedItemIDs: [assignmentID]
+        )
+
+        let context = ModelContext(container)
+        let presets = try context.fetch(FetchDescriptor<ShiftPreset>())
+        let assignments = try context.fetch(FetchDescriptor<DayAssignment>())
+
+        #expect(presets.count == 1)
+        #expect(assignments.count == 1)
+        #expect(assignments.first?.preset?.id == bundle.presets[0].id)
+        #expect(try context.fetch(FetchDescriptor<RotationPattern>()).isEmpty)
+        #expect(try context.fetch(FetchDescriptor<HolidayOverride>()).isEmpty)
+    }
+
     @Test
     func testEmptyBundleHasNoChanges() {
         let container = SharedPersistence.makeContainer(inMemory: true)
         let empty = ShiftBundle()
         let preview = ShareImporter.preview(bundle: empty, container: container)
         #expect(!preview.hasChanges)
+        #expect(preview.changePreview.sections.isEmpty)
     }
 }
