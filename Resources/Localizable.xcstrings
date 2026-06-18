@@ -1297,6 +1297,22 @@
         }
       }
     },
+    "change_preview.alarm.inherited": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Inherited %@"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ を継承"
+          }
+        }
+      }
+    },
     "change_preview.alarm.unset": {
       "localizations": {
         "en": {

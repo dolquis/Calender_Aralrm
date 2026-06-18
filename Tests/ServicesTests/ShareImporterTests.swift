@@ -128,6 +128,31 @@ struct ShareImporterTests {
         #expect(preview.changePreview.summary.conflictCount == 1)
         #expect(!preview.canApply)
     }
+
+    @Test
+    func testPreviewAssignmentInheritsPresetDefaultAlarm() throws {
+        let container = SharedPersistence.makeContainer(inMemory: true)
+        var bundle = makeBundle()
+        bundle.assignments[0].overrideAlarmHour = nil
+        bundle.assignments[0].overrideAlarmMinute = nil
+
+        let preview = ShareImporter.preview(bundle: bundle, container: container)
+        let assignmentItem = try #require(
+            preview.changePreview.items.first {
+                $0.sourcePath == "shiftalarm:assignments[0]"
+            }
+        )
+        let afterText = try #require(assignmentItem.afterText)
+        let inheritedText = String(
+            format: String(localized: "change_preview.alarm.inherited"),
+            "07:00"
+        )
+
+        #expect(String(localized: afterText).contains(inheritedText))
+        #expect(
+            !String(localized: afterText).contains(String(localized: "change_preview.alarm.unset")))
+    }
+
     @Test
     func testApplyInsertsData() throws {
         let container = SharedPersistence.makeContainer(inMemory: true)

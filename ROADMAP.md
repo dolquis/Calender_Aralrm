@@ -22,7 +22,7 @@ main へ PR（Linear issue が無い緊急時のみ `feature/<topic>`）。
 - P0-1 は Xcode 26.5 / iOS 26.5 SDK でコードレベル検証に着手済み。
   `AlarmPresentation.Alert.stopButton` の iOS 26.1 deprecation を回避し、
   `AlarmManager.AlarmConfiguration.alarm(...)` に寄せた。実機確認は未完了。
-- テストは Apple の Swift Testing（`@Test` / `#expect`）で記述。131 件 (19 スイート /
+- テストは Apple の Swift Testing（`@Test` / `#expect`）で記述。132 件 (19 スイート /
   22 ファイル) 緑。通常の `scripts/verify.sh` では 6 件の snapshot test は
   `SNAPSHOT_TESTING_ENABLED=1` 未指定のため skip。
   CI は `macos-26` / Xcode 26+ で `scripts/verify.sh` を実行。
@@ -491,7 +491,7 @@ main へ PR（Linear issue が無い緊急時のみ `feature/<topic>`）。
 - **DoD**:
   - 壊れた bundle を apply できない。
   - 警告は preview で読める。
-  - `bash scripts/verify.sh test` で SBV-U1〜U14 / SBV-I1〜I2 を含む 131 tests が緑。
+  - `bash scripts/verify.sh test` で SBV-U1〜U14 / SBV-I1〜I2 を含む 132 tests が緑。
   - 既存正常系 `ShareImporterTests` が壊れない。
   - 参照切れ presetID でクラッシュしない。
   - ja / en ローカライズ済み。

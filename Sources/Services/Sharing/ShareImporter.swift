@@ -71,7 +71,7 @@ public enum ShareImporter {
             ((try? context.fetch(FetchDescriptor<HolidayOverride>())) ?? [])
             .reduce(into: [:]) { $0[calendar.startOfDay(for: $1.date)] = $1 }
 
-        let presetNames = presetNameMap(bundle: bundle, existingPresets: existingPresets)
+        let presetReferences = presetReferenceMap(bundle: bundle, existingPresets: existingPresets)
         var consumedWarningIDs = Set<UUID>()
         var addedPresets = 0
         var updatedPresets = 0
@@ -149,7 +149,8 @@ public enum ShareImporter {
                 entityID: existing?.id,
                 changeKind: changeKind,
                 beforeText: existing.map { resource(assignmentSummary($0, calendar: calendar)) },
-                afterText: resource(assignmentSummary(assignment, presetNames: presetNames)),
+                afterText: resource(
+                    assignmentSummary(assignment, presetReferences: presetReferences)),
                 warnings: warnings(
                     for: path,
                     in: validation,
@@ -176,7 +177,7 @@ public enum ShareImporter {
                 entityID: existing?.id,
                 changeKind: changeKind,
                 beforeText: existing.map { resource(overrideSummary($0, calendar: calendar)) },
-                afterText: resource(overrideSummary(override, presetNames: presetNames)),
+                afterText: resource(overrideSummary(override, presetReferences: presetReferences)),
                 warnings: warnings(
                     for: path,
                     in: validation,
@@ -484,15 +485,31 @@ public enum ShareImporter {
         return .preset
     }
 
-    private static func presetNameMap(
+    private struct PresetPreviewReference {
+        var name: String
+        var defaultAlarmHour: Int?
+        var defaultAlarmMinute: Int?
+    }
+
+    private static func presetReferenceMap(
         bundle: ShiftBundle,
         existingPresets: [UUID: ShiftPreset]
-    ) -> [UUID: String] {
-        var names = existingPresets.mapValues(\.name)
-        for preset in bundle.presets {
-            names[preset.id] = preset.name
+    ) -> [UUID: PresetPreviewReference] {
+        var references = existingPresets.mapValues {
+            PresetPreviewReference(
+                name: $0.name,
+                defaultAlarmHour: $0.defaultAlarmHour,
+                defaultAlarmMinute: $0.defaultAlarmMinute
+            )
         }
-        return names
+        for preset in bundle.presets {
+            references[preset.id] = PresetPreviewReference(
+                name: preset.name,
+                defaultAlarmHour: preset.defaultAlarmHour,
+                defaultAlarmMinute: preset.defaultAlarmMinute
+            )
+        }
+        return references
     }
 
     private static func presetSummary(_ preset: ShiftPreset) -> String {
@@ -550,9 +567,11 @@ public enum ShareImporter {
             format: String(localized: "change_preview.assignment.summary"),
             dateText(assignment.date, calendar: calendar),
             assignment.preset?.name ?? String(localized: "change_preview.assignment.rest_day"),
-            alarmText(
-                hour: assignment.overrideAlarmHour,
-                minute: assignment.overrideAlarmMinute,
+            assignmentAlarmText(
+                overrideHour: assignment.overrideAlarmHour,
+                overrideMinute: assignment.overrideAlarmMinute,
+                inheritedHour: assignment.preset?.defaultAlarmHour,
+                inheritedMinute: assignment.preset?.defaultAlarmMinute,
                 skipAlarm: assignment.skipAlarm
             )
         )
@@ -560,16 +579,18 @@ public enum ShareImporter {
 
     private static func assignmentSummary(
         _ assignment: ShiftBundle.AssignmentDTO,
-        presetNames: [UUID: String]
+        presetReferences: [UUID: PresetPreviewReference]
     ) -> String {
+        let preset = assignment.presetID.flatMap { presetReferences[$0] }
         String(
             format: String(localized: "change_preview.assignment.summary"),
             calendarDayText(assignment.date),
-            assignment.presetID.flatMap { presetNames[$0] }
-                ?? String(localized: "change_preview.assignment.rest_day"),
-            alarmText(
-                hour: assignment.overrideAlarmHour,
-                minute: assignment.overrideAlarmMinute,
+            preset?.name ?? String(localized: "change_preview.assignment.rest_day"),
+            assignmentAlarmText(
+                overrideHour: assignment.overrideAlarmHour,
+                overrideMinute: assignment.overrideAlarmMinute,
+                inheritedHour: preset?.defaultAlarmHour,
+                inheritedMinute: preset?.defaultAlarmMinute,
                 skipAlarm: assignment.skipAlarm
             )
         )
@@ -592,7 +613,7 @@ public enum ShareImporter {
 
     private static func overrideSummary(
         _ override: ShiftBundle.OverrideDTO,
-        presetNames: [UUID: String]
+        presetReferences: [UUID: PresetPreviewReference]
     ) -> String {
         String(
             format: String(localized: "change_preview.override.summary"),
@@ -600,8 +621,30 @@ public enum ShareImporter {
             override.label,
             overrideActionText(
                 skipAlarm: override.skipAlarm,
-                replacementName: override.replacementPresetID.flatMap { presetNames[$0] }
+                replacementName: override.replacementPresetID.flatMap { presetReferences[$0]?.name }
             )
+        )
+    }
+
+    private static func assignmentAlarmText(
+        overrideHour: Int?,
+        overrideMinute: Int?,
+        inheritedHour: Int?,
+        inheritedMinute: Int?,
+        skipAlarm: Bool
+    ) -> String {
+        if skipAlarm {
+            return String(localized: "change_preview.alarm.skipped")
+        }
+        if let overrideHour, let overrideMinute {
+            return alarmText(hour: overrideHour, minute: overrideMinute)
+        }
+        guard let inheritedHour, let inheritedMinute else {
+            return String(localized: "change_preview.alarm.unset")
+        }
+        return String(
+            format: String(localized: "change_preview.alarm.inherited"),
+            alarmText(hour: inheritedHour, minute: inheritedMinute)
         )
     }
 
