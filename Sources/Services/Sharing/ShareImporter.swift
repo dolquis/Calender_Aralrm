@@ -582,7 +582,7 @@ public enum ShareImporter {
         presetReferences: [UUID: PresetPreviewReference]
     ) -> String {
         let preset = assignment.presetID.flatMap { presetReferences[$0] }
-        String(
+        return String(
             format: String(localized: "change_preview.assignment.summary"),
             calendarDayText(assignment.date),
             preset?.name ?? String(localized: "change_preview.assignment.rest_day"),
