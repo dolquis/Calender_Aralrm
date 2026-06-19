@@ -298,13 +298,24 @@ public final class AlarmDiagnosticsService {
                 recoveryAction: .refreshScheduledAlarms
             )
         }
+        let resultRaw = settings.lastAlarmSchedulerResultRaw
         let isFresh = generatedAt.timeIntervalSince(lastRun) <= 60 * 60 * 24
+        let isCompleted = resultRaw == "completed"
+        let isHealthy = isFresh && isCompleted
+        let message =
+            if isHealthy {
+                "diagnostics.last_sync.ok"
+            } else if isFresh {
+                "diagnostics.last_sync.failed"
+            } else {
+                "diagnostics.last_sync.stale"
+            }
         return check(
             "last_sync",
-            message: isFresh ? "diagnostics.last_sync.ok" : "diagnostics.last_sync.stale",
-            detail: settings.lastAlarmSchedulerResultRaw,
-            status: isFresh ? .normal : .attention,
-            recoveryAction: isFresh ? nil : .refreshScheduledAlarms
+            message: message,
+            detail: resultRaw,
+            status: isHealthy ? .normal : .attention,
+            recoveryAction: isHealthy ? nil : .refreshScheduledAlarms
         )
     }
 

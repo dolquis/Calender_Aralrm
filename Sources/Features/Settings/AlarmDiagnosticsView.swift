@@ -138,26 +138,7 @@ private struct AlarmDiagnosticsCheckRow: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            HStack(alignment: .firstTextBaseline, spacing: 10) {
-                Image(systemName: check.status.systemImage)
-                    .foregroundStyle(check.status.tint)
-                    .accessibilityHidden(true)
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(LocalizedStringKey(check.titleKey))
-                        .font(.headline)
-                    Text(LocalizedStringKey(check.messageKey))
-                        .foregroundStyle(.secondary)
-                    if let detail = check.detail {
-                        Text(detail)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-                }
-                Spacer()
-                Text(LocalizedStringKey(check.status.shortKey))
-                    .font(.caption)
-                    .foregroundStyle(check.status.tint)
-            }
+            checkSummary
             if let action = check.recoveryAction, action != .none {
                 Button {
                     perform(action)
@@ -168,6 +149,29 @@ private struct AlarmDiagnosticsCheckRow: View {
             }
         }
         .padding(.vertical, 4)
+    }
+
+    private var checkSummary: some View {
+        HStack(alignment: .firstTextBaseline, spacing: 10) {
+            Image(systemName: check.status.systemImage)
+                .foregroundStyle(check.status.tint)
+                .accessibilityHidden(true)
+            VStack(alignment: .leading, spacing: 4) {
+                Text(LocalizedStringKey(check.titleKey))
+                    .font(.headline)
+                Text(LocalizedStringKey(check.messageKey))
+                    .foregroundStyle(.secondary)
+                if let detail = check.detail {
+                    Text(detail)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            Spacer()
+            Text(LocalizedStringKey(check.status.shortKey))
+                .font(.caption)
+                .foregroundStyle(check.status.tint)
+        }
         .accessibilityElement(children: .combine)
     }
 }

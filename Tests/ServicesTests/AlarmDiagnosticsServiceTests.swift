@@ -53,6 +53,21 @@ struct AlarmDiagnosticsServiceTests {
     }
 
     @Test
+    func testFreshSchedulerFailureIsAttention() async throws {
+        let report = await makeReport(lastSchedulerResultRaw: "fetchExistingAlarmsFailed")
+
+        #expect(report.overallStatus == .attention)
+        #expect(try check("last_sync", in: report).status == .attention)
+        #expect(
+            try check("last_sync", in: report).messageKey
+                == "diagnostics.last_sync.failed"
+        )
+        #expect(
+            try check("last_sync", in: report).recoveryAction == .refreshScheduledAlarms
+        )
+    }
+
+    @Test
     func testDIAGU5AllChecksOkIsNormal() async throws {
         let report = await makeReport()
 
@@ -79,6 +94,7 @@ struct AlarmDiagnosticsServiceTests {
         scheduledIDs explicitScheduledIDs: Set<UUID>? = nil,
         includeAlarm: Bool = true,
         lastRun: Date? = nil,
+        lastSchedulerResultRaw: String = "completed",
         healthKitState: AlarmDiagnosticsHealthKitState = .authorized
     ) async -> AlarmDiagnosticsReport {
         let now = self.now
@@ -87,7 +103,8 @@ struct AlarmDiagnosticsServiceTests {
         let container = makeContainer(
             alarmID: alarmID,
             includeAlarm: includeAlarm,
-            lastRun: lastRun ?? now.addingTimeInterval(-60 * 60)
+            lastRun: lastRun ?? now.addingTimeInterval(-60 * 60),
+            lastSchedulerResultRaw: lastSchedulerResultRaw
         )
         let scheduledIDs = explicitScheduledIDs ?? (includeAlarm ? [alarmID] : [])
         let fake = FakeAlarmSchedulingClient(
@@ -110,7 +127,8 @@ struct AlarmDiagnosticsServiceTests {
     private func makeContainer(
         alarmID: UUID,
         includeAlarm: Bool,
-        lastRun: Date
+        lastRun: Date,
+        lastSchedulerResultRaw: String
     ) -> ModelContainer {
         let container = SharedPersistence.makeContainer(inMemory: true)
         let context = ModelContext(container)
@@ -119,7 +137,7 @@ struct AlarmDiagnosticsServiceTests {
                 lookaheadDays: 2,
                 liveActivityLeadHours: 8,
                 lastAlarmSchedulerRunAt: lastRun,
-                lastAlarmSchedulerResultRaw: "completed"
+                lastAlarmSchedulerResultRaw: lastSchedulerResultRaw
             )
         )
         let preset = ShiftPreset(

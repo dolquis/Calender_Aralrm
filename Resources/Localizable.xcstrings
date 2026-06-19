@@ -3581,6 +3581,22 @@
         }
       }
     },
+    "diagnostics.last_sync.failed": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The most recent scheduler run did not complete."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "直近のスケジューラ実行が完了していません。"
+          }
+        }
+      }
+    },
     "diagnostics.last_sync.ok": {
       "localizations": {
         "en": {
