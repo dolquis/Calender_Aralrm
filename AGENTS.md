@@ -196,7 +196,7 @@ Linear に起票**してハンドオフする（必要なら GitHub Issue にミ
 
 **状態ライフサイクル**: Backlog → Todo → In Progress → In Review → Done
 （中止は Canceled、重複は Duplicate）。ブランチ作成・PR で In Progress / In Review へ、
-PR マージで Done へ遷移させる。
+PR マージは In Review で止め（自動 Done にしない）、Done は検証メモ記載後に明示遷移する（`docs/linear-conventions.md` §7.1.3）。
 
 **ブランチ命名**: Linear issue が自動生成する `dolquis/dev-xx-*` を基本とする。
 
