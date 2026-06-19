@@ -120,11 +120,12 @@ public struct AlarmDiagnosticsView: View {
     }
 
     private func runSchedulerRefresh() async {
+        guard !isRefreshing else { return }
         isRefreshing = true
+        defer { isRefreshing = false }
         await dependencies.alarmScheduler.refreshScheduledAlarms()
         await dependencies.liveActivityController.evaluate()
         await reload()
-        isRefreshing = false
     }
 
     private func reload() async {

@@ -89,6 +89,40 @@ struct AlarmDiagnosticsServiceTests {
         )
     }
 
+    @Test
+    func testBGRefreshConfiguredRequiresPermittedPlistIdentifier() {
+        let identifier = "com.example.shiftalarm.refreshAlarms"
+
+        #expect(
+            AlarmDiagnosticsService.bgRefreshPermittedIdentifierConfigured(
+                infoDictionary: [
+                    "ShiftAlarmBGRefreshTaskIdentifier": identifier,
+                    "BGTaskSchedulerPermittedIdentifiers": [identifier],
+                ])
+        )
+        #expect(
+            !AlarmDiagnosticsService.bgRefreshPermittedIdentifierConfigured(
+                infoDictionary: [
+                    "ShiftAlarmBGRefreshTaskIdentifier": identifier,
+                    "BGTaskSchedulerPermittedIdentifiers": [],
+                ])
+        )
+        #expect(
+            !AlarmDiagnosticsService.bgRefreshPermittedIdentifierConfigured(
+                infoDictionary: [
+                    "ShiftAlarmBGRefreshTaskIdentifier": "$(SHIFTALARM_BG_REFRESH_TASK_ID)",
+                    "BGTaskSchedulerPermittedIdentifiers": [identifier],
+                ])
+        )
+        #expect(
+            !AlarmDiagnosticsService.bgRefreshPermittedIdentifierConfigured(
+                infoDictionary: [
+                    "ShiftAlarmBGRefreshTaskIdentifier": identifier,
+                    "BGTaskSchedulerPermittedIdentifiers": ["$(SHIFTALARM_BG_REFRESH_TASK_ID)"],
+                ])
+        )
+    }
+
     private func makeReport(
         authorizationState: AlarmAuthorizationState = .authorized,
         scheduledIDs explicitScheduledIDs: Set<UUID>? = nil,

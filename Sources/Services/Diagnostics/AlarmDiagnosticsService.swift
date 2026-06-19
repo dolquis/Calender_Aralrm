@@ -118,7 +118,7 @@ public final class AlarmDiagnosticsService {
             ) != nil
         },
         bgRefreshConfigured: @escaping () -> Bool = {
-            !BGRefreshController.identifier.isEmpty
+            AlarmDiagnosticsService.bgRefreshPermittedIdentifierConfigured()
         },
         healthKitState: @escaping () -> AlarmDiagnosticsHealthKitState = {
             AlarmDiagnosticsService.currentHealthKitState()
@@ -428,5 +428,30 @@ public final class AlarmDiagnosticsService {
         #else
         return .unavailable
         #endif
+    }
+
+    public static func bgRefreshPermittedIdentifierConfigured(bundle: Bundle = .main) -> Bool {
+        bgRefreshPermittedIdentifierConfigured(infoDictionary: bundle.infoDictionary ?? [:])
+    }
+
+    static func bgRefreshPermittedIdentifierConfigured(
+        infoDictionary: [String: Any]
+    ) -> Bool {
+        guard
+            let identifier = resolvedInfoString(
+                infoDictionary["ShiftAlarmBGRefreshTaskIdentifier"]
+            ),
+            let permitted = infoDictionary["BGTaskSchedulerPermittedIdentifiers"] as? [String]
+        else {
+            return false
+        }
+        return permitted.compactMap(resolvedInfoString).contains(identifier)
+    }
+
+    private static func resolvedInfoString(_ value: Any?) -> String? {
+        guard let string = value as? String else { return nil }
+        let trimmed = string.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty, !trimmed.hasPrefix("$(") else { return nil }
+        return trimmed
     }
 }
