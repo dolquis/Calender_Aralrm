@@ -149,12 +149,15 @@ struct AlarmSchedulerTests {
         var alarms = try fetchAlarms(in: container)
         #expect(alarms.first?.currentAlarmKitID != oldID)
         #expect(alarms.first?.pendingCancelIDs == [oldID])
+        #expect(
+            try fetchSettings(in: container).lastAlarmSchedulerResultRaw == "alarmOperationsFailed")
 
         await fake.setCancelFailures([])
         await scheduler.refreshScheduledAlarms()
 
         alarms = try fetchAlarms(in: container)
         #expect(alarms.first?.pendingCancelIDs.isEmpty == true)
+        #expect(try fetchSettings(in: container).lastAlarmSchedulerResultRaw == "completed")
         let operations = await fake.recordedOperations()
         #expect(cancelIDs(in: operations).filter { $0 == oldID }.count == 2)
     }
@@ -475,6 +478,11 @@ struct AlarmSchedulerTests {
         let context = ModelContext(container)
         let alarms = try context.fetch(FetchDescriptor<ShiftAlarm>())
         return alarms.sorted { $0.fireDate < $1.fireDate }
+    }
+
+    private func fetchSettings(in container: ModelContainer) throws -> AppSettings {
+        let context = ModelContext(container)
+        return try #require(try context.fetch(FetchDescriptor<AppSettings>()).first)
     }
 
     private func copyPreP04V1StoreFixture(to directory: URL) throws -> URL {
