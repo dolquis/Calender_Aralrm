@@ -1,9 +1,9 @@
 import Foundation
 import SwiftData
 
-public typealias RotationPattern = SchemaV2.RotationPattern
+public typealias RotationPattern = SchemaV3.RotationPattern
 
-extension SchemaV2 {
+extension SchemaV3 {
     @Model
     public final class RotationPattern {
         @Attribute(.unique) public var id: UUID

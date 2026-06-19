@@ -1,9 +1,9 @@
 import Foundation
 import SwiftData
 
-public typealias AppSettings = SchemaV2.AppSettings
+public typealias AppSettings = SchemaV3.AppSettings
 
-extension SchemaV2 {
+extension SchemaV3 {
     @Model
     public final class AppSettings {
         @Attribute(.unique) public var id: UUID
@@ -18,6 +18,10 @@ extension SchemaV2 {
         public var patternSuggestionSnoozedFingerprint: String?
         /// Manual override mismatch ratio that triggers accepted-pattern drift suggestions.
         public var patternDriftThreshold: Double?
+        /// Last time `AlarmScheduler` completed a refresh attempt.
+        public var lastAlarmSchedulerRunAt: Date?
+        /// Human-readable scheduler result. Structured diagnostics are deferred to P3-8.
+        public var lastAlarmSchedulerResultRaw: String?
 
         public var effectivePatternDriftThreshold: Double {
             patternDriftThreshold ?? 0.15
@@ -32,7 +36,9 @@ extension SchemaV2 {
             hasOnboarded: Bool = false,
             patternSuggestionSnoozedUntil: Date? = nil,
             patternSuggestionSnoozedFingerprint: String? = nil,
-            patternDriftThreshold: Double = 0.15
+            patternDriftThreshold: Double = 0.15,
+            lastAlarmSchedulerRunAt: Date? = nil,
+            lastAlarmSchedulerResultRaw: String? = nil
         ) {
             self.id = id
             self.defaultSoundID = defaultSoundID
@@ -43,6 +49,8 @@ extension SchemaV2 {
             self.patternSuggestionSnoozedUntil = patternSuggestionSnoozedUntil
             self.patternSuggestionSnoozedFingerprint = patternSuggestionSnoozedFingerprint
             self.patternDriftThreshold = patternDriftThreshold
+            self.lastAlarmSchedulerRunAt = lastAlarmSchedulerRunAt
+            self.lastAlarmSchedulerResultRaw = lastAlarmSchedulerResultRaw
         }
     }
 }

@@ -16,7 +16,7 @@ public enum SharedPersistence {
     }
 
     public static func makeContainer(inMemory: Bool = false) -> ModelContainer {
-        let schema = Schema(versionedSchema: SchemaV2.self)
+        let schema = Schema(versionedSchema: SchemaV3.self)
         let configuration: ModelConfiguration
         if inMemory {
             configuration = ModelConfiguration(isStoredInMemoryOnly: true)

@@ -12,6 +12,18 @@ public final class AlarmScheduler {
     private let saveContext: @MainActor (ModelContext) throws -> Void
     private let fetchExistingAlarms: @MainActor (ModelContext) throws -> [ShiftAlarm]
 
+    private enum RefreshResult: String {
+        case completed
+        case fetchExistingAlarmsFailed
+        case alarmOperationsFailed
+
+        func merged(with other: RefreshResult) -> RefreshResult {
+            if self == .completed { return other }
+            if other == .completed { return self }
+            return self
+        }
+    }
+
     public init(
         modelContainer: ModelContainer,
         alarmClient: any AlarmSchedulingClient,
@@ -45,7 +57,7 @@ public final class AlarmScheduler {
     public func refreshScheduledAlarms() async {
         let context = ModelContext(modelContainer)
         let calendar = Calendar.current
-        let settings = (try? context.fetch(FetchDescriptor<AppSettings>()).first) ?? AppSettings()
+        let settings = loadSettings(context: context)
         let lookahead = max(1, settings.lookaheadDays)
         let days = Array(DayRange(start: .now, dayCount: lookahead, calendar: calendar))
         let existingAlarms: [ShiftAlarm]
@@ -53,6 +65,11 @@ public final class AlarmScheduler {
             existingAlarms = try fetchExistingAlarms(context)
         } catch {
             // Without persisted rows, live AlarmKit IDs cannot be distinguished from real alarms.
+            recordSchedulerRun(
+                settings: settings,
+                result: .fetchExistingAlarmsFailed,
+                context: context
+            )
             return
         }
 
@@ -62,7 +79,7 @@ public final class AlarmScheduler {
         let expectedBedtime = Self.buildExpectedBedtime(
             days: days, input: input, settings: settings)
 
-        await cancelOrphanedLiveAlarms(knownAlarms: existingAlarms)
+        var result = await cancelOrphanedLiveAlarms(knownAlarms: existingAlarms)
 
         let (existingWakeByDay, existingBedtimeByFireDate) =
             Self.partitionExisting(
@@ -70,21 +87,24 @@ public final class AlarmScheduler {
                 calendar: calendar
             )
 
-        await diffSync(
-            expected: expectedWake,
-            existingByKey: existingWakeByDay,
-            isBedtimeReminder: false,
-            context: context
-        )
-        await diffSync(
-            expected: expectedBedtime,
-            existingByKey: existingBedtimeByFireDate,
-            isBedtimeReminder: true,
-            context: context
-        )
+        result = result.merged(
+            with: await diffSync(
+                expected: expectedWake,
+                existingByKey: existingWakeByDay,
+                isBedtimeReminder: false,
+                context: context
+            ))
+        result = result.merged(
+            with: await diffSync(
+                expected: expectedBedtime,
+                existingByKey: existingBedtimeByFireDate,
+                isBedtimeReminder: true,
+                context: context
+            ))
         #if canImport(WidgetKit)
         WidgetCenter.shared.reloadAllTimelines()
         #endif
+        recordSchedulerRun(settings: settings, result: result, context: context)
     }
 
     // MARK: - Expected-set construction
@@ -163,22 +183,32 @@ public final class AlarmScheduler {
         existingByKey: [Date: ShiftAlarm],
         isBedtimeReminder: Bool,
         context: ModelContext
-    ) async {
+    ) async -> RefreshResult {
+        var result: RefreshResult = .completed
         let expectedKeys = Set(expected.map(\.key))
         for entry in expected {
             if let existingAlarm = existingByKey[entry.key] {
-                await reschedule(existingAlarm, to: entry, context: context)
+                result = result.merged(
+                    with: await reschedule(existingAlarm, to: entry, context: context))
             } else {
-                await scheduleNew(entry, isBedtimeReminder: isBedtimeReminder, context: context)
+                result = result.merged(
+                    with: await scheduleNew(
+                        entry,
+                        isBedtimeReminder: isBedtimeReminder,
+                        context: context
+                    ))
             }
         }
         for (key, alarm) in existingByKey where !expectedKeys.contains(key) {
-            await cancel(alarm, context: context)
+            result = result.merged(with: await cancel(alarm, context: context))
         }
+        return result
     }
 
-    private func cancelOrphanedLiveAlarms(knownAlarms: [ShiftAlarm]) async {
-        guard let liveIDs = try? await alarmClient.scheduledIDs() else { return }
+    private func cancelOrphanedLiveAlarms(knownAlarms: [ShiftAlarm]) async -> RefreshResult {
+        guard let liveIDs = try? await alarmClient.scheduledIDs() else {
+            return .alarmOperationsFailed
+        }
         let knownIDs = Set(
             knownAlarms.flatMap { alarm -> [UUID] in
                 var ids = alarm.pendingCancelIDs
@@ -188,16 +218,22 @@ public final class AlarmScheduler {
                 return ids
             }
         )
+        var result: RefreshResult = .completed
         for orphanID in liveIDs.subtracting(knownIDs) {
-            try? await alarmClient.cancel(id: orphanID)
+            do {
+                try await alarmClient.cancel(id: orphanID)
+            } catch {
+                result = .alarmOperationsFailed
+            }
         }
+        return result
     }
 
     private func reschedule(
         _ existing: ShiftAlarm,
         to entry: ExpectedAlarm,
         context: ModelContext
-    ) async {
+    ) async -> RefreshResult {
         let needsReplacement =
             existing.fireDate != entry.fireDate
             || existing.label != entry.label
@@ -205,8 +241,7 @@ public final class AlarmScheduler {
             || existing.currentAlarmKitID == nil
 
         guard needsReplacement else {
-            await cancelPendingIDs(for: existing, context: context)
-            return
+            return await cancelPendingIDs(for: existing, context: context)
         }
         let previousFireDate = existing.fireDate
         let previousLabel = existing.label
@@ -238,17 +273,18 @@ public final class AlarmScheduler {
                 existing.currentAlarmKitID = previousCurrentID
                 existing.pendingCancelIDs = previousPendingIDs
                 try? await alarmClient.cancel(id: newID)
-                return
+                return .alarmOperationsFailed
             }
-            await cancelPendingIDs(for: existing, context: context)
+            return await cancelPendingIDs(for: existing, context: context)
         } catch {
             // Schedule failed: old alarm is still active; next refresh will retry.
+            return .alarmOperationsFailed
         }
     }
 
     private func scheduleNew(
         _ entry: ExpectedAlarm, isBedtimeReminder: Bool, context: ModelContext
-    ) async {
+    ) async -> RefreshResult {
         let newID = UUID()
         do {
             try await alarmClient.schedule(
@@ -272,30 +308,42 @@ public final class AlarmScheduler {
             } catch {
                 context.delete(alarm)
                 try? await alarmClient.cancel(id: newID)
+                return .alarmOperationsFailed
             }
         } catch {
             // Schedule failed: skip persisting; the next refresh will retry.
+            return .alarmOperationsFailed
         }
+        return .completed
     }
 
-    private func cancel(_ alarm: ShiftAlarm, context: ModelContext) async {
+    private func cancel(_ alarm: ShiftAlarm, context: ModelContext) async -> RefreshResult {
+        var result: RefreshResult = .completed
         if let kitID = alarm.currentAlarmKitID {
             alarm.appendPendingCancelID(kitID)
             alarm.currentAlarmKitID = nil
             do {
                 try saveContext(context)
             } catch {
-                return
+                return .alarmOperationsFailed
             }
         }
-        await cancelPendingIDs(for: alarm, context: context)
+        result = result.merged(with: await cancelPendingIDs(for: alarm, context: context))
         if alarm.currentAlarmKitID == nil, alarm.pendingCancelIDs.isEmpty {
             context.delete(alarm)
-            try? saveContext(context)
+            do {
+                try saveContext(context)
+            } catch {
+                result = .alarmOperationsFailed
+            }
         }
+        return result
     }
 
-    private func cancelPendingIDs(for alarm: ShiftAlarm, context: ModelContext) async {
+    private func cancelPendingIDs(
+        for alarm: ShiftAlarm, context: ModelContext
+    ) async -> RefreshResult {
+        var result: RefreshResult = .completed
         for pendingID in alarm.pendingCancelIDs {
             do {
                 try await alarmClient.cancel(id: pendingID)
@@ -303,8 +351,30 @@ public final class AlarmScheduler {
                 try saveContext(context)
             } catch {
                 // Leave the ID in pending so the next refresh can retry.
+                result = .alarmOperationsFailed
             }
         }
+        return result
+    }
+
+    private func loadSettings(context: ModelContext) -> AppSettings {
+        if let settings = try? context.fetch(FetchDescriptor<AppSettings>()).first {
+            return settings
+        }
+        let settings = AppSettings()
+        context.insert(settings)
+        try? saveContext(context)
+        return settings
+    }
+
+    private func recordSchedulerRun(
+        settings: AppSettings,
+        result: RefreshResult,
+        context: ModelContext
+    ) {
+        settings.lastAlarmSchedulerRunAt = .now
+        settings.lastAlarmSchedulerResultRaw = result.rawValue
+        try? saveContext(context)
     }
 
     static func buildResolverInput(

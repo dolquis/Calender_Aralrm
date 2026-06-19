@@ -75,7 +75,7 @@ bash scripts/verify.sh test
 ```
 
 テストは Apple の [Swift Testing](https://developer.apple.com/documentation/testing)
-（`@Test` / `#expect`）で記述しており、現在は 132 件のテスト（19 テストスイート / 22 ファイル）
+（`@Test` / `#expect`）で記述しており、現在は 141 件のテスト（20 テストスイート / 23 ファイル）
 で Domain / Services / App Intents / HealthKit 補助ロジック / Background refresh / Deep link /
 Sharing / Snapshot をカバーしています。snapshot test 6 件は通常 `verify.sh` では
 skip され、`SNAPSHOT_TESTING_ENABLED=1` 指定時に記録 / 検証されます。
@@ -135,6 +135,9 @@ readiness script が意図的に失敗します。device build script は同じ 
 - **`.shiftalarm` 入力バリデーション** — Codable を超えた時刻範囲・周期長・重複 ID /
   日付・件数上限・参照切れ preset の検査により、壊れた共有ファイルや URL import が
   ローカルストアを壊さないようにする。
+- **アラーム診断画面** — 設定から次回アラームが実際に鳴る状態かを確認し、AlarmKit 権限、
+  scheduler 同期、App Group、BG refresh、Live Activity、HealthKit の状態と復旧アクションを
+  表示する。
 
 設計済み（未実装）:
 

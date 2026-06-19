@@ -1282,12 +1282,12 @@ public enum SwapKind: Int, Codable, Sendable, CaseIterable {
 `date` は `calendar.startOfDay(for:)` 正規化。`@Relationship` は持たず、
 `DayAssignment` とは独立に存在する（書き戻し負荷最小化のため）。
 
-### 5.2 スキーマ migration（V2 → V3）
+### 5.2 スキーマ migration（active schema → 次版）
 
 - `SwapRecord` 追加のみ。SwiftData lightweight migration で吸収。
-- 新規 `Sources/Domain/Persistence/SchemaV3.swift` + 既存 `MigrationPlan` 拡張:
-  - `SchemaV3.versionIdentifier = Schema.Version(3, 0, 0)`
-  - `SchemaMigrationPlan.stages += [.lightweight(from: V2, to: V3)]`
+- 新規 `Sources/Domain/Persistence/SchemaV*.swift` + 既存 `MigrationPlan` 拡張:
+  - versionIdentifier は実装着手時点の次の未使用版番号を使う。
+  - `SchemaMigrationPlan.stages` に active schema から次版への lightweight stage を追加。
 - 既存 `DayAssignment` / `RotationPattern` / `VacationPeriod` / `ShiftPreset` /
   `HolidayOverride` / `AppSettings` は **非破壊** (δ-S1)。
 - migration 直後 `SwapRecord.count == 0` (δ-S2)。

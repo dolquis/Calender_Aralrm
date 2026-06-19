@@ -1,9 +1,9 @@
 import Foundation
 import SwiftData
 
-public typealias ShiftPreset = SchemaV2.ShiftPreset
+public typealias ShiftPreset = SchemaV3.ShiftPreset
 
-extension SchemaV2 {
+extension SchemaV3 {
     @Model
     public final class ShiftPreset {
         @Attribute(.unique) public var id: UUID

@@ -9,6 +9,7 @@ public final class AppDependencies {
     public let modelContainer: ModelContainer
     public let alarmAuthorization: AlarmAuthorization
     public let alarmScheduler: AlarmScheduler
+    public let alarmDiagnosticsService: AlarmDiagnosticsService
     public let liveActivityController: LiveActivityController
     public let sleepSampleWriter: SleepSampleWriter
     public var pendingImport: PendingImportBundle?
@@ -19,6 +20,10 @@ public final class AppDependencies {
         let service = AlarmService()
         self.alarmAuthorization = AlarmAuthorization(service: service)
         self.alarmScheduler = AlarmScheduler(
+            modelContainer: container,
+            alarmClient: service
+        )
+        self.alarmDiagnosticsService = AlarmDiagnosticsService(
             modelContainer: container,
             alarmClient: service
         )
