@@ -36,7 +36,7 @@ public static func storeURL() -> URL {
   ローカルストアを置く。テストでは `makeContainer(inMemory: true)` を使うのが既定。
 
 `makeContainer(inMemory:)` は現行の versioned schema
-（例: `Schema(versionedSchema: SchemaV2.self)`）を一次源として
+（例: `Schema(versionedSchema: SchemaV3.self)`）を一次源として
 `ModelConfiguration("ShiftAlarmStore", schema:, url:)` を組み立て、
 `ModelContainer(for:, migrationPlan:, configurations:)` に migration plan を渡す。
 マイグレーション時に新 schema へ切り替えるのはこの 1 箇所。

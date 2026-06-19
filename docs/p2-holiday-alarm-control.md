@@ -61,12 +61,11 @@ public enum HolidayAlarmBehavior: Int, Codable, Sendable {
 - `replacementPreset` は据え置き（`ring` 時の差し替え時刻として継続利用）。
 
 ### 4.4 マイグレーション（**推奨 = 追加列 + 遅延 backfill**）
-- **次版スキーマ（既定 SchemaV3）** を新設し、上記 2 列（`AppSettings.holidayAlarmDefaultRaw` /
+- **次版スキーマ（DEV-35 完了後は SchemaV4 以降）** を新設し、上記 2 列（`AppSettings.holidayAlarmDefaultRaw` /
   `HolidayOverride.alarmBehaviorRaw`）を **nullable 追加**（[SchemaV2.swift](../Sources/Domain/Persistence/SchemaV2.swift)
   に倣い [MigrationPlan.swift](../Sources/Domain/Persistence/MigrationPlan.swift) に `.lightweight` stage を追加）。
-  - **版番号の調整（重要）**: ROADMAP §P2-β / §P2-γ も SchemaV2→**SchemaV3** の新設を予定している
-    （ROADMAP.md L304 / L920 / L1008）。**先に着手したタスクが SchemaV3 を取り、後発は SchemaV4 以降**にする。
-    本仕様の「V3」はプレースホルダで、実装着手時に次の未使用版番号へ解決する（複数のスキーマ追加を
+  - **版番号の調整（重要）**: DEV-35 で SchemaV3 が導入済みのため、
+    本仕様の版番号は実装着手時に次の未使用版番号へ解決する（複数のスキーマ追加を
     1 PR に束ねる場合は 1 版にまとめる）。
 - **遅延 backfill**（初回起動 or コンテナ初期化時に 1 回）:
   - `HolidayOverride.alarmBehaviorRaw == nil` の行 → `skipAlarm ? .inherit : .ring`（方針 #3: true→inherit）。
@@ -171,7 +170,7 @@ public enum HolidayAlarmBehavior: Int, Codable, Sendable {
 
 **新規**
 - `Sources/Domain/Models/HolidayAlarmBehavior.swift` — 列挙型。
-- `Sources/Domain/Persistence/SchemaV3.swift` — V3 スキーマ。
+- `Sources/Domain/Persistence/SchemaV*.swift` — 次版スキーマ。
 - `Sources/Domain/Persistence/HolidayBehaviorBackfill.swift`（命名要調整）— 遅延 backfill。
 - `Tests/DomainTests/HolidayAlarmResolveTests.swift` / `Tests/DomainTests/HolidayMigrationBackfillTests.swift`。
 

@@ -12,6 +12,11 @@ public final class AlarmScheduler {
     private let saveContext: @MainActor (ModelContext) throws -> Void
     private let fetchExistingAlarms: @MainActor (ModelContext) throws -> [ShiftAlarm]
 
+    private enum RefreshResult: String {
+        case completed
+        case fetchExistingAlarmsFailed
+    }
+
     public init(
         modelContainer: ModelContainer,
         alarmClient: any AlarmSchedulingClient,
@@ -45,7 +50,7 @@ public final class AlarmScheduler {
     public func refreshScheduledAlarms() async {
         let context = ModelContext(modelContainer)
         let calendar = Calendar.current
-        let settings = (try? context.fetch(FetchDescriptor<AppSettings>()).first) ?? AppSettings()
+        let settings = loadSettings(context: context)
         let lookahead = max(1, settings.lookaheadDays)
         let days = Array(DayRange(start: .now, dayCount: lookahead, calendar: calendar))
         let existingAlarms: [ShiftAlarm]
@@ -53,6 +58,11 @@ public final class AlarmScheduler {
             existingAlarms = try fetchExistingAlarms(context)
         } catch {
             // Without persisted rows, live AlarmKit IDs cannot be distinguished from real alarms.
+            recordSchedulerRun(
+                settings: settings,
+                result: .fetchExistingAlarmsFailed,
+                context: context
+            )
             return
         }
 
@@ -85,6 +95,7 @@ public final class AlarmScheduler {
         #if canImport(WidgetKit)
         WidgetCenter.shared.reloadAllTimelines()
         #endif
+        recordSchedulerRun(settings: settings, result: .completed, context: context)
     }
 
     // MARK: - Expected-set construction
@@ -305,6 +316,26 @@ public final class AlarmScheduler {
                 // Leave the ID in pending so the next refresh can retry.
             }
         }
+    }
+
+    private func loadSettings(context: ModelContext) -> AppSettings {
+        if let settings = try? context.fetch(FetchDescriptor<AppSettings>()).first {
+            return settings
+        }
+        let settings = AppSettings()
+        context.insert(settings)
+        try? saveContext(context)
+        return settings
+    }
+
+    private func recordSchedulerRun(
+        settings: AppSettings,
+        result: RefreshResult,
+        context: ModelContext
+    ) {
+        settings.lastAlarmSchedulerRunAt = .now
+        settings.lastAlarmSchedulerResultRaw = result.rawValue
+        try? saveContext(context)
     }
 
     static func buildResolverInput(

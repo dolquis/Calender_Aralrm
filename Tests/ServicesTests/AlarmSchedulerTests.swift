@@ -336,7 +336,7 @@ struct AlarmSchedulerTests {
         defer { try? fileManager.removeItem(at: directory) }
         let storeURL = try copyPreP04V1StoreFixture(to: directory)
 
-        let newSchema = Schema(versionedSchema: SchemaV2.self)
+        let newSchema = Schema(versionedSchema: SchemaV3.self)
         let newConfiguration = ModelConfiguration(
             "MigrationTest",
             schema: newSchema,
@@ -355,6 +355,49 @@ struct AlarmSchedulerTests {
         #expect(alarms.first?.currentAlarmKitID == alarmKitID)
         #expect(alarms.first?.alarmKitID == alarmKitID)
         #expect(alarms.first?.pendingCancelIDs.isEmpty == true)
+    }
+
+    @Test
+    func testASM2V2StoreMigratesDiagnosticsSettingsDefaults() throws {
+        let fileManager = FileManager.default
+        let directory = fileManager.temporaryDirectory.appendingPathComponent(
+            "ShiftAlarmV3Migration-\(UUID().uuidString)",
+            isDirectory: true
+        )
+        try fileManager.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? fileManager.removeItem(at: directory) }
+        let storeURL = directory.appendingPathComponent("ShiftAlarm.store")
+
+        do {
+            let v2Schema = Schema(versionedSchema: SchemaV2.self)
+            let v2Configuration = ModelConfiguration(
+                "MigrationTestV2",
+                schema: v2Schema,
+                url: storeURL
+            )
+            let v2Container = try ModelContainer(for: v2Schema, configurations: [v2Configuration])
+            let v2Context = ModelContext(v2Container)
+            v2Context.insert(SchemaV2.AppSettings(lookaheadDays: 5))
+            try v2Context.save()
+        }
+
+        let v3Schema = Schema(versionedSchema: SchemaV3.self)
+        let v3Configuration = ModelConfiguration(
+            "MigrationTestV3",
+            schema: v3Schema,
+            url: storeURL
+        )
+        let v3Container = try ModelContainer(
+            for: v3Schema,
+            migrationPlan: ShiftAlarmMigrationPlan.self,
+            configurations: [v3Configuration]
+        )
+        let v3Context = ModelContext(v3Container)
+        let settings = try #require(try v3Context.fetch(FetchDescriptor<AppSettings>()).first)
+
+        #expect(settings.lookaheadDays == 5)
+        #expect(settings.lastAlarmSchedulerRunAt == nil)
+        #expect(settings.lastAlarmSchedulerResultRaw == nil)
     }
 
     private func seededWakeContainer(

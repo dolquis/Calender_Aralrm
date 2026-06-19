@@ -22,8 +22,8 @@ main へ PR（Linear issue が無い緊急時のみ `feature/<topic>`）。
 - P0-1 は Xcode 26.5 / iOS 26.5 SDK でコードレベル検証に着手済み。
   `AlarmPresentation.Alert.stopButton` の iOS 26.1 deprecation を回避し、
   `AlarmManager.AlarmConfiguration.alarm(...)` に寄せた。実機確認は未完了。
-- テストは Apple の Swift Testing（`@Test` / `#expect`）で記述。132 件 (19 スイート /
-  22 ファイル) 緑。通常の `scripts/verify.sh` では 6 件の snapshot test は
+- テストは Apple の Swift Testing（`@Test` / `#expect`）で記述。139 件 (20 スイート /
+  23 ファイル) 緑。通常の `scripts/verify.sh` では 6 件の snapshot test は
   `SNAPSHOT_TESTING_ENABLED=1` 未指定のため skip。
   CI は `macos-26` / Xcode 26+ で `scripts/verify.sh` を実行。
 - **状態・進捗・優先度の正典は Linear**（team `Dev` / project **Shift Alarm /
@@ -298,11 +298,13 @@ main へ PR（Linear issue が無い緊急時のみ `feature/<topic>`）。
         `@Attribute(originalName: "alarmKitID")` を持つ `current_alarm_kit_id`
         と、`Data` デフォルト値（`Data([0x5b, 0x5d])` = `"[]"`）の
         `pendingCancelData` で SwiftData が自動的に値を引き継ぐ。
-      - `SharedPersistence.makeContainer()` は `Schema(versionedSchema: SchemaV2.self)`
-        を渡し、`MigrationPlan` をコンテナ生成オプションに付与する。
+      - P0-4 時点の `SharedPersistence.makeContainer()` は
+        `Schema(versionedSchema: SchemaV2.self)` を渡し、`MigrationPlan` を
+        コンテナ生成オプションに付与する（現在は後続の DEV-35 migration により
+        SchemaV3 が active）。
       - 履歴版 `SchemaV1` の列構成は **変更しない**（migration baseline 維持）。
-        以降の P2-β / P2-γ が更にスキーマを足す場合は SchemaV2 → SchemaV3
-        と段階的に追加する。
+        以降のタスクが更にスキーマを足す場合は active schema の次版
+        （DEV-35 完了後は SchemaV4 以降）として段階的に追加する。
       - `/swiftdata-migration` skill を必ず起動し、Widget ターゲットでも V2
         を読めることをビルドで確認する。
     - 既存 `alarmKitID` プロパティを `current_alarm_kit_id` に rename する際は
@@ -354,13 +356,13 @@ main へ PR（Linear issue が無い緊急時のみ `feature/<topic>`）。
     `@Attribute(originalName: "alarmKitID")` 付き rename）
   - 変更 `Sources/Domain/Persistence/SchemaV1.swift`（履歴版モデルを `SchemaV1.*`
     として固定し、V2 の新列と混線しない migration baseline を維持）
-  - 新規 `Sources/Domain/Persistence/SchemaV2.swift`（現行モデルを `SchemaV2.*`
-    として公開）
+  - 新規 `Sources/Domain/Persistence/SchemaV2.swift`（P0-4 時点の現行モデルを
+    `SchemaV2.*` として公開。現在は DEV-35 の SchemaV3 が active）
   - 新規 / 変更 `Sources/Domain/Persistence/MigrationPlan.swift`（`SchemaV1 →
     SchemaV2` の lightweight migration stage を登録）
   - 変更 `Sources/Domain/Persistence/ModelContainer+Shared.swift`
-    （`SharedPersistence.makeContainer()` が `Schema(versionedSchema: SchemaV2.self)` と
-    `MigrationPlan` を使うように切り替え）
+    （P0-4 時点で `SharedPersistence.makeContainer()` が
+    `Schema(versionedSchema: SchemaV2.self)` と `MigrationPlan` を使うように切り替え）
   - 変更 `App/AppDependencies.swift`
   - 新規 `Tests/Support/FakeAlarmSchedulingClient.swift`
   - **変更（既存ファイル）** `Tests/ServicesTests/AlarmSchedulerTests.swift`
@@ -491,7 +493,7 @@ main へ PR（Linear issue が無い緊急時のみ `feature/<topic>`）。
 - **DoD**:
   - 壊れた bundle を apply できない。
   - 警告は preview で読める。
-  - `bash scripts/verify.sh test` で SBV-U1〜U14 / SBV-I1〜I2 を含む 132 tests が緑。
+  - `bash scripts/verify.sh test` で SBV-U1〜U14 / SBV-I1〜I2 を含む 139 tests が緑。
   - 既存正常系 `ShareImporterTests` が壊れない。
   - 参照切れ presetID でクラッシュしない。
   - ja / en ローカライズ済み。
@@ -501,9 +503,8 @@ main へ PR（Linear issue が無い緊急時のみ `feature/<topic>`）。
 ## 3. P1 — UX 完成度
 
 > ステータス: **P1-1〜P1-4 は完了**（PR #7 / #8 / #9 / #10、以下は履歴）。
-> **P1-5 アラーム診断画面 / P1-6 ChangePreview 共通化 / P1（追補）A1 ドリフト
-> UI 統合は 2026-05-27 提案書取り込みで新規追加** — いずれも未着手で、依存関係
-> として §P0-4 が完了している必要がある（§8「次の 1 手」順序を参照）。
+> **P1-5 アラーム診断画面は DEV-35 で実装済み**。P1-6 ChangePreview 共通化は
+> 未着手。P1（追補）A1 ドリフト UI 統合は `RotationListView` へ実装済み。
 
 ### P1-1. オンボーディング ✅ 完了 (PR #7)
 
@@ -558,7 +559,7 @@ main へ PR（Linear issue が無い緊急時のみ `feature/<topic>`）。
   - Settings から Live Activity 表示開始時間を変更でき、即時反映。
   - Widget のタイムラインが次のアラームに近づくにつれて自然に更新される。
 
-### P1-5. アラーム診断画面（未着手 / 2026-05-27 追加）
+### P1-5. アラーム診断画面（実装済み / DEV-35）
 
 > 詳細モデル / アルゴリズムは
 > [docs/p2-algorithms.md §7](docs/p2-algorithms.md#7-横断-changepreview-抽象--アラーム診断--shiftalarm-validator) に集約。
@@ -612,6 +613,8 @@ main へ PR（Linear issue が無い緊急時のみ `feature/<topic>`）。
   - 変更 `Sources/Features/Settings/SettingsView.swift`
   - 変更 `Sources/Services/AlarmKit/AlarmScheduler.swift`
   - 変更 `Sources/Domain/Models/AppSettings.swift`
+  - 新規 `Sources/Domain/Persistence/SchemaV3.swift` /
+    `Sources/Domain/Persistence/SchemaV2Models.swift`
   - 新規 `Tests/ServicesTests/AlarmDiagnosticsServiceTests.swift`
 - **DoD**:
   - Settings から診断画面を開ける。
@@ -619,7 +622,7 @@ main へ PR（Linear issue が無い緊急時のみ `feature/<topic>`）。
   - AlarmKit 未許可時に明確な CTA が出る。
   - 診断結果が VoiceOver で意味のある順序で読める（既存 P1-2 a11y 監査済みリストに
     追記）。
-  - 単体テストで状態判定 5 ケースを網羅する。
+  - 単体テストで状態判定 5 ケース + DIAG-U6 を網羅する。
 
 ### P1-6. ChangePreview 共通化（実装中 / DEV-256 / 2026-06-19 更新）
 
@@ -921,13 +924,13 @@ main へ PR（Linear issue が無い緊急時のみ `feature/<topic>`）。
     P2-β テスト群に追加すること。
   - **Widget の SwiftData container も最新スキーマを読むこと**を migration 時に
     確認（App と Widget で同じ App Group store を共有しているため）。
-    `/swiftdata-migration` skill 必須。**§8 の優先順位に従うと P0-4 完了時点で
-    SchemaV2 が active になっている**ため、P2-β は **SchemaV3 を新規追加** し、
-    `MigrationPlan` に `SchemaV2 → SchemaV3` stage を登録する形で `VacationPeriod`
+    `/swiftdata-migration` skill 必須。**DEV-35 完了時点で SchemaV3 が active** のため、
+    P2-β は **SchemaV4 以降を新規追加** し、`MigrationPlan` に
+    `SchemaV3 → SchemaV4` stage を登録する形で `VacationPeriod`
     + `RotationPattern` / `ShiftPreset` 列追加を載せる。SchemaV2 に追記する
-    形にすると、既に V2 で起動した端末（P0-4 を入れた状態）にスキーマ baseline
-    の不整合が生じる。`Sources/Domain/Persistence/SchemaV3.swift` を新規追加し、
-    `SharedPersistence.makeContainer()` の `Schema(...)` 引数も SchemaV3 に
+    形にすると、既に V2 / V3 で起動した端末にスキーマ baseline
+    の不整合が生じる。`Sources/Domain/Persistence/SchemaV4.swift` を新規追加し、
+    `SharedPersistence.makeContainer()` の `Schema(...)` 引数も SchemaV4 に
     切り替える。
   - 連休内の日付は **手動割当を優先**（既存 DayResolver 優先順位
     `手動 > 祝日/有休/連休 > ローテ > なし` を維持）。
@@ -1015,12 +1018,12 @@ main へ PR（Linear issue が無い緊急時のみ `feature/<topic>`）。
     `models` 配列に `ShiftSymbolMapping.self` を追加。`AppDependencies.swift`
     ではなくここが App / Widget 共有 `ModelContainer` の単一エントリポイント。
     `SharedPersistence.makeContainer()` が `Schema(<最新版>.models)` を構築する。
-    優先順位 (§8 「次の 1 手」) では **P2-β SchemaV2 migration が P2-γ より前**
-    のため、P2-γ Phase 1 が着手される頃には実際の対象は `SchemaV2` 以降に
-    なっている可能性が高い。`SchemaV1` を後から書き換えると migration baseline
-    が変わって既存ユーザストアが壊れるので、**履歴版 (V1) は触らず、現行
-    active 版に追加する**。Phase 1 着手 PR の冒頭で `SharedPersistence` の
-    `Schema(...)` 呼び出しを grep して active 版を特定すること。
+    DEV-35 完了時点で `SchemaV3` が active。P2-γ Phase 1 が着手される頃には
+    P2-β などの先行 migration により更に進んでいる可能性がある。`SchemaV1` を
+    後から書き換えると migration baseline が変わって既存ユーザストアが壊れるので、
+    **履歴版 (V1/V2/...) は触らず、現行 active 版の次版に追加する**。Phase 1 着手 PR
+    の冒頭で `SharedPersistence` の `Schema(...)` 呼び出しを grep して active 版を
+    特定すること。
   - 既存の Import/Export 画面から「画像から取り込む」導線を追加
   - `App/Info.plist`: `NSCameraUsageDescription`, `NSPhotoLibraryUsageDescription` を追加
   - テスト: 新規 `Tests/ServicesTests/ShiftImageParserTests.swift`
@@ -1045,11 +1048,11 @@ main へ PR（Linear issue が無い緊急時のみ `feature/<topic>`）。
         記号ごとの最終利用時刻で並べ替えたり破棄したりするクエリが素直に書ける。
         **`Sources/Domain/Persistence/Schema*.swift` のうち、`SharedPersistence
         .makeContainer()` が現に `Schema(...)` 引数として渡している最新スキーマ
-        版** の `models` 配列に `ShiftSymbolMapping.self` を追加して、App /
+        版の次版** の `models` 配列に `ShiftSymbolMapping.self` を追加して、App /
         Widget 共有 `ModelContainer` が新モデルを認識するようにする。**履歴版
-        (`SchemaV1` 等) は migration baseline を保つため触らない**。P2-β
-        (§P2-β) で SchemaV2 が導入されているため、P2-γ Phase 1 着手時点では
-        SchemaV2 以降が active になっている前提で着手前に grep で確認する。
+        (`SchemaV1` / `SchemaV2` 等) は migration baseline を保つため触らない**。
+        DEV-35 で SchemaV3 が導入されているため、P2-γ Phase 1 着手時点では
+        SchemaV3 以降が active になっている前提で着手前に grep で確認する。
         `/swiftdata-migration` skill を必ず起動。Widget 側ビルドで model 解決でき
         ることを確認する（参照しないが schema に存在することは必要）。IMG-U1
         「mapping が保存される」テストは Phase 1 PR 内で SwiftData store を経由
@@ -1133,7 +1136,7 @@ main へ PR（Linear issue が無い緊急時のみ `feature/<topic>`）。
   2. **代行 (on)**: 自分が休み予定だった日に同僚の代わりに出勤する → 当日のプリセットを
      出勤シフトに上書きし、アラーム登録。
   3. **同時スワップ (exchange)**: 1 + 2 を同じ操作で記録。
-- **データモデル（V2 → V3）**:
+- **データモデル（active schema → 次版）**:
   - 新規 `@Model SwapRecord { id, date, kind: .covered|.covering|.exchange,
     counterpartyLabel: String, note: String, createdAt }`。
   - `DayAssignment` には **フィールド追加なし**。出勤 / 欠勤は通常の `DayAssignment` で
@@ -1141,8 +1144,8 @@ main へ PR（Linear issue が無い緊急時のみ `feature/<topic>`）。
   - これにより `DayResolver` / `AlarmScheduler` は **完全に無改変**（既存の手動優先パス
     がそのまま機能する）。
 - **対象ファイル**:
-  - 新規 `Sources/Domain/Models/SwapRecord.swift`（SwiftData @Model、Schema V2 → V3）
-  - 新規 `Sources/Domain/Persistence/SchemaV3.swift` + 既存 `MigrationPlan` 拡張
+  - 新規 `Sources/Domain/Models/SwapRecord.swift`（SwiftData @Model、次版 schema）
+  - 新規 `Sources/Domain/Persistence/SchemaV*.swift` + 既存 `MigrationPlan` 拡張
   - 既存 `Sources/Features/Calendar/DayDetailEditorView.swift` にスワップアクション追加
   - 既存 `Sources/Features/Calendar/DayCellView.swift` に「↔」バッジ追加
   - 既存 `Sources/Domain/Logic/DayResolverInputBuilder.swift` に SwapRecord スナップ
@@ -1216,7 +1219,7 @@ main へ PR（Linear issue が無い緊急時のみ `feature/<topic>`）。
   祝日表示は常時オーバーレイ、実効は明示取り込み or 先読み窓の自動 materialize。
 - **モデル**: `HolidayAlarmBehavior {inherit, ring, silence}`、`AppSettings.holidayAlarmDefaultRaw`、
   `HolidayOverride.alarmBehaviorRaw`。**次版スキーマの追加列 + 遅延 backfill**（lightweight 維持、custom 破壊的移行は非推奨。
-  版番号は P2-β / P2-γ の SchemaV3 予定と調整し、先着が V3・後発は V4 以降）。
+  版番号は DEV-35 で導入済みの SchemaV3 以降と調整し、次の未使用版番号を使う）。
 - **互換**: `.shiftalarm` Override DTO に `alarmBehavior` を Codable default-nil 追加（旧 bundle は `skipAlarm` 読み替え）。
 - **解決**: `DayResolver` の祝日分岐で `inherit` を全体既定に解決。優先順位 手動 > 祝日 > ローテ は不変。
 - **対象ファイル / 段階 / テスト ID / DoD**: docs を参照（**Phase 1 = 三値＋全体既定＋移行＋先読み窓の auto-materialize
@@ -1240,7 +1243,7 @@ main へ PR（Linear issue が無い緊急時のみ `feature/<topic>`）。
   - `Tests/ServicesTests/SleepIntentHelperTests.swift` — App Intents 用 sleep window 取得。
   - `Tests/ServicesTests/SleepSampleWriterTests.swift` — HealthKit 書込み対象 window 抽出。
   - `Tests/DomainTests/SleepWindowResolverTests.swift` — bedtime 計算 / 端境ケース。
-- 現状: Swift Testing で 19 スイート / 131 テスト緑（うち 6 件 snapshot は通常 verify では skip）。
+- 現状: Swift Testing で 20 スイート / 139 テスト緑（うち 6 件 snapshot は通常 verify では skip）。
 
 ### P3-2. UI / スナップショットテスト（一部着手）
 
@@ -1270,8 +1273,8 @@ main へ PR（Linear issue が無い緊急時のみ `feature/<topic>`）。
 
 - **目的（達成済み）**: XCTest 相当のテストを Apple の Swift Testing（`@Test`）で記述し、
   `#expect` / `#require` ベースの表現力と並列実行を得る。
-- **現状**: `Tests/` 配下 22 ファイル / 19 テストスイート（`struct` + `@Test`） /
-  131 テスト関数。`XCTestCase` サブクラスは 0。`@testable import ShiftAlarm` を維持。
+- **現状**: `Tests/` 配下 23 ファイル / 20 テストスイート（`struct` + `@Test`） /
+  139 テスト関数。`XCTestCase` サブクラスは 0。`@testable import ShiftAlarm` を維持。
   `project.yml` のテストターゲット定義は変更不要（Swift Testing はツールチェーン同梱）。
 - **採用済みの対応**:
   - `XCTestCase` サブクラス → `struct` + `@Test` 関数。
@@ -1545,8 +1548,8 @@ main へ PR（Linear issue が無い緊急時のみ `feature/<topic>`）。
    pattern を `isActive = false` にする。`patternDriftSnoozedFingerprint` は
    `"v1:..."` プレフィックス付き。
 
-5. **P1-5 アラーム診断画面**: P0-4 完了後に着手。`AlarmDiagnosticsService` 新設、
-   `SettingsView` から導線追加、DIAG-U1〜U5 / DIAG-I1〜I2 を緑にする。
+5. **P1-5 アラーム診断画面**: DEV-35 で実装済み。`AlarmDiagnosticsService`、
+   `AlarmDiagnosticsView`、`SettingsView` 導線、DIAG-U1〜U6 を追加。
 
 6. **P1-6 ChangePreview 共通化**: Step 1（`ImportPreviewView` 抽出）→ Step 2
    （`ChangePreview` 抽象モデル導入）→ Step 3（画像 / ドリフト / DOW へ展開）。

@@ -94,7 +94,7 @@ bash scripts/verify.sh test
 ```
 
 The Tests target is written with Apple's [Swift Testing](https://developer.apple.com/documentation/testing)
-(`@Test` / `#expect`) and currently runs 132 tests across 19 test suites (22 files) covering domain,
+(`@Test` / `#expect`) and currently runs 139 tests across 20 test suites (23 files) covering domain,
 services, App Intents, HealthKit helpers, background refresh, deep links, sharing, and snapshot
 coverage. Six snapshot tests are skipped by default unless `SNAPSHOT_TESTING_ENABLED=1` is
 set.
@@ -158,12 +158,12 @@ Recently shipped:
 - **`.shiftalarm` input validation** — semantic checks beyond Codable (hour / minute /
   cycle length / duplicate IDs / size limits / missing preset references) prevent malformed
   share files or URL imports from corrupting the local store.
-
-Designed, not yet implemented:
-
 - **Alarm reliability diagnostics** — a settings screen that shows at a glance whether the
   next alarm will actually fire (permissions, scheduler sync, App Group, BG refresh,
   Live Activity, HealthKit), with one-tap recovery actions when something is off.
+
+Designed, not yet implemented:
+
 - **Unified diff preview** — a shared change-preview abstraction reused by `.shiftalarm`
   import, image import, pattern-drift suggestions, and day-of-week rule expansion, so
   every destructive change is reviewed before it lands.

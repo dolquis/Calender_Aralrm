@@ -1,9 +1,9 @@
 import Foundation
 import SwiftData
 
-public typealias DayAssignment = SchemaV2.DayAssignment
+public typealias DayAssignment = SchemaV3.DayAssignment
 
-extension SchemaV2 {
+extension SchemaV3 {
     @Model
     public final class DayAssignment {
         @Attribute(.unique) public var id: UUID

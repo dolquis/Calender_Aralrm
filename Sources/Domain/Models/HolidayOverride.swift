@@ -1,9 +1,9 @@
 import Foundation
 import SwiftData
 
-public typealias HolidayOverride = SchemaV2.HolidayOverride
+public typealias HolidayOverride = SchemaV3.HolidayOverride
 
-extension SchemaV2 {
+extension SchemaV3 {
     @Model
     public final class HolidayOverride {
         public enum Kind: Int, Codable, Sendable {

@@ -69,8 +69,8 @@ CI は `.github/workflows/ios.yml` が `macos-26` / Xcode 26+ で実行する。
 `build-test` ジョブが `scripts/verify.sh`、`lint` ジョブが `scripts/lint.sh check`
 （`swift-format`、設定は `.swift-format`）を並列に走らせる。
 **CI 緑 = ローカルで `verify.sh` と `lint.sh check` がともに緑** が前提。
-テストは Apple の Swift Testing（`@Test` / `#expect`）で記述。現状は 132 件のテスト
-（19 テストスイート / 22 ファイル、うち snapshot 6 件は通常 verify で skip）を確認する。
+テストは Apple の Swift Testing（`@Test` / `#expect`）で記述。現状は 139 件のテスト
+（20 テストスイート / 23 ファイル、うち snapshot 6 件は通常 verify で skip）を確認する。
 実機向け P0 確認は `bash scripts/p0-readiness.sh`、実機 build 入口は
 `bash scripts/p0-device-build.sh`。
 
@@ -320,7 +320,7 @@ rg '85|103|121|XCTest|Swift Testing|Xcode 26|iOS 26|verify\.sh|lint\.sh|xcodebui
   -g '!docs/archive/**' README*.md AGENTS.md ROADMAP.md docs .claude .agents
 ```
 
-古いテスト件数（現状は Swift Testing 132 件 / 19 スイート / 22 ファイル）、古いビルド
+古いテスト件数（現状は Swift Testing 139 件 / 20 スイート / 23 ファイル）、古いビルド
 手順、古い Xcode / iOS バージョン、古い MCP / plugin 設定が見つかった場合は、該当
 文書を同じ PR で更新する（`0.85` などのしきい値は対象外）。
 

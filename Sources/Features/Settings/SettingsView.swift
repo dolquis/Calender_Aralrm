@@ -80,6 +80,11 @@ public struct SettingsView: View {
                     }
                 }
             }
+            Section("settings.safety_diagnostics_section") {
+                NavigationLink("diagnostics.title") {
+                    AlarmDiagnosticsView()
+                }
+            }
             Section {
                 NavigationLink("settings.holidays") {
                     HolidayManagerView()
