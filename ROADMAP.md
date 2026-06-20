@@ -1126,6 +1126,8 @@ main へ PR（Linear issue が無い緊急時のみ `feature/<topic>`）。
 ### P2-δ. シフトスワップ — 代行 / 被代行のアラーム正当性（未着手）
 
 > アルゴリズム詳細: [docs/p2-algorithms.md §5](docs/p2-algorithms.md#5-p2-δ--シフトスワップ)
+>
+> 追跡: Linear DEV-281（team Dev / project Shift Alarm / Backlog / P2）。
 
 - **目的**: 同僚と勤務を交換した日でも **正しいシフトのアラームが鳴る** ことを保証する。
   「火曜の昼勤を A に代わってもらった / 水曜の夜勤を代わってあげた」を 1 操作で記録し、
@@ -1247,6 +1249,8 @@ main へ PR（Linear issue が無い緊急時のみ `feature/<topic>`）。
 
 ### P3-2. UI / スナップショットテスト（一部着手）
 
+> 追跡: Linear DEV-282（team Dev / project Shift Alarm / Backlog / P3）。
+
 - 対象: `Tests/UITests/`（新規ターゲット）
 - 主要画面の light/dark / Dynamic Type 3 サイズ × ja/en のスナップショット。
 - 進捗: `Tests/SnapshotTests/DayCellViewSnapshotTests.swift` で DayCell の light / dark /
@@ -1256,11 +1260,15 @@ main へ PR（Linear issue が無い緊急時のみ `feature/<topic>`）。
 
 ### P3-3. TestFlight 自動配布（未着手）
 
+> 追跡: Linear DEV-283（team Dev / project Shift Alarm / Backlog / P3。`gate:human-required`、DEV-19 ブロック）。
+
 - 対象: `.github/workflows/release.yml`（新規）
 - タグ `v*` プッシュで Archive → App Store Connect API → TestFlight。
 - **DoD**: タグ 1 個で TestFlight に届く。
 
 ### P3-4. クラッシュ / ログ収集（未着手）
+
+> 追跡: Linear DEV-284（team Dev / project Shift Alarm / Backlog / P3。P3-8 構造化ログと整合）。
 
 - 軽量に: `os.Logger` のサブシステム整理 + MetricKit 取り込み。
 - 外部 SDK は避ける（プライバシー / AlarmKit のバックグラウンド要件のため）。
