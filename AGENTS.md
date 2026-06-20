@@ -287,6 +287,11 @@ Codex CLI は `.agents/skills/`、Claude Code は `.claude/skills/` を参照す
 同期時はこの表の左右を**フィールド単位で個別に維持**する。「単純な丸ごとコピー」で
 上書きすると Claude 固有の `allowed-tools` 等が消えてプラグイン挙動が壊れるので注意。
 
+さらに、`doc-coauthoring` スキルは **Claude 専用**で `.claude/skills/` のみに置き、Codex の
+`.agents/skills/` には置かない（サブエージェント検証・Claude 固有の編集ツールを前提とするため。
+`dolquis/agent-ops` origin の方針）。§8.2 の `diff -qr` で `Only in .claude/skills: doc-coauthoring`
+が出るのは意図的非対称であり、更新漏れではない。
+
 ### 8.2 skills 同期ルール
 
 `.claude/skills/` と `.agents/skills/` は、プロジェクト固有の仕様・禁止事項・
