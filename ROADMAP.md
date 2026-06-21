@@ -1477,6 +1477,8 @@ main へ PR（Linear issue が無い緊急時のみ `feature/<topic>`）。
 > A2 出荷後の後続タスク。専用 Linear issue は **DEV-309**（blockedBy DEV-259 /
 > related DEV-143）。
 
+> 追跡: Linear DEV-296（実装。blockedBy DEV-259 / related DEV-143）
+
 - **目的**: §P2-α A2 DOW ルール検出が受諾されると最大 6 ヶ月分の
   `HolidayOverride` を一括 insert するため、行数が増えて `DayResolver` クエリ
   コストへ影響しうる懸念に対応する。
