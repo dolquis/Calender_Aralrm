@@ -333,11 +333,14 @@ container でも schema 解決できることを `/swiftdata-migration` skill �
 
 ```swift
 @Model public final class VacationPeriod {
-    @Attribute(.unique) public var id: UUID
-    public var startDate: Date           // inclusive、startOfDay 正規化
-    public var endDate: Date             // inclusive、startOfDay 正規化
+    @Attribute(.unique) public private(set) var id: UUID
+    public private(set) var startDate: Date   // inclusive、startOfDay 正規化
+    public private(set) var endDate: Date     // inclusive、startOfDay 正規化
     public var label: String
-    public init(id: UUID = UUID(), startDate: Date, endDate: Date, label: String)
+    // ★memberwise init は fileprivate。3 日不変条件を強制するため、全 write path
+    //   （UI / §2.8 自動グルーピング / .shiftalarm import / App Intents / test helper）は
+    //   唯一の公開生成経路 make(...) throws を通す。public な生 init を残さないこと。
+    fileprivate init(id: UUID, startDate: Date, endDate: Date, label: String)
 }
 ```
 
@@ -478,12 +481,21 @@ phase = 0
 for v in V where v.endDate < d:                 // d より前の連休のみ、startDate 昇順
     if v.endDate < effStart: continue           // ★ローテ開始前に終わった連休は無視（VAC-U11）
     vStart = max(v.startDate, effStart)          // 開始跨ぎ連休は実効開始でクランプ
-    // (a) 連休直前の最後の稼働日スロット（この連休の override 参照元）
-    preVac  = vStart - 1 day
-    prevIdx = (baseSlotIndex(preVac, p) + shift + phase) mod L
-    // (b) policy 決定（pattern 既定 < preset override）
-    //     ※ vStart == effStart（開始跨ぎ）で preVac がローテ外なら pattern 既定にフォールバック
-    policy  = policyFor(prevIdx, p, presets)
+    // (a) 連休直前の「実際の稼働日」を遡って探す（休み(nil)スロットは飛ばす）。
+    //     探索は現 working segment 内（直前連休の翌日 〜 vStart-1）に限定する＝この区間は
+    //     累積 shift/phase が一定で有効。区間外（直前連休/ローテ開始前）の preset は拾わない。
+    prevVacEnd = max{ v'.endDate : v' ∈ V, v'.endDate < v.startDate }   // 無ければ無し
+    lowerBound = max(effStart, prevVacEnd + 1 day)
+    prevWorkingIdx = nil
+    day = vStart - 1
+    while day >= lowerBound:
+        idx = (baseSlotIndex(day, p) + shift + phase) mod L
+        if p.slots[idx] != nil { prevWorkingIdx = idx; break }   // 稼働日（非 nil スロット）
+        day = day - 1
+    // (b) policy 決定: 実稼働日が見つかればその preset override を、無ければ pattern 既定。
+    //     （開始跨ぎ vStart==effStart や区間が全休みで実稼働日が無い場合は override を拾わない）
+    policy = (prevWorkingIdx != nil) ? policyFor(prevWorkingIdx, p, presets)
+                                     : p.crossVacationPolicy
     // (c) 連休日数を周期カウンタから除外（全 policy 共通 = .continue 意味論）
     duration = daysBetween(vStart, v.endDate) + 1
     shift -= duration
@@ -589,6 +601,8 @@ slots[0..6]=昼(D, alarm 06:00), slots[7..13]=夜(N, alarm 17:00) /
 | **VAC-U9** | VP `08-13〜08-14`(2日) | – | – | **UI 検証で reject** | フォーム / 確認ダイアログ層 |
 | **VAC-U10** | VP `08-13〜08-14`(2日) | – | – | `VacationPeriodError.tooShort(2)` throw | throwing init / domain factory（UI 非経由 write path） |
 | **VAC-U11** | ローテ開始前連休 `04-20〜04-24`(anchor 5-4 前) ＋ Obon、両方 `.invert` | 2026-08-17 | 7 | slot 10 = **N** | `effStart=anchor` 未満で終わる前連休を除外 → Obon 単独 `.invert`（VAC-U4）と一致。前連休のみなら VAC-U1（夜7）と一致 |
+| **VAC-U12** | 連休直前が休み(nil)スロット、その手前の稼働日 preset が `.continue` override | （policy 選択） | – | policy=**`.continue`** | 休み日を遡り実稼働日の preset override を参照（pattern 既定でなく） |
+| **VAC-U13** | 連休が `effStart` を跨ぐ（実稼働日が範囲内に無い） | （policy 選択） | – | policy=**pattern 既定** | ローテ外の preset override を拾わない（`lowerBound` ガード） |
 
 **override 優先順位の worked-example**（同一ベースライン、連休 = Obon、参照 preset = 直前稼働日
 `08-12` の preset）:
@@ -694,9 +708,10 @@ slots[0..6]=昼(D, alarm 06:00), slots[7..13]=夜(N, alarm 17:00) /
 
 **適用:**
 
-- 選択された各 ran について:
-  - `VacationPeriod(startDate: run.start, endDate: run.end,
-    label: "自動グルーピング: \(label_set.joined(", "))")` を insert。
+- 選択された各 run について:
+  - `try VacationPeriod.make(startDate: run.start, endDate: run.end,
+    label: "自動グルーピング: \(label_set.joined(", "))", calendar: calendar)` を insert
+    （検出 step 3 で 3 日以上を保証済みだが、生成は必ず唯一の factory 経由とする）。
   - 範囲内 `HolidayOverride.isVacationGroup = true` を更新。
 - 適用後 `AppSettings.vacationAutoGroupingOffered = true`。
 
@@ -762,7 +777,13 @@ DEV-141 スパイクの確定事項を実装 issue [DEV-257]（「P2-β: 長期�
       `DayResolver` のローテ分岐が差し替わる。`DayResolverInput` に `vacations` を追加。
 - [ ] **ローテ実効範囲外の連休を除外**: `effStart = startOfDay(p.startDate ?? p.anchorDate)`
       より前に終わる連休は phase/shift に算入しない（**VAC-U11**）。開始跨ぎ連休は `effStart` でクランプ。
-- [ ] **VAC-U1〜U11 を §2.3.1 の数値で固定**（`Tests/DomainTests/VacationAwareRotationTests.swift`）。
+- [ ] **policy 参照は実稼働日**: 連休直前の休み(nil)スロットを遡り、現 working segment 内
+      （直前連休翌日〜）の最後の非 nil 稼働日 preset の override を使う。実稼働日が無ければ
+      pattern 既定にフォールバック（**VAC-U12 / VAC-U13**。ローテ外の preset override を拾わない）。
+- [ ] **`VacationPeriod` は factory 唯一生成**: memberwise init を `fileprivate` 化し、
+      `make(...) throws` を全 write path（UI / §2.8 / `.shiftalarm` import / App Intents / test helper）
+      で必須化（**VAC-U10** をバイパス不能に）。
+- [ ] **VAC-U1〜U13 を §2.3.1 で固定**（U1〜U11 は数値、U12/U13 は policy 選択。`Tests/DomainTests/VacationAwareRotationTests.swift`）。
 - [ ] override 優先順位（preset ＞ pattern）を §2.3.1 の 3 ケースで検証。
 - [ ] `CrossVacationPolicy` は Int rawValue 0/1/2。`.invert` は UI で偶数周期パターンに限定ガード。
 
