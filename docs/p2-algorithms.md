@@ -432,7 +432,7 @@ P2-β はこの版数機構に **SchemaV4 を 1 段足す**。追加はすべて
 
 **`.shiftalarm`（`ShiftBundleCodec`）との境界**: 現行 bundle は `PresetDTO` / `RotationDTO`
 / `OverrideDTO` を持つが **`VacationDTO` は無い**。P2-β v1 では `VacationPeriod` を bundle に
-含めない（スコープ外）。`RotationPattern` / `ShiftPreset` に増える policy 列は、import 時に
+含めない（スコープ外。2026-06-22 lead 確定）。`RotationPattern` / `ShiftPreset` に増える policy 列は、import 時に
 欠落していたら **既定（pattern `.invert` / preset nil）でデコード**して後方互換を壊さない。
 provenance や `.shiftalarm` への policy 反映の是非は [DEV-143] の横断設計で扱う。
 
@@ -526,7 +526,7 @@ return slot at (baseSlotIndex(d, p) + shift + phase) mod L
   **偶数周期で昼夜が反転**する。ROADMAP の「夜勤で終われば昼勤始まり」は典型例であり、
   機構は「`.continue` ± `L/2`」。連休 2 回で `L/2 + L/2 = L ≡ 0` となり `.continue` に一致
   （**VAC-U7**）。**奇数周期は floor のため厳密反転にならない**ので、UI で `.invert` は
-  偶数周期パターンに限定するのが推奨（DEV-257 で UI ガード）。
+  偶数周期パターンに限定する（2026-06-22 lead 確定。実装ガードは DEV-257）。
 - `.resetToDay` … 連休明け初日を `effectiveDayStartSlot` に整列。以降そこから連続。
 
 **Step 3 — `policyFor(prevIdx, p, presets)`**（pattern 既定 < preset override）:
