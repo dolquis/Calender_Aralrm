@@ -438,11 +438,14 @@ P2-β はこの版数機構に **SchemaV4 を 1 段足す**。追加はすべて
 bundle に含めない**（連休“共有”は scope 外。2026-06-22 lead 確定。provenance / 連休共有は [DEV-143]）。
 
 ただし `RotationPattern` / `ShiftPreset` に増える **policy 列（`crossVacationPolicy`）は
-round-trip させる**: `RotationDTO` / `PresetDTO` に **optional** な `crossVacationPolicy`
-（rawValue）を追加し、export で書き出し import で復元する。理由: これらは **既に共有対象の
-エンティティ**であり、round-trip しないと `.continue` / `.resetToDay` を設定した rotation/preset を
-export→import すると **黙って pattern `.invert` / preset nil に戻り**、受信側が連休を作った時点で
-復帰後アラームが変わる（silent round-trip loss）。optional 追加なので後方互換は保たれ、**旧 bundle
+round-trip させる**: `RotationDTO` に **optional** な `crossVacationPolicy`（rawValue）と
+`dayStartSlotIndex`、`PresetDTO` に **optional** `crossVacationPolicy` を追加し、export で
+書き出し import で復元する。理由: これらは **既に共有対象のエンティティ**であり、round-trip
+しないと `.continue` / `.resetToDay` を設定した rotation/preset を export→import すると **黙って
+pattern `.invert` / preset nil に戻り**、受信側が連休を作った時点で復帰後アラームが変わる
+（silent round-trip loss）。同様に `.resetToDay` が明示 `dayStartSlotIndex` に依存する場合、
+それも round-trip しないと受信側で `effectiveDayStartSlot` の自動導出（既定 0）に戻り、復帰
+スロット＝preset / アラーム時刻が変わる。optional 追加なので後方互換は保たれ、**旧 bundle
 （フィールド欠落）は従来どおり既定デコード**（当時の default 値なので情報損失なし）。`ShiftBundleCodec`
 の legacy 受け入れ（PR #5）を踏襲。これは「v1 = `VacationPeriod` 非対応」確定方針の **範囲内の
 精緻化**（連休共有は依然 scope 外。round-trip するのは既存共有エンティティに載る policy 列のみ）。
@@ -805,9 +808,10 @@ DEV-141 スパイクの確定事項を実装 issue [DEV-257]（「P2-β: 長期�
       VAC-S2: `HolidayOverride.isVacationGroup=false` / VAC-S3: `VacationPeriod` 件数 0）。
       migration テストはファイル URL ストアで実施（in-memory では stage 不発火）。
 - [ ] `.shiftalarm`（`ShiftBundleCodec`）に `VacationDTO` を追加しない（連休共有は v1 scope 外、DEV-143）。
-      ただし `RotationDTO` / `PresetDTO` に **optional `crossVacationPolicy` を追加して round-trip** し、
-      `.continue` / `.resetToDay` の export→import 消失を防ぐ。旧 bundle（欠落）は既定デコードで後方互換。
-      `ShiftBundleCodecTests` に round-trip テスト（`testCrossVacationPolicyRoundTrips`）を追加。
+      ただし `RotationDTO` に **optional `crossVacationPolicy` ＋ `dayStartSlotIndex`**、`PresetDTO` に
+      optional `crossVacationPolicy` を追加して **round-trip** し、`.continue` / `.resetToDay`（明示
+      `dayStartSlotIndex` 含む）の export→import 消失を防ぐ。旧 bundle（欠落）は既定デコードで後方互換。
+      `ShiftBundleCodecTests` に round-trip テスト（`testCrossVacationPolicyAndDayStartSlotRoundTrip`）を追加。
 
 **アルゴリズム（§2.3 / §2.3.1）**
 
