@@ -1474,8 +1474,8 @@ main へ PR（Linear issue が無い緊急時のみ `feature/<topic>`）。
 >
 > 追跡: 設計は Linear DEV-143（spike）。provenance 2 列（`expandedFromRuleID` /
 > `expandedAt`）は **DEV-259（A2 v1）と同 PR** で出荷し、本節（テーブル分離）は
-> A2 出荷後の後続タスク。専用 Linear issue は workspace の issue 上限解除後に
-> 起票予定（DEV-143 / DEV-259 に紐付け）。
+> A2 出荷後の後続タスク。専用 Linear issue は **DEV-309**（blockedBy DEV-259 /
+> related DEV-143）。
 
 - **目的**: §P2-α A2 DOW ルール検出が受諾されると最大 6 ヶ月分の
   `HolidayOverride` を一括 insert するため、行数が増えて `DayResolver` クエリ
