@@ -13,6 +13,7 @@ public enum DayResolverInputBuilder {
         assignments: [DayAssignment],
         holidays: [HolidayOverride],
         rotations: [RotationPattern],
+        vacations: [VacationPeriod] = [],
         calendar: Calendar
     ) -> DayResolverInput {
         let presetSnapshots: [UUID: ShiftPresetSnapshot] = presets.reduce(into: [:]) {
@@ -24,7 +25,8 @@ public enum DayResolverInputBuilder {
                 alarmTime: preset.defaultAlarmTime,
                 soundID: preset.soundID,
                 targetSleepDuration: preset.targetSleepDuration,
-                bedtimeLeadMinutes: preset.bedtimeLeadMinutes
+                bedtimeLeadMinutes: preset.bedtimeLeadMinutes,
+                crossVacationPolicy: preset.crossVacationPolicy
             )
         }
 
@@ -57,7 +59,17 @@ public enum DayResolverInputBuilder {
                 startDate: rotation.startDate,
                 endDate: rotation.endDate,
                 priority: rotation.priority,
-                isActive: rotation.isActive
+                isActive: rotation.isActive,
+                crossVacationPolicy: rotation.crossVacationPolicy,
+                dayStartSlotIndex: rotation.dayStartSlotIndex
+            )
+        }
+
+        let vacationSnapshots = vacations.map { vacation in
+            VacationPeriodSnapshot(
+                startDate: calendar.startOfDay(for: vacation.startDate),
+                endDate: calendar.startOfDay(for: vacation.endDate),
+                label: vacation.label
             )
         }
 
@@ -66,6 +78,7 @@ public enum DayResolverInputBuilder {
             holidays: holidaySnapshots,
             rotations: rotationSnapshots,
             presets: presetSnapshots,
+            vacations: vacationSnapshots,
             calendar: calendar
         )
     }
@@ -79,11 +92,14 @@ public enum DayResolverInputBuilder {
             (try? context.fetch(FetchDescriptor<HolidayOverride>())) ?? []
         let rotations: [RotationPattern] =
             (try? context.fetch(FetchDescriptor<RotationPattern>())) ?? []
+        let vacations: [VacationPeriod] =
+            (try? context.fetch(FetchDescriptor<VacationPeriod>())) ?? []
         return make(
             presets: presets,
             assignments: assignments,
             holidays: holidays,
             rotations: rotations,
+            vacations: vacations,
             calendar: calendar
         )
     }

@@ -38,6 +38,13 @@ struct AlarmSchedulerTests {
             skipAlarm: true
         )
         context.insert(holiday)
+        let vacation = try VacationPeriod.make(
+            startDate: calendar.date(byAdding: .day, value: 2, to: day)!,
+            endDate: calendar.date(byAdding: .day, value: 4, to: day)!,
+            label: "Vacation",
+            calendar: calendar
+        )
+        context.insert(vacation)
 
         let rotation = RotationPattern(
             name: "r",
@@ -53,6 +60,7 @@ struct AlarmSchedulerTests {
         #expect(input.manualAssignments.count == 1)
         #expect(input.holidays.count == 1)
         #expect(input.rotations.count == 1)
+        #expect(input.vacations.count == 1)
         #expect((input.rotations.first?.slots.first ?? nil) == preset.id)
     }
 
@@ -339,7 +347,7 @@ struct AlarmSchedulerTests {
         defer { try? fileManager.removeItem(at: directory) }
         let storeURL = try copyPreP04V1StoreFixture(to: directory)
 
-        let newSchema = Schema(versionedSchema: SchemaV3.self)
+        let newSchema = Schema(versionedSchema: SchemaV4.self)
         let newConfiguration = ModelConfiguration(
             "MigrationTest",
             schema: newSchema,
@@ -384,7 +392,7 @@ struct AlarmSchedulerTests {
             try v2Context.save()
         }
 
-        let v3Schema = Schema(versionedSchema: SchemaV3.self)
+        let v3Schema = Schema(versionedSchema: SchemaV4.self)
         let v3Configuration = ModelConfiguration(
             "MigrationTestV3",
             schema: v3Schema,

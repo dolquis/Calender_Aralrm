@@ -175,6 +175,32 @@ struct ShareImporterTests {
         #expect(overrides.count == 1)
         #expect(overrides.first?.label == "Holiday")
     }
+
+    @Test
+    func testApplyAndExportPreservesCrossVacationPolicyFields() throws {
+        let container = SharedPersistence.makeContainer(inMemory: true)
+        var bundle = makeBundle()
+        bundle.presets[0].crossVacationPolicy = CrossVacationPolicy.continue.rawValue
+        bundle.patterns[0].crossVacationPolicy = CrossVacationPolicy.resetToDay.rawValue
+        bundle.patterns[0].dayStartSlotIndex = 2
+
+        try ShareImporter.apply(bundle: bundle, container: container)
+
+        let context = ModelContext(container)
+        let preset = try #require(try context.fetch(FetchDescriptor<ShiftPreset>()).first)
+        let pattern = try #require(try context.fetch(FetchDescriptor<RotationPattern>()).first)
+        let exported = ShareExporter.snapshot(from: container)
+
+        #expect(preset.crossVacationPolicy == .continue)
+        #expect(pattern.crossVacationPolicy == .resetToDay)
+        #expect(pattern.dayStartSlotIndex == 2)
+        #expect(
+            exported.presets.first?.crossVacationPolicy == CrossVacationPolicy.continue.rawValue)
+        #expect(
+            exported.patterns.first?.crossVacationPolicy == CrossVacationPolicy.resetToDay.rawValue)
+        #expect(exported.patterns.first?.dayStartSlotIndex == 2)
+    }
+
     @Test
     func testApplyIdempotent() throws {
         let container = SharedPersistence.makeContainer(inMemory: true)

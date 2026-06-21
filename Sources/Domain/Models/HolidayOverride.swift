@@ -1,9 +1,9 @@
 import Foundation
 import SwiftData
 
-public typealias HolidayOverride = SchemaV3.HolidayOverride
+public typealias HolidayOverride = SchemaV4.HolidayOverride
 
-extension SchemaV3 {
+extension SchemaV4 {
     @Model
     public final class HolidayOverride {
         public enum Kind: Int, Codable, Sendable {
@@ -18,6 +18,7 @@ extension SchemaV3 {
         public var kindRaw: Int
         public var label: String
         public var skipAlarm: Bool
+        public var isVacationGroup: Bool = false
         @Relationship public var replacementPreset: ShiftPreset?
 
         public init(
@@ -26,6 +27,7 @@ extension SchemaV3 {
             kind: Kind,
             label: String,
             skipAlarm: Bool = true,
+            isVacationGroup: Bool = false,
             replacementPreset: ShiftPreset? = nil
         ) {
             self.id = id
@@ -33,6 +35,7 @@ extension SchemaV3 {
             self.kindRaw = kind.rawValue
             self.label = label
             self.skipAlarm = skipAlarm
+            self.isVacationGroup = isVacationGroup
             self.replacementPreset = replacementPreset
         }
 

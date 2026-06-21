@@ -118,4 +118,48 @@ struct ShiftBundleCodecTests {
         }
         _ = try decoder.decode(CalendarDay.self, from: Data("\"2026-02-28\"".utf8))
     }
+
+    @Test
+    func testCrossVacationPolicyAndDayStartSlotRoundTrip() throws {
+        let presetID = UUID()
+        let bundle = ShiftBundle(
+            version: 1,
+            exportedAt: Date(timeIntervalSince1970: 1_700_000_000),
+            presets: [
+                ShiftBundle.PresetDTO(
+                    id: presetID,
+                    name: "Day",
+                    colorHex: "#1E88E5",
+                    defaultAlarmHour: 6,
+                    defaultAlarmMinute: 0,
+                    soundID: "system.default",
+                    note: "",
+                    crossVacationPolicy: CrossVacationPolicy.continue.rawValue
+                )
+            ],
+            patterns: [
+                ShiftBundle.RotationDTO(
+                    id: UUID(),
+                    name: "14-day",
+                    anchorDate: CalendarDay(year: 2026, month: 5, day: 4),
+                    cycleLength: 14,
+                    slots: [presetID],
+                    startDate: nil,
+                    endDate: nil,
+                    priority: 0,
+                    isActive: true,
+                    crossVacationPolicy: CrossVacationPolicy.resetToDay.rawValue,
+                    dayStartSlotIndex: 3
+                )
+            ]
+        )
+
+        let decoded = try ShiftBundleCodec.decode(try ShiftBundleCodec.encode(bundle))
+
+        #expect(decoded == bundle)
+        #expect(decoded.presets.first?.crossVacationPolicy == CrossVacationPolicy.continue.rawValue)
+        #expect(
+            decoded.patterns.first?.crossVacationPolicy == CrossVacationPolicy.resetToDay.rawValue)
+        #expect(decoded.patterns.first?.dayStartSlotIndex == 3)
+    }
 }

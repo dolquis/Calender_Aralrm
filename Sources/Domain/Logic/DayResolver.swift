@@ -39,6 +39,7 @@ public struct DayResolverInput {
     public let holidays: [Date: HolidayOverrideSnapshot]
     public let rotations: [RotationPatternSnapshot]
     public let presets: [UUID: ShiftPresetSnapshot]
+    public let vacations: [VacationPeriodSnapshot]
     public let calendar: Calendar
 
     public init(
@@ -46,12 +47,14 @@ public struct DayResolverInput {
         holidays: [Date: HolidayOverrideSnapshot],
         rotations: [RotationPatternSnapshot],
         presets: [UUID: ShiftPresetSnapshot],
+        vacations: [VacationPeriodSnapshot] = [],
         calendar: Calendar = .current
     ) {
         self.manualAssignments = manualAssignments
         self.holidays = holidays
         self.rotations = rotations
         self.presets = presets
+        self.vacations = vacations
         self.calendar = calendar
     }
 }
@@ -90,6 +93,7 @@ public struct ShiftPresetSnapshot: Sendable, Equatable {
     public let soundID: String
     public let targetSleepDuration: Double
     public let bedtimeLeadMinutes: Int
+    public let crossVacationPolicy: CrossVacationPolicy?
 
     public init(
         id: UUID,
@@ -98,7 +102,8 @@ public struct ShiftPresetSnapshot: Sendable, Equatable {
         alarmTime: DateComponents?,
         soundID: String,
         targetSleepDuration: Double = 8 * 3600,
-        bedtimeLeadMinutes: Int = 30
+        bedtimeLeadMinutes: Int = 30,
+        crossVacationPolicy: CrossVacationPolicy? = nil
     ) {
         self.id = id
         self.name = name
@@ -107,6 +112,7 @@ public struct ShiftPresetSnapshot: Sendable, Equatable {
         self.soundID = soundID
         self.targetSleepDuration = targetSleepDuration
         self.bedtimeLeadMinutes = bedtimeLeadMinutes
+        self.crossVacationPolicy = crossVacationPolicy
     }
 }
 
@@ -120,6 +126,8 @@ public struct RotationPatternSnapshot: Sendable, Equatable {
     public let endDate: Date?
     public let priority: Int
     public let isActive: Bool
+    public let crossVacationPolicy: CrossVacationPolicy
+    public let dayStartSlotIndex: Int?
 
     public init(
         id: UUID,
@@ -130,7 +138,9 @@ public struct RotationPatternSnapshot: Sendable, Equatable {
         startDate: Date?,
         endDate: Date?,
         priority: Int,
-        isActive: Bool
+        isActive: Bool,
+        crossVacationPolicy: CrossVacationPolicy = .invert,
+        dayStartSlotIndex: Int? = nil
     ) {
         self.id = id
         self.name = name
@@ -141,6 +151,20 @@ public struct RotationPatternSnapshot: Sendable, Equatable {
         self.endDate = endDate
         self.priority = priority
         self.isActive = isActive
+        self.crossVacationPolicy = crossVacationPolicy
+        self.dayStartSlotIndex = dayStartSlotIndex
+    }
+}
+
+public struct VacationPeriodSnapshot: Sendable, Equatable {
+    public let startDate: Date
+    public let endDate: Date
+    public let label: String
+
+    public init(startDate: Date, endDate: Date, label: String) {
+        self.startDate = startDate
+        self.endDate = endDate
+        self.label = label
     }
 }
 
@@ -191,8 +215,12 @@ public enum DayResolver {
             // - presetID resolves to a loaded preset => schedule it.
             // - presetID is stale (preset deleted) => fall through to lower priority.
             // - nil slot => explicit rest day, do not fall through.
-            if let presetID = RotationExpander.presetID(
-                for: day, pattern: rotation, calendar: input.calendar)
+            if let presetID = VacationAwareRotation.presetID(
+                for: day,
+                pattern: rotation,
+                vacations: input.vacations,
+                presets: input.presets,
+                calendar: input.calendar)
             {
                 if let preset = input.presets[presetID] {
                     return .rotation(presetID: presetID, alarmTime: preset.alarmTime)

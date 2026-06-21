@@ -1137,6 +1137,22 @@
         }
       }
     },
+    "import.validation.invalid_cross_vacation_policy": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vacation crossing policy at %@ is invalid."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ の連休越境ポリシーが不正です。"
+          }
+        }
+      }
+    },
     "import.validation.invalid_cycle_length": {
       "localizations": {
         "en": {
@@ -1149,6 +1165,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "%@ の周期は 1 から 365 の範囲にしてください。"
+          }
+        }
+      }
+    },
+    "import.validation.invalid_day_start_slot_index": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Day-start slot index at %@ is outside the rotation cycle."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ の昼勤開始スロットがローテーション周期の範囲外です。"
           }
         }
       }

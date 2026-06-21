@@ -291,6 +291,7 @@ public enum ShareImporter {
                 existing.defaultAlarmMinute = p.defaultAlarmMinute
                 existing.soundID = p.soundID
                 existing.note = p.note
+                existing.crossVacationPolicyRaw = p.crossVacationPolicy
             } else {
                 let new = ShiftPreset(
                     id: p.id,
@@ -299,7 +300,9 @@ public enum ShareImporter {
                     defaultAlarmHour: p.defaultAlarmHour,
                     defaultAlarmMinute: p.defaultAlarmMinute,
                     soundID: p.soundID,
-                    note: p.note
+                    note: p.note,
+                    crossVacationPolicy: p.crossVacationPolicy.flatMap(
+                        CrossVacationPolicy.init(rawValue:))
                 )
                 context.insert(new)
                 byID[p.id] = new
@@ -327,6 +330,9 @@ public enum ShareImporter {
                 existing.endDate = end
                 existing.priority = r.priority
                 existing.isActive = r.isActive
+                existing.crossVacationPolicyRaw =
+                    r.crossVacationPolicy ?? CrossVacationPolicy.invert.rawValue
+                existing.dayStartSlotIndex = r.dayStartSlotIndex
             } else {
                 let new = RotationPattern(
                     id: r.id,
@@ -337,7 +343,10 @@ public enum ShareImporter {
                     startDate: start,
                     endDate: end,
                     priority: r.priority,
-                    isActive: r.isActive
+                    isActive: r.isActive,
+                    crossVacationPolicy: r.crossVacationPolicy.flatMap(
+                        CrossVacationPolicy.init(rawValue:)) ?? .invert,
+                    dayStartSlotIndex: r.dayStartSlotIndex
                 )
                 context.insert(new)
                 byID[r.id] = new

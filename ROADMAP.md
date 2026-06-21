@@ -66,7 +66,9 @@ main へ PR（Linear issue が無い緊急時のみ `feature/<topic>`）。
   key、`NSAlarmKitUsageDescription`、`Config/LocalSigning.xcconfig` による実機向け
   signing override 導線は入っている。実 Team ID / bundle id / App Group の値は未設定。
 - 実機 / 実 iOS 26 シミュレータでのゴールデンパス通し検証は未実施。
-- P2 拡張案 A2 / A3 / A4 + P2-β / P2-γ / P2-δ は未着手。
+- P2 拡張案 A2 / A3 / A4 + P2-γ / P2-δ は未着手。P2-β は DEV-257 で実装中
+  （SchemaV4 / `VacationAwareRotation` / `.shiftalarm` policy round-trip /
+  migration・domain tests まで実装済み。HolidayManager からの連休登録 UI は未実装）。
 - P2-ε（一括適用→パターン検出）/ P2-ζ（祝日アラーム制御）は **設計確定（2026-06-14）・実装未着手**
   （仕様: `docs/p2-bulk-preset-apply.md` / `docs/p2-holiday-alarm-control.md`）。
 - A1 ドリフト検出アルゴリズム (`ShiftPatternDetector.detectDrift`) は実装済み。
@@ -864,9 +866,15 @@ main へ PR（Linear issue が無い緊急時のみ `feature/<topic>`）。
     - Settings から現在値を閲覧でき、ワンタップでリセットできる。
     - リセット操作は `lastResetAt` を更新する。
 
-### P2-β. 長期連休を挟んだ昼夜シフト切替（未着手）
+### P2-β. 長期連休を挟んだ昼夜シフト切替（実装中 / DEV-257）
 
 > アルゴリズム詳細: [docs/p2-algorithms.md §2](docs/p2-algorithms.md#2-p2-β--連休越境ローテーション)
+
+2026-06-22 進捗: DEV-257 でロジック主体の第一段を実装。
+`SchemaV4` / `VacationPeriod` / `VacationAwareRotation` /
+`DayResolverInput.vacations` / `.shiftalarm` policy round-trip /
+V3→V4 migration test を追加済み。
+HolidayManager から `VacationPeriod` を作る UI（VAC-I1 / VAC-U9）は未実装。
 
 - **目的**: お盆・ゴールデンウィーク等の **連続休暇** をユーザが設定したとき、休暇前の最後
   のシフトと休暇後の最初のシフトを **意図通りに切り替える**。
