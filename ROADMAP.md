@@ -886,8 +886,9 @@ main へ PR（Linear issue が無い緊急時のみ `feature/<topic>`）。
     時に policy に従ってオフセットを再計算する。
 - **対象ファイル**:
   - 既存 `Sources/Domain/Models/HolidayOverride.swift` に `isVacationGroup` フラグ
-  - 新規 `Sources/Domain/Models/VacationPeriod.swift`（SwiftData @Model、SchemaV1→V2
-    マイグレーション必要）
+  - 新規 `Sources/Domain/Models/VacationPeriod.swift`（SwiftData @Model、SchemaV3→V4
+    lightweight マイグレーション。現行 active が SchemaV3 のため。詳細
+    `docs/p2-algorithms.md §2.2`）
   - 既存 `Sources/Domain/Models/RotationPattern.swift` に
     `crossVacationPolicy: CrossVacationPolicy = .invert` と
     `dayStartSlotIndex: Int?` を追加
