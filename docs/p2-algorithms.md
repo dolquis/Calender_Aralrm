@@ -472,16 +472,20 @@ provenance や `.shiftalarm` への policy 反映の是非は [DEV-143] の横�
 > `shift`（周期カウンタからの除外）と `phase`（policy 補正）に分けて累積する。
 
 ```
+effStart = startOfDay(p.startDate ?? p.anchorDate)   // ローテの実効開始（＝位相基準の下限）
 shift = 0
 phase = 0
 for v in V where v.endDate < d:                 // d より前の連休のみ、startDate 昇順
+    if v.endDate < effStart: continue           // ★ローテ開始前に終わった連休は無視（VAC-U11）
+    vStart = max(v.startDate, effStart)          // 開始跨ぎ連休は実効開始でクランプ
     // (a) 連休直前の最後の稼働日スロット（この連休の override 参照元）
-    preVac  = v.startDate - 1 day
+    preVac  = vStart - 1 day
     prevIdx = (baseSlotIndex(preVac, p) + shift + phase) mod L
     // (b) policy 決定（pattern 既定 < preset override）
+    //     ※ vStart == effStart（開始跨ぎ）で preVac がローテ外なら pattern 既定にフォールバック
     policy  = policyFor(prevIdx, p, presets)
     // (c) 連休日数を周期カウンタから除外（全 policy 共通 = .continue 意味論）
-    duration = daysBetween(v.startDate, v.endDate) + 1
+    duration = daysBetween(vStart, v.endDate) + 1
     shift -= duration
     // (d) policy 別の位相補正
     switch policy {
@@ -497,6 +501,14 @@ for v in V where v.endDate < d:                 // d より前の連休のみ、
 
 return slot at (baseSlotIndex(d, p) + shift + phase) mod L
 ```
+
+> **連休はローテの実効範囲内のみ算入（Codex review #52 / P1）**: ローテは自前の
+> `anchorDate` / `startDate` / `endDate` でスコープされる。`base(d)` は `anchorDate` 基準のため、
+> **`effStart = p.startDate ?? p.anchorDate` より前に終わった連休**を算入すると、無関係な
+> 歴史的連休（古いローテを消して新ローテに切替えた等）で以降の全スロットがずれ、誤プリセット・
+> 誤アラーム時刻になる。よって `v.endDate < effStart` の連休はループで除外し、`effStart` を跨ぐ
+> 連休は `vStart = max(v.startDate, effStart)` にクランプして「ローテ稼働中に重なった日数」だけを
+> 数える。上限は従来どおり `v.endDate < d`（＝問合せ日より前）。
 
 ここで:
 
@@ -576,6 +588,7 @@ slots[0..6]=昼(D, alarm 06:00), slots[7..13]=夜(N, alarm 17:00) /
 | **VAC-U8** | 年末年始 `12-30〜01-03`(5日,`.invert`) | 2027-01-04 | 7 | slot 9 = **N** | 年跨ぎ `daysBetween` で日付ズレ無し（`.continue` なら slot 2=D） |
 | **VAC-U9** | VP `08-13〜08-14`(2日) | – | – | **UI 検証で reject** | フォーム / 確認ダイアログ層 |
 | **VAC-U10** | VP `08-13〜08-14`(2日) | – | – | `VacationPeriodError.tooShort(2)` throw | throwing init / domain factory（UI 非経由 write path） |
+| **VAC-U11** | ローテ開始前連休 `04-20〜04-24`(anchor 5-4 前) ＋ Obon、両方 `.invert` | 2026-08-17 | 7 | slot 10 = **N** | `effStart=anchor` 未満で終わる前連休を除外 → Obon 単独 `.invert`（VAC-U4）と一致。前連休のみなら VAC-U1（夜7）と一致 |
 
 **override 優先順位の worked-example**（同一ベースライン、連休 = Obon、参照 preset = 直前稼働日
 `08-12` の preset）:
@@ -654,6 +667,7 @@ slots[0..6]=昼(D, alarm 06:00), slots[7..13]=夜(N, alarm 17:00) /
 | VAC-U8 | β-U12 / β-U13 | 月跨ぎ / 年跨ぎ |
 | VAC-U9 | β-U7（UI 分） | 3 日未満 UI reject |
 | VAC-U10 | β-U7（init 分） | 3 日未満 factory reject（新規・分離） |
+| VAC-U11 | （新規） | ローテ実効範囲外（`effStart` 前）の連休を除外。Codex review #52 由来 |
 | （補助）| β-U8 / β-U11 | `isVacationGroup` は resolver 不変 / 優先度連鎖不変 |
 
 ### 2.8 自動グルーピング提案フロー
@@ -746,7 +760,9 @@ DEV-141 スパイクの確定事項を実装 issue [DEV-257]（「P2-β: 長期�
 
 - [ ] `VacationAwareRotation.presetID` が §2.3 確定版（順序固定）どおり実装され、
       `DayResolver` のローテ分岐が差し替わる。`DayResolverInput` に `vacations` を追加。
-- [ ] **VAC-U1〜U10 を §2.3.1 の数値で固定**（`Tests/DomainTests/VacationAwareRotationTests.swift`）。
+- [ ] **ローテ実効範囲外の連休を除外**: `effStart = startOfDay(p.startDate ?? p.anchorDate)`
+      より前に終わる連休は phase/shift に算入しない（**VAC-U11**）。開始跨ぎ連休は `effStart` でクランプ。
+- [ ] **VAC-U1〜U11 を §2.3.1 の数値で固定**（`Tests/DomainTests/VacationAwareRotationTests.swift`）。
 - [ ] override 優先順位（preset ＞ pattern）を §2.3.1 の 3 ケースで検証。
 - [ ] `CrossVacationPolicy` は Int rawValue 0/1/2。`.invert` は UI で偶数周期パターンに限定ガード。
 
