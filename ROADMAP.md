@@ -1684,7 +1684,7 @@ TDD 的に最初に **赤いテスト** として並べてから実装すると�
 
 | # | テスト名 | 検証する性質 |
 |---|---|---|
-| β-S1 | `testMigrationFromV3AddsCrossVacationPolicyDefault` | 既存 `RotationPattern` / `ShiftPreset` に `.invert` が付く |
+| β-S1 | `testMigrationFromV3AddsCrossVacationPolicyDefault` | 既存 `RotationPattern.crossVacationPolicy` に既定 `.invert`（rawValue 0）が付く。`ShiftPreset.crossVacationPolicy` は **nil のまま**（optional・backfill しない。preset override が pattern を不当に上書きしないため） |
 | β-S2 | `testMigrationPreservesExistingHolidayOverrides` | 既存 `HolidayOverride` が破壊されない |
 | β-S3 | `testMigrationCreatesNoVacationPeriodAutomatically` | マイグレーション時に自動で連休をまとめない（明示操作必須） |
 

@@ -526,7 +526,8 @@ for v in V where v.endDate < d:                 // d より前の連休のみ、
     case .continue:
         break                                   // (c) のみ
     case .invert:
-        phase += L / 2                          // 整数除算(floor)。半周期ずらし
+        if L is even: phase += L / 2            // 半周期ずらし（偶数周期のみ有効な反転）
+        else:         break                      // 奇数周期は .continue にフォールバック（domain ガード, VAC-U15）
     case .resetToDay:
         dayAfter = v.endDate + 1 day
         idxAfterContinue = (baseSlotIndex(dayAfter, p) + shift + phase) mod L
@@ -559,8 +560,11 @@ return slot at (baseSlotIndex(d, p) + shift + phase) mod L
 - `.invert` … `.continue` に半周期 `L/2`（floor）を加える **相対**シフト。day/night が対称な
   **偶数周期で昼夜が反転**する。ROADMAP の「夜勤で終われば昼勤始まり」は典型例であり、
   機構は「`.continue` ± `L/2`」。連休 2 回で `L/2 + L/2 = L ≡ 0` となり `.continue` に一致
-  （**VAC-U7**）。**奇数周期は floor のため厳密反転にならない**ので、UI で `.invert` は
-  偶数周期パターンに限定する（2026-06-22 lead 確定。実装ガードは DEV-257）。
+  （**VAC-U7**）。**奇数周期は floor のため厳密反転にならない**ので、**resolver でも奇数周期の
+  `.invert` は `.continue` にフォールバック**し位相をずらさない（**VAC-U15**。migration 既定や
+  `.shiftalarm` import 由来で `crossVacationPolicyRaw=0`(.invert) が付いた奇数周期パターンも
+  domain 層で安全化される）。UI は `.invert` を偶数周期パターンに限定（UX 層。2026-06-22
+  lead 確定。実装ガードは DEV-257）。
 - `.resetToDay` … 連休明け初日を `effectiveDayStartSlot` に整列。以降そこから連続。
 
 **Step 3 — `policyFor(prevIdx, p, presets)`**（pattern 既定 < preset override）:
@@ -626,6 +630,7 @@ slots[0..6]=昼(D, alarm 06:00), slots[7..13]=夜(N, alarm 17:00) /
 | **VAC-U12** | 連休直前が休み(nil)スロット、その手前の稼働日 preset が `.continue` override | （policy 選択） | – | policy=**`.continue`** | 休み日を遡り実稼働日の preset override を参照（pattern 既定でなく） |
 | **VAC-U13** | 連休が `effStart` を跨ぐ（実稼働日が範囲内に無い） | （policy 選択） | – | policy=**pattern 既定** | ローテ外の preset override を拾わない（`lowerBound` ガード） |
 | **VAC-U14** | 隣接 2 連休 `08-13〜16` ＋ `08-17〜20`、両方 `.invert` | 2026-08-21 | 11 | slot 10 = **N** | Step 0 正規化で連続 `08-13〜20` に併合し invert を 1 回適用（未併合だと invert×2 相殺で slot 3=昼の誤り） |
+| **VAC-U15** | 奇数周期（例 7 日）pattern ＋ policy=`.invert` | （フォールバック） | – | `.continue` と同一（位相ずらし無し） | resolver が奇数周期 `.invert` を `.continue` に降格。UI を経ない migration/import 由来の `.invert` も誤反転しない |
 
 **override 優先順位の worked-example**（同一ベースライン、連休 = Obon、参照 preset = 直前稼働日
 `08-12` の preset）:
@@ -805,6 +810,9 @@ DEV-141 スパイクの確定事項を実装 issue [DEV-257]（「P2-β: 長期�
       pattern 既定にフォールバック（**VAC-U12 / VAC-U13**。ローテ外の preset override を拾わない）。
 - [ ] **連休 `V` を正規化**: 位相計算前に隣接（`≤ end+1day`）/重複範囲を coalesce し、連続休み
       あたり policy を 1 回だけ適用（**VAC-U14**）。UI/factory も重複・隣接作成を弾く/併合する。
+- [ ] **奇数周期 `.invert` の domain フォールバック**: `L` が奇数のとき resolver は `.invert` を
+      `.continue` 扱いにし位相をずらさない（**VAC-U15**）。UI ガードだけに頼らず、migration 既定
+      （pattern `crossVacationPolicyRaw=0`）や `.shiftalarm` import 由来の `.invert` も安全化。
 - [ ] **`VacationPeriod` は factory 唯一生成**: memberwise init を `fileprivate` 化し、
       `make(...) throws` を全 write path（UI / §2.8 / `.shiftalarm` import / App Intents / test helper）
       で必須化（**VAC-U10** をバイパス不能に）。
