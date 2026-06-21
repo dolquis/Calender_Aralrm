@@ -1464,6 +1464,8 @@ main へ PR（Linear issue が無い緊急時のみ `feature/<topic>`）。
 
 > 根拠: 仕様提案書取り込み（§9 DOW）評価時の指摘
 
+> 追跡: Linear DEV-296（実装。blockedBy DEV-259 / related DEV-143）
+
 - **目的**: §P2-α A2 DOW ルール検出が受諾されると最大 6 ヶ月分の
   `HolidayOverride` を一括 insert するため、行数が増えて `DayResolver` クエリ
   コストへ影響しうる懸念に対応する。
