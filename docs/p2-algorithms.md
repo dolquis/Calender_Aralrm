@@ -324,7 +324,7 @@ container でも schema 解決できることを `/swiftdata-migration` skill �
 > `SharedPersistence.makeContainer()` は `Schema(versionedSchema: SchemaV3.self)` を使う
 > （DEV-35 完了で **SchemaV3 が active**）。本節の旧記述「Schema V2 / V1→V2」は誤りで、
 > P2-β は **SchemaV4 を新規追加**し `SchemaV3 → SchemaV4` の lightweight stage を載せる
-> （詳細 §2.2）。テスト ID も ROADMAP §P2-β の **VAC-U1〜U10 / VAC-I1〜I2 を正典**とし、
+> （詳細 §2.2）。テスト ID も ROADMAP §P2-β の **VAC-U1〜U15 / VAC-I1〜I2 を正典**とし、
 > 旧 `β-U*` は §2.7 で crosswalk する（実装 issue は [DEV-257]）。
 
 ### 2.1 データモデル追加（Schema V4）
@@ -603,7 +603,7 @@ return p.slots
   .min(by: { ($0.1, $0.0) < ($1.1, $1.0) })?.0 ?? 0
 ```
 
-### 2.3.1 確定テストベクタ（VAC-U1〜U10）
+### 2.3.1 確定テストベクタ（VAC-U1〜U15）
 
 実装テスト `Tests/DomainTests/VacationAwareRotationTests.swift` が固定すべき数値表。
 下記はすべて Python（標準 `date`）で **機械検証済み**（2026-06-21）。
@@ -816,7 +816,7 @@ DEV-141 スパイクの確定事項を実装 issue [DEV-257]（「P2-β: 長期�
 - [ ] **`VacationPeriod` は factory 唯一生成**: memberwise init を `fileprivate` 化し、
       `make(...) throws` を全 write path（UI / §2.8 / `.shiftalarm` import / App Intents / test helper）
       で必須化（**VAC-U10** をバイパス不能に）。
-- [ ] **VAC-U1〜U13 を §2.3.1 で固定**（U1〜U11 は数値、U12/U13 は policy 選択。`Tests/DomainTests/VacationAwareRotationTests.swift`）。
+- [ ] **VAC-U1〜U15 を §2.3.1 で固定**（U1〜U11・U14 は数値、U12/U13/U15 は policy 選択/フォールバック。`Tests/DomainTests/VacationAwareRotationTests.swift`）。
 - [ ] override 優先順位（preset ＞ pattern）を §2.3.1 の 3 ケースで検証。
 - [ ] `CrossVacationPolicy` は Int rawValue 0/1/2。`.invert` は UI で偶数周期パターンに限定ガード。
 
@@ -1305,7 +1305,7 @@ Day preset の `defaultAlarmHour = 6`、Night preset の `defaultAlarmHour = 17`
 
 #### 4.3.2 テストケース
 
-> **正典は §2.3.1（VAC-U1〜U10、機械検証済み）**。下表は旧 β-U スキームの参考。とくに
+> **正典は §2.3.1（VAC-U1〜U15、機械検証済み）**。下表は旧 β-U スキームの参考。とくに
 > **β-U2 / β-U3 の「8-12 = night」前提は誤り**: 同ベースライン（anchor 2026-05-04）では
 > `daysBetween(anchor, 8-12)=100`, `100 mod 14 = 2` で **8-12 = slot 2 = 昼**。よって
 > 8-17 の `.invert` 期待は **slot 10 = 夜**（VAC-U4）であり、旧表の「day」は誤り。実装テストは
@@ -1481,7 +1481,7 @@ assert（γ-U12）。
   ケースを critical 判定。
 - **DRIFT-U1〜U5 / DRIFT-I1〜I3**: A1 ドリフト UI 統合
 - **DOW-U1〜U5 / DOW-I1〜I3**: A2 DOW ルール検出
-- **VAC-U1〜U10 / VAC-I1〜I2**: P2-β 連休越境ローテーション。U9 は UI 入力検証 /
+- **VAC-U1〜U15 / VAC-I1〜I2**: P2-β 連休越境ローテーション。U9 は UI 入力検証 /
   U10 は domain factory 側で 3 日未満 reject（`VacationPeriodError.tooShort`）。
 - **IMG-U1〜U5 / IMG-I1〜I3 / IMG-S1〜S2**: P2-γ Phase 1 画像インポート
 
