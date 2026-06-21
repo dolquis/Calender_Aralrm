@@ -320,21 +320,53 @@ container でも schema 解決できることを `/swiftdata-migration` skill �
 
 ## 2. P2-β — 連休越境ローテーション
 
-### 2.1 データモデル追加（Schema V2）
+> **スキーマ版数の確定（2026-06-21 / DEV-141 設計スパイク）**: 実装時点で
+> `SharedPersistence.makeContainer()` は `Schema(versionedSchema: SchemaV3.self)` を使う
+> （DEV-35 完了で **SchemaV3 が active**）。本節の旧記述「Schema V2 / V1→V2」は誤りで、
+> P2-β は **SchemaV4 を新規追加**し `SchemaV3 → SchemaV4` の lightweight stage を載せる
+> （詳細 §2.2）。テスト ID も ROADMAP §P2-β の **VAC-U1〜U15 / VAC-I1〜I2 を正典**とし、
+> 旧 `β-U*` は §2.7 で crosswalk する（実装 issue は [DEV-257]）。
+
+### 2.1 データモデル追加（Schema V4）
 
 **新規 @Model `VacationPeriod`**（`Sources/Domain/Models/VacationPeriod.swift`）:
 
 ```swift
 @Model public final class VacationPeriod {
-    @Attribute(.unique) public var id: UUID
-    public var startDate: Date           // inclusive、startOfDay 正規化
-    public var endDate: Date             // inclusive、startOfDay 正規化
+    @Attribute(.unique) public private(set) var id: UUID
+    public private(set) var startDate: Date   // inclusive、startOfDay 正規化
+    public private(set) var endDate: Date     // inclusive、startOfDay 正規化
     public var label: String
-    public init(id: UUID = UUID(), startDate: Date, endDate: Date, label: String)
+    // ★memberwise init は fileprivate。3 日不変条件を強制するため、全 write path
+    //   （UI / §2.8 自動グルーピング / .shiftalarm import / App Intents / test helper）は
+    //   唯一の公開生成経路 make(...) throws を通す。public な生 init を残さないこと。
+    fileprivate init(id: UUID, startDate: Date, endDate: Date, label: String)
 }
 ```
 
-最短 3 日は書き込み時に validate（`endDate - startDate ≥ 2 days`）。(β-U7)
+最短 3 日は **throwing initializer / 専用 factory** で不変条件として強制する
+（`endDate − startDate ≥ 2 days`、すなわち `Calendar.daysBetween ≥ 2` / 日数 ≥ 3）。
+UI 検証（**VAC-U9**）だけでなく domain factory（**VAC-U10**）でも reject し、違反時は
+`VacationPeriodError.tooShort(days:)` を throw する。理由: `RotationExpander` /
+`DayResolver` は永続化済み `VacationPeriod` をアラーム抑制範囲として無条件に扱うため、
+1〜2 日の混入が本来鳴るべきローテ・アラームを暗黙に黙らせる事故になる。例:
+
+```swift
+public enum VacationPeriodError: Error, Equatable { case tooShort(days: Int) }
+
+extension VacationPeriod {
+    public static func make(
+        id: UUID = UUID(), startDate: Date, endDate: Date, label: String,
+        calendar: Calendar = .current
+    ) throws -> VacationPeriod {
+        let s = calendar.startOfDay(for: startDate)
+        let e = calendar.startOfDay(for: endDate)
+        let days = calendar.daysBetween(s, e) + 1     // inclusive
+        guard days >= 3 else { throw VacationPeriodError.tooShort(days: days) }
+        return VacationPeriod(id: id, startDate: s, endDate: e, label: label)
+    }
+}
+```
 
 **Enum**（同ファイル or `VacationPolicy.swift`）:
 
@@ -360,33 +392,72 @@ public enum CrossVacationPolicy: Int, Codable, Sendable, CaseIterable {
 `VacationPeriodSnapshot { startDate, endDate, label }` を新設。
 `DayResolverInput` に `vacations: [VacationPeriodSnapshot]` を追加。
 
-### 2.2 スキーママイグレーション（V1 → V2）
+### 2.2 スキーママイグレーション（V3 → V4）
 
-SwiftData の lightweight migration:
+**現状（2026-06-21 実コード確認）**: `ShiftAlarmMigrationPlan.schemas = [SchemaV1,
+SchemaV2, SchemaV3]`、`stages` は V1→V2 / V2→V3 とも `.lightweight`。ライブの `@Model`
+クラスは `Sources/Domain/Models/*.swift` の `extension SchemaV3 { … }` に置かれ
+（`public typealias Foo = SchemaV3.Foo`）、過去版は `SchemaV1.swift` /
+`SchemaV2Models.swift` に凍結コピーが残る。`makeContainer` は
+`Schema(versionedSchema: SchemaV3.self)`。
 
-- 新規 @Model `VacationPeriod` — 追加のみ。既存行に影響なし
-- `RotationPattern.crossVacationPolicyRaw`: 既定 0 で既存行を埋める (β-S1)
-- `RotationPattern.dayStartSlotIndex`: optional、既存行は nil
-- `ShiftPreset.crossVacationPolicyRaw`: optional、既存行は nil
-- `HolidayOverride.isVacationGroup`: 既定 false (β-S2)
-- **既存 `HolidayOverride` の連続範囲を自動的に `VacationPeriod` 化しない** (β-S3)
+P2-β はこの版数機構に **SchemaV4 を 1 段足す**。追加はすべて加算的（新 @Model・
+既定値付き / optional プロパティ）なので **lightweight で可**:
 
-`Sources/Domain/Persistence/SchemaV2.swift` + `MigrationPlan.swift` を新設し、
-`SchemaV2.versionIdentifier = Schema.Version(2, 0, 0)`、
-`SchemaMigrationPlan` の `stages = [.lightweight(fromVersion: SchemaV1.self,
-toVersion: SchemaV2.self)]` を用意。
+| 追加 | 種類 | lightweight 可否 |
+|---|---|---|
+| 新規 @Model `VacationPeriod` | モデル追加 | ○（既存行に影響なし） |
+| `RotationPattern.crossVacationPolicyRaw: Int = 0` | 既定値付き | ○（既存行を 0=`.invert` で充填、VAC-S1） |
+| `RotationPattern.dayStartSlotIndex: Int?` | optional | ○（既存行 nil） |
+| `ShiftPreset.crossVacationPolicyRaw: Int?` | optional | ○（既存行 nil） |
+| `HolidayOverride.isVacationGroup: Bool = false` | 既定値付き | ○（既存行 false、VAC-S2） |
 
-**実装精緻化（2026-05-27 追加）:**
+**手順（既存パターン踏襲）**:
 
-- **Widget の SwiftData container も V2 を読むこと** を確認する。App と Widget は
-  App Group 配下の同一 SwiftData store を共有しているため、`Widget/` 側の
-  `ModelContainer` 初期化コードでも `SchemaV2` を渡す必要がある。`/swiftdata-migration`
-  skill を起動して確認漏れを防ぐ。
-- `CrossVacationPolicy.invert/continue/resetToDay` の **Int rawValue (0/1/2) は確定**。
-  将来追加する policy は rawValue 3 以降に積み、既存数値を変更しない。
-- `VacationPeriod` は **独立 @Model** で `HolidayOverride` とは別エンティティ。
-  `HolidayOverride.isVacationGroup` は「`VacationPeriod` 由来か否かのマーカー」専用
-  であり、単日 override の責務に侵食しない。
+1. 現行 V3 形状を `Sources/Domain/Persistence/SchemaV3Models.swift` に **凍結コピー**
+   （`SchemaV2Models.swift` の precedent に倣う）。これで `SchemaV3.models` は旧形状を
+   指し続ける。
+2. ライブ `@Model` 群（`Sources/Domain/Models/*.swift`）を `extension SchemaV4` に移し、
+   上表のフィールドと新規 `VacationPeriod` を追加。`public typealias Foo = SchemaV4.Foo`
+   に更新。
+3. `Sources/Domain/Persistence/SchemaV4.swift` を新設:
+   `versionIdentifier = Schema.Version(4, 0, 0)`、`models` に既存 6 + `VacationPeriod`
+   の **計 7** を列挙。
+4. `MigrationPlan` に `SchemaV4.self` を `schemas` 追加、`stages` に
+   `.lightweight(fromVersion: SchemaV3.self, toVersion: SchemaV4.self)` を追加。
+5. `SharedPersistence.makeContainer` を `Schema(versionedSchema: SchemaV4.self)` に切替。
+   **App Group store URL（`ShiftAlarm.store`）は不変**（変えると Widget が読めなくなる）。
+
+**Widget 共有 container の整合**: App と Widget は **唯一の `SharedPersistence.makeContainer`**
+を共有する（`Widget/NextAlarmTimelineProvider.fetchData()` が直接呼ぶ。実コード確認済み）。
+別個の Widget 用 container 初期化は存在しないため、手順 5 の切替だけで Widget も SchemaV4 に
+追従する。`/swiftdata-migration` skill のルール（store URL / App Group ID を変えない）を遵守。
+
+**`.shiftalarm`（`ShiftBundleCodec`）との境界**: 現行 bundle は `PresetDTO` / `RotationDTO`
+/ `OverrideDTO` を持つが **`VacationDTO` は無い**。P2-β v1 でも **`VacationPeriod`（連休範囲）は
+bundle に含めない**（連休“共有”は scope 外。2026-06-22 lead 確定。provenance / 連休共有は [DEV-143]）。
+
+ただし `RotationPattern` / `ShiftPreset` に増える **policy 列（`crossVacationPolicy`）は
+round-trip させる**: `RotationDTO` に **optional** な `crossVacationPolicy`（rawValue）と
+`dayStartSlotIndex`、`PresetDTO` に **optional** `crossVacationPolicy` を追加し、export で
+書き出し import で復元する。理由: これらは **既に共有対象のエンティティ**であり、round-trip
+しないと `.continue` / `.resetToDay` を設定した rotation/preset を export→import すると **黙って
+pattern `.invert` / preset nil に戻り**、受信側が連休を作った時点で復帰後アラームが変わる
+（silent round-trip loss）。同様に `.resetToDay` が明示 `dayStartSlotIndex` に依存する場合、
+それも round-trip しないと受信側で `effectiveDayStartSlot` の自動導出（既定 0）に戻り、復帰
+スロット＝preset / アラーム時刻が変わる。optional 追加なので後方互換は保たれ、**旧 bundle
+（フィールド欠落）は従来どおり既定デコード**（当時の default 値なので情報損失なし）。`ShiftBundleCodec`
+の legacy 受け入れ（PR #5）を踏襲。これは「v1 = `VacationPeriod` 非対応」確定方針の **範囲内の
+精緻化**（連休共有は依然 scope 外。round-trip するのは既存共有エンティティに載る policy 列のみ）。
+
+**不変の確定事項（旧 2026-05-27 追加分を引継ぎ）**:
+
+- `CrossVacationPolicy` の **Int rawValue (0/1/2) は確定**。将来追加 policy は rawValue 3
+  以降に積み、既存数値を変更しない。
+- `VacationPeriod` は **独立 @Model**。`HolidayOverride.isVacationGroup` は
+  「`VacationPeriod` 由来か否かのマーカー」専用で、単日 override の責務に侵食しない。
+- migration で既存 `HolidayOverride` の連続範囲を **自動 `VacationPeriod` 化しない**
+  （VAC-S3。昇格は §2.8 の明示同意フロー経由のみ）。
 
 ### 2.3 アルゴリズム: `VacationAwareRotation.presetID`
 
@@ -403,62 +474,129 @@ toVersion: SchemaV2.self)]` を用意。
   UUID?  (preset id、連休セルは nil)
 ```
 
-**Step 1 — 連休所属。**
-`v.startDate ≤ d ≤ v.endDate` を満たす `v ∈ V` があれば `nil` を返す (β-U6)。
-
-**Step 2 — 直前連休の累積シフト。**
+**Step 0 — 連休の正規化（前提）。**
+`V` を **startDate 昇順**にソートし、**隣接（`next.startDate ≤ cur.endDate + 1 day`）または重複
+する範囲を 1 つの連続休みに併合（coalesce）** してから以降を実行する。理由: 行レベルの隣接/
+重複連休を別カウントすると `.invert` 等が連続休みあたり複数回適用され（例: `08-13…16` ＋
+`08-17…20` で invert ×2 が相殺）、単一の連続連休 `08-13…20`（invert ×1）と結果が変わる
+（**VAC-U14**）。UI / factory 側でも重複・隣接の作成を弾く/併合するのが望ましいが、resolver は
+防御的に正規化する。policy は連休固有でなく「併合後の連続休み直前の稼働日」から決まるので、
+併合で policy 情報は失われない。
 
 ```
+func normalize(V):
+    sort V by startDate
+    out = []
+    for v in V:
+        if out nonempty and v.startDate <= out.last.endDate + 1 day:
+            out.last.endDate = max(out.last.endDate, v.endDate)   // 連続休みに 1 回だけ policy 適用
+        else:
+            out.append(v)
+    return out
+V = normalize(V)
+```
+
+**Step 1 — 連休所属。**
+`v.startDate ≤ d ≤ v.endDate` を満たす `v ∈ V` があれば `nil` を返す（**VAC-U2**）。
+
+**Step 2 — 直前連休の累積補正（確定版 / 順序固定）。**
+
+> 旧版疑似コードは `prevWorkingPresetIdx` をループ末尾で更新していたため、初回連休の
+> `policyFor` が `baseSlotIndex(anchor)=0` を参照する **順序バグ**があった。下記で固定する。
+> 各連休の `prevIdx`（policy 参照元 = 連休直前の最後の稼働日スロット）は、**その連休の
+> 補正を適用する前**に、先行連休ぶんの累積（`shift`/`phase`）だけで算出する。連休の寄与は
+> `shift`（周期カウンタからの除外）と `phase`（policy 補正）に分けて累積する。
+
+```
+effStart = startOfDay(p.startDate ?? p.anchorDate)   // ローテの実効開始（＝位相基準の下限）
 shift = 0
-phaseAdjust = 0
-prevWorkingPresetIdx = baseSlotIndex(p.anchorDate, p)
-for v in V where v.endDate < d:
-    duration = daysBetween(v.startDate, v.endDate) + 1
-    // ".continue" 意味論: 連休日数をサイクルカウンタから除外
+phase = 0
+for v in V where v.endDate < d:                 // d より前の連休のみ、startDate 昇順
+    if v.endDate < effStart: continue           // ★ローテ開始前に終わった連休は無視（VAC-U11）
+    vStart = max(v.startDate, effStart)          // 開始跨ぎ連休は実効開始でクランプ
+    // (a) 連休直前の「実際の稼働日」を遡って探す（休み(nil)スロットは飛ばす）。
+    //     探索は現 working segment 内（直前連休の翌日 〜 vStart-1）に限定する＝この区間は
+    //     累積 shift/phase が一定で有効。区間外（直前連休/ローテ開始前）の preset は拾わない。
+    prevVacEnd = max{ v'.endDate : v' ∈ V, v'.endDate < v.startDate }   // 無ければ無し
+    lowerBound = max(effStart, prevVacEnd + 1 day)
+    prevWorkingIdx = nil
+    day = vStart - 1
+    while day >= lowerBound:
+        idx = (baseSlotIndex(day, p) + shift + phase) mod L
+        if p.slots[idx] != nil { prevWorkingIdx = idx; break }   // 稼働日（非 nil スロット）
+        day = day - 1
+    // (b) policy 決定: 実稼働日が見つかればその preset override を、無ければ pattern 既定。
+    //     （開始跨ぎ vStart==effStart や区間が全休みで実稼働日が無い場合は override を拾わない）
+    policy = (prevWorkingIdx != nil) ? policyFor(prevWorkingIdx, p, presets)
+                                     : p.crossVacationPolicy
+    // (c) 連休日数を周期カウンタから除外（全 policy 共通 = .continue 意味論）
+    duration = daysBetween(vStart, v.endDate) + 1
     shift -= duration
-    // この連休のポリシーを決定
-    policy = policyFor(v, p, presets, prevWorkingPresetIdx)
+    // (d) policy 別の位相補正
     switch policy {
     case .continue:
-        break  // shift -= duration で吸収済み
+        break                                   // (c) のみ
     case .invert:
-        phaseAdjust += p.cycleLength / 2  // 整数除算
+        if L is even: phase += L / 2            // 半周期ずらし（偶数周期のみ有効な反転）
+        else:         break                      // 奇数周期は .continue にフォールバック（domain ガード, VAC-U15）
     case .resetToDay:
-        // 連休明け初日を「昼勤始まりスロット」にスナップ
-        let dayAfter = v.endDate + 1 day
-        let baseIdx = (baseSlotIndex(dayAfter, p) + shift + phaseAdjust) mod L
-        let target = effectiveDayStartSlot(p, presets)
-        phaseAdjust += (target - baseIdx) mod L
+        dayAfter = v.endDate + 1 day
+        idxAfterContinue = (baseSlotIndex(dayAfter, p) + shift + phase) mod L
+        phase += ((effectiveDayStartSlot(p, presets) - idxAfterContinue) mod L + L) mod L
     }
-    // prevWorkingPresetIdx を v.startDate - 1 日時点に更新
-    let preVacDate = v.startDate - 1 day
-    let preVacIdx = (baseSlotIndex(preVacDate, p) + shiftSnapshot + phaseAdjustSnapshot) mod L
-    prevWorkingPresetIdx = preVacIdx
 
-return slot at (baseSlotIndex(d, p) + shift + phaseAdjust) mod L
+return slot at (baseSlotIndex(d, p) + shift + phase) mod L
 ```
+
+> **連休はローテの実効範囲内のみ算入（Codex review #52 / P1）**: ローテは自前の
+> `anchorDate` / `startDate` / `endDate` でスコープされる。`base(d)` は `anchorDate` 基準のため、
+> **`effStart = p.startDate ?? p.anchorDate` より前に終わった連休**を算入すると、無関係な
+> 歴史的連休（古いローテを消して新ローテに切替えた等）で以降の全スロットがずれ、誤プリセット・
+> 誤アラーム時刻になる。よって `v.endDate < effStart` の連休はループで除外し、`effStart` を跨ぐ
+> 連休は `vStart = max(v.startDate, effStart)` にクランプして「ローテ稼働中に重なった日数」だけを
+> 数える。上限は従来どおり `v.endDate < d`（＝問合せ日より前）。
 
 ここで:
 
 - `baseSlotIndex(date, p) = ((daysBetween(p.anchorDate, date)) mod p.cycleLength + p.cycleLength) mod p.cycleLength`
+  — 現行 `RotationExpander.presetID` と**同一**の基底式。
 - `L = p.cycleLength`
 - `daysBetween` は両日を `calendar.startOfDay` 正規化した上で
-  `calendar.dateComponents([.day], from: a, to: b).day!`。
+  `calendar.dateComponents([.day], from: a, to: b).day!`（実在ヘルパ `Calendar.daysBetween`）。
 
-**Step 3 — `policyFor(v, p, presets, prevWorkingPresetIdx)`**
-（pattern + preset 階層）:
+**意味論の確定（policy ごと）**:
+
+- `.continue` … 連休日を周期から除外し、連休前の稼働位置の「次」から続行（`shift -= duration`
+  のみ、`phase` 不変）。例: 連休前の最後の稼働日が slot 2 なら連休明け初日は slot 3。
+- `.invert` … `.continue` に半周期 `L/2`（floor）を加える **相対**シフト。day/night が対称な
+  **偶数周期で昼夜が反転**する。ROADMAP の「夜勤で終われば昼勤始まり」は典型例であり、
+  機構は「`.continue` ± `L/2`」。連休 2 回で `L/2 + L/2 = L ≡ 0` となり `.continue` に一致
+  （**VAC-U7**）。**奇数周期は floor のため厳密反転にならない**ので、**resolver でも奇数周期の
+  `.invert` は `.continue` にフォールバック**し位相をずらさない（**VAC-U15**。migration 既定や
+  `.shiftalarm` import 由来で `crossVacationPolicyRaw=0`(.invert) が付いた奇数周期パターンも
+  domain 層で安全化される）。UI は `.invert` を偶数周期パターンに限定（UX 層。2026-06-22
+  lead 確定。実装ガードは DEV-257）。
+- `.resetToDay` … 連休明け初日を `effectiveDayStartSlot` に整列。以降そこから連続。
+
+**Step 3 — `policyFor(prevIdx, p, presets)`**（pattern 既定 < preset override）:
 
 ```
-let prevPresetID = p.slots[prevWorkingPresetIdx]
+let prevPresetID = p.slots[prevIdx]
 if let prevPreset = prevPresetID.flatMap({ presets[$0] }),
    let override = prevPreset.crossVacationPolicy {
-    return override
+    return override                  // ShiftPreset.crossVacationPolicy?（override が優先）
 }
-return p.crossVacationPolicy   // 既定 = .invert
+return p.crossVacationPolicy         // RotationPattern.crossVacationPolicy（既定 .invert）
 ```
 
-スナップショット構造体は preset 側に `crossVacationPolicy: CrossVacationPolicy?`、
-pattern 側に non-optional の同名フィールドを持つ。
+優先順位は **preset override ＞ pattern 既定**。参照する preset は「連休直前の最後の稼働日」
+（`prevIdx`）のもの。スナップショット構造体は preset 側に
+`crossVacationPolicy: CrossVacationPolicy?`、pattern 側に non-optional の同名フィールドを持つ。
+
+> **連続連休（gap 0）の注意**: `v.startDate - 1` が直前の別連休内に入る場合、`prevIdx` は
+> 「直近の稼働日」まで遡る（連休日はスキップ）。`shift`/`phase` の累積は invert/continue では
+> 順序非依存だが `.resetToDay` は `dayAfter` 依存なので、隣接連休は 1 つに統合するのが安全
+> （§2.8 自動グルーピングは隣接 run を 1 範囲にまとめる）。
 
 **Step 4 — `effectiveDayStartSlot(p, presets)`**（`.resetToDay` 用）:
 
@@ -475,6 +613,47 @@ return p.slots
   }
   .min(by: { ($0.1, $0.0) < ($1.1, $1.0) })?.0 ?? 0
 ```
+
+### 2.3.1 確定テストベクタ（VAC-U1〜U15）
+
+実装テスト `Tests/DomainTests/VacationAwareRotationTests.swift` が固定すべき数値表。
+下記はすべて Python（標準 `date`）で **機械検証済み**（2026-06-21）。
+
+**ベースライン**: anchor `2026-05-04`(月) / `L = 14` /
+slots[0..6]=昼(D, alarm 06:00), slots[7..13]=夜(N, alarm 17:00) /
+`dayStartSlotIndex = nil`（自動導出 → slot 0）。
+`base(d) = daysBetween(2026-05-04, d) mod 14`。各 Obon 連休 = `2026-08-13〜08-16`（4 日、
+直前稼働日 `08-12` は `base 2 = 昼`）。
+
+| ID | 連休（policy） | 問合せ日 | base | 期待 | 算出根拠 |
+|---|---|---|---|---|---|
+| **VAC-U1** | なし | 2026-08-17 | 7 | slot 7 = **N** | 基底 expander と一致 |
+| **VAC-U2** | Obon | 2026-08-14（連休内） | – | **nil** | Step 1 |
+| **VAC-U3** | Obon ＋ 手動 `08-15=昼` | 2026-08-15 | – | `ResolvedDay.manual(昼)` | DayResolver 優先（手動＞連休）/ §2.4 |
+| **VAC-U4** | Obon（`.invert`） | 2026-08-17 | 7 | slot 10 = **N** | `(7−4+7) mod 14` |
+| **VAC-U5** | Obon（`.continue`） | 2026-08-17 | 7 | slot 3 = **D** | `(7−4) mod 14`；前稼働日 08-12=slot2 の次 |
+| **VAC-U6** | Obon（`.resetToDay`,dayStart=0） | 2026-08-17 | 7 | slot 0 = **D** | dayAfter を昼始まりへ整列 |
+| **VAC-U7** | 夏季 `07-20〜07-24`(5日) ＋ Obon、両方 `.invert` | 2026-08-17 | 7 | slot 12 = **N** | `phase=7+7≡0` → shift=−9 の `.continue` と一致 |
+| **VAC-U8** | 年末年始 `12-30〜01-03`(5日,`.invert`) | 2027-01-04 | 7 | slot 9 = **N** | 年跨ぎ `daysBetween` で日付ズレ無し（`.continue` なら slot 2=D） |
+| **VAC-U9** | VP `08-13〜08-14`(2日) | – | – | **UI 検証で reject** | フォーム / 確認ダイアログ層 |
+| **VAC-U10** | VP `08-13〜08-14`(2日) | – | – | `VacationPeriodError.tooShort(2)` throw | throwing init / domain factory（UI 非経由 write path） |
+| **VAC-U11** | ローテ開始前連休 `04-20〜04-24`(anchor 5-4 前) ＋ Obon、両方 `.invert` | 2026-08-17 | 7 | slot 10 = **N** | `effStart=anchor` 未満で終わる前連休を除外 → Obon 単独 `.invert`（VAC-U4）と一致。前連休のみなら VAC-U1（夜7）と一致 |
+| **VAC-U12** | 連休直前が休み(nil)スロット、その手前の稼働日 preset が `.continue` override | （policy 選択） | – | policy=**`.continue`** | 休み日を遡り実稼働日の preset override を参照（pattern 既定でなく） |
+| **VAC-U13** | 連休が `effStart` を跨ぐ（実稼働日が範囲内に無い） | （policy 選択） | – | policy=**pattern 既定** | ローテ外の preset override を拾わない（`lowerBound` ガード） |
+| **VAC-U14** | 隣接 2 連休 `08-13〜16` ＋ `08-17〜20`、両方 `.invert` | 2026-08-21 | 11 | slot 10 = **N** | Step 0 正規化で連続 `08-13〜20` に併合し invert を 1 回適用（未併合だと invert×2 相殺で slot 3=昼の誤り） |
+| **VAC-U15** | 奇数周期（例 7 日）pattern ＋ policy=`.invert` | （フォールバック） | – | `.continue` と同一（位相ずらし無し） | resolver が奇数周期 `.invert` を `.continue` に降格。UI を経ない migration/import 由来の `.invert` も誤反転しない |
+
+**override 優先順位の worked-example**（同一ベースライン、連休 = Obon、参照 preset = 直前稼働日
+`08-12` の preset）:
+
+| pattern | 前稼働 preset override | 適用 policy | 期待（2026-08-17） |
+|---|---|---|---|
+| `.invert` | nil | `.invert`（pattern） | slot 10 = N |
+| `.invert` | `.continue` | `.continue`（preset 優先） | slot 3 = D |
+| `.continue` | `.resetToDay` | `.resetToDay`（preset 優先） | slot 0 = D |
+
+> 検証スクリプト（順序固定アルゴリズムをそのまま実装）で上記をすべて再現。VAC-U7 は
+> 「invert を偶数回 → 相殺して `.continue` と一致」「shift は連休日数ぶん累積」を同時に確認する。
 
 ### 2.4 DayResolver への組込
 
@@ -526,6 +705,24 @@ return p.slots
 | β-I1/2/3 | 2.5 節 |
 | β-U14/U15/U16 | 4.3.3 節（preset override） |
 
+**VAC（正典）↔ β（旧）crosswalk**: ROADMAP §P2-β の VAC-U* を正典 ID とし、§4.3 の旧
+β-U* は下記で対応づける。数値の正は §2.3.1。
+
+| VAC（正典） | 旧 β | 備考 |
+|---|---|---|
+| VAC-U1 | β-U1 | 連休なし＝基底 |
+| VAC-U2 | β-U6 | 連休内＝nil |
+| VAC-U3 | β-U10 | 手動＞連休 |
+| VAC-U4 | β-U2 / β-U3 | invert。**β-U2 の「8-12=night→day」は基底と数値不整合（8-12=slot2=昼、invert結果=slot10=夜）→ §2.3.1 で訂正** |
+| VAC-U5 | β-U4 | continue |
+| VAC-U6 | β-U5 | resetToDay |
+| VAC-U7 | β-U9 | invert ×2 相殺 |
+| VAC-U8 | β-U12 / β-U13 | 月跨ぎ / 年跨ぎ |
+| VAC-U9 | β-U7（UI 分） | 3 日未満 UI reject |
+| VAC-U10 | β-U7（init 分） | 3 日未満 factory reject（新規・分離） |
+| VAC-U11 | （新規） | ローテ実効範囲外（`effStart` 前）の連休を除外。Codex review #52 由来 |
+| （補助）| β-U8 / β-U11 | `isVacationGroup` は resolver 不変 / 優先度連鎖不変 |
+
 ### 2.8 自動グルーピング提案フロー
 
 派生機能 **A4**（ROADMAP §4 P2-β A4）の本体ロジック。β-S3 の不変条件
@@ -550,9 +747,10 @@ return p.slots
 
 **適用:**
 
-- 選択された各 ran について:
-  - `VacationPeriod(startDate: run.start, endDate: run.end,
-    label: "自動グルーピング: \(label_set.joined(", "))")` を insert。
+- 選択された各 run について:
+  - `try VacationPeriod.make(startDate: run.start, endDate: run.end,
+    label: "自動グルーピング: \(label_set.joined(", "))", calendar: calendar)` を insert
+    （検出 step 3 で 3 日以上を保証済みだが、生成は必ず唯一の factory 経由とする）。
   - 範囲内 `HolidayOverride.isVacationGroup = true` を更新。
 - 適用後 `AppSettings.vacationAutoGroupingOffered = true`。
 
@@ -592,6 +790,61 @@ public struct VacationCandidate: Equatable, Sendable {
 | β-U17 | §2.8 検出 step 3（≥ 3 日のみ） |
 | β-U18 | apply で選択された候補のみ insert |
 | β-I4 | sheet 表示時に `vacationAutoGroupingOffered = true` を立てる |
+
+### 2.9 P2-β 実装 issue（DEV-257）Acceptance Criteria 草案
+
+DEV-141 スパイクの確定事項を実装 issue [DEV-257]（「P2-β: 長期連休越境ローテーション（実装）」）
+の受入条件に落とす草案。数値・アルゴリズムの正は §2.3 / §2.3.1、移行の正は §2.2。
+
+**スキーマ / 移行（§2.2）**
+
+- [ ] `SchemaV4`（`Schema.Version(4,0,0)`）を新設、`models` に既存 6 ＋ `VacationPeriod` の
+      **計 7** を列挙。現行 V3 形状は `SchemaV3Models.swift` に凍結（`SchemaV2Models.swift` 踏襲）。
+- [ ] `ShiftAlarmMigrationPlan` に `SchemaV4.self` を `schemas` 追加、`stages` に
+      `.lightweight(fromVersion: SchemaV3.self, toVersion: SchemaV4.self)` を追加。
+- [ ] `SharedPersistence.makeContainer` を `Schema(versionedSchema: SchemaV4.self)` に切替。
+      App Group store URL（`ShiftAlarm.store`）は不変。Widget は同 factory 共有のため自動追従。
+- [ ] V3 で起動済みストアを V4 で開いて既存データ保持（VAC-S1: pattern 列 = `.invert` 充填 /
+      VAC-S2: `HolidayOverride.isVacationGroup=false` / VAC-S3: `VacationPeriod` 件数 0）。
+      migration テストはファイル URL ストアで実施（in-memory では stage 不発火）。
+- [ ] `.shiftalarm`（`ShiftBundleCodec`）に `VacationDTO` を追加しない（連休共有は v1 scope 外、DEV-143）。
+      ただし `RotationDTO` に **optional `crossVacationPolicy` ＋ `dayStartSlotIndex`**、`PresetDTO` に
+      optional `crossVacationPolicy` を追加して **round-trip** し、`.continue` / `.resetToDay`（明示
+      `dayStartSlotIndex` 含む）の export→import 消失を防ぐ。旧 bundle（欠落）は既定デコードで後方互換。
+      `ShiftBundleCodecTests` に round-trip テスト（`testCrossVacationPolicyAndDayStartSlotRoundTrip`）を追加。
+
+**アルゴリズム（§2.3 / §2.3.1）**
+
+- [ ] `VacationAwareRotation.presetID` が §2.3 確定版（順序固定）どおり実装され、
+      `DayResolver` のローテ分岐が差し替わる。`DayResolverInput` に `vacations` を追加。
+- [ ] **ローテ実効範囲外の連休を除外**: `effStart = startOfDay(p.startDate ?? p.anchorDate)`
+      より前に終わる連休は phase/shift に算入しない（**VAC-U11**）。開始跨ぎ連休は `effStart` でクランプ。
+- [ ] **policy 参照は実稼働日**: 連休直前の休み(nil)スロットを遡り、現 working segment 内
+      （直前連休翌日〜）の最後の非 nil 稼働日 preset の override を使う。実稼働日が無ければ
+      pattern 既定にフォールバック（**VAC-U12 / VAC-U13**。ローテ外の preset override を拾わない）。
+- [ ] **連休 `V` を正規化**: 位相計算前に隣接（`≤ end+1day`）/重複範囲を coalesce し、連続休み
+      あたり policy を 1 回だけ適用（**VAC-U14**）。UI/factory も重複・隣接作成を弾く/併合する。
+- [ ] **奇数周期 `.invert` の domain フォールバック**: `L` が奇数のとき resolver は `.invert` を
+      `.continue` 扱いにし位相をずらさない（**VAC-U15**）。UI ガードだけに頼らず、migration 既定
+      （pattern `crossVacationPolicyRaw=0`）や `.shiftalarm` import 由来の `.invert` も安全化。
+- [ ] **`VacationPeriod` は factory 唯一生成**: memberwise init を `fileprivate` 化し、
+      `make(...) throws` を全 write path（UI / §2.8 / `.shiftalarm` import / App Intents / test helper）
+      で必須化（**VAC-U10** をバイパス不能に）。
+- [ ] **VAC-U1〜U15 を §2.3.1 で固定**（U1〜U11・U14 は数値、U12/U13/U15 は policy 選択/フォールバック。`Tests/DomainTests/VacationAwareRotationTests.swift`）。
+- [ ] override 優先順位（preset ＞ pattern）を §2.3.1 の 3 ケースで検証。
+- [ ] `CrossVacationPolicy` は Int rawValue 0/1/2。`.invert` は UI で偶数周期パターンに限定ガード。
+
+**DayResolver 不変条件（§2.4）**
+
+- [ ] 優先順位 `手動 > 祝日/有休/連休 > ローテ > なし` を維持。連休日は `nil`→`.none`（沈黙）だが、
+      同日の手動 `DayAssignment` は手動が勝つ（VAC-U3）。
+- [ ] `VacationPeriod` の 3 日未満を UI（VAC-U9）と throwing factory（VAC-U10）の **両方**で reject。
+
+**統合（§2.5 / ROADMAP §P2-β VAC-I*）**
+
+- [ ] **VAC-I1**: HolidayManager / 連休 UI から `VacationPeriod` を登録できる（≥3 日検証込み）。
+- [ ] **VAC-I2**: 登録後に `AlarmScheduler` の expected set が変化する — 連休日は除外され、
+      連休明け日は policy どおりの preset／時刻で `AlarmKit` 登録される。
 
 ---
 
@@ -1066,6 +1319,12 @@ Day preset の `defaultAlarmHour = 6`、Night preset の `defaultAlarmHour = 17`
 
 #### 4.3.2 テストケース
 
+> **正典は §2.3.1（VAC-U1〜U15、機械検証済み）**。下表は旧 β-U スキームの参考。とくに
+> **β-U2 / β-U3 の「8-12 = night」前提は誤り**: 同ベースライン（anchor 2026-05-04）では
+> `daysBetween(anchor, 8-12)=100`, `100 mod 14 = 2` で **8-12 = slot 2 = 昼**。よって
+> 8-17 の `.invert` 期待は **slot 10 = 夜**（VAC-U4）であり、旧表の「day」は誤り。実装テストは
+> §2.3.1 の数値を採用すること。crosswalk は §2.7。
+
 | # | Vacation set | 問合せ日付 | Policy | 期待スロット |
 |---|---|---|---|---|
 | β-U1 | `[]` | `2026-05-25` (anchor + 21) | n/a | `night` (基底 expander と同一) |
@@ -1092,15 +1351,16 @@ ROADMAP §9 にはまだ無い拡張テスト。`VacationAwareRotationTests` に
 | β-U15 | `.invert` | `.continue` | preset 優先 → `.continue` |
 | β-U16 | `.continue` | `.resetToDay` | preset 優先 → `.resetToDay` |
 
-#### 4.3.4 スキーマ migration (`SchemaV1MigrationTests`)
+#### 4.3.4 スキーマ migration (`SchemaV3ToV4MigrationTests`)
 
-- β-S1: コードで SchemaV1 の `ModelContainer` を組み、`RotationPattern` /
-  `ShiftPreset` 各 1 行を入れて close。SchemaV2 + `MigrationPlan` で再 open。
-  読み戻して `crossVacationPolicy == .invert`（pattern）、`nil`（preset）を
-  assert。
-- β-S2: 同様に `HolidayOverride` 3 行をシード → migration 後にも 3 行残り、
+正典は §2.2。stage は `.lightweight(SchemaV3 → SchemaV4)`（active が V3 のため）。
+
+- VAC-S1: ファイル URL の現行（V3 相当）ストアに `RotationPattern` / `ShiftPreset`
+  各 1 行を入れて close → `SchemaV4` ＋ `MigrationPlan` で再 open。読み戻して
+  `crossVacationPolicy == .invert`（pattern 既定充填）、`nil`（preset override）を assert。
+- VAC-S2: 同様に `HolidayOverride` 3 行をシード → migration 後も 3 行残り、
   全行 `isVacationGroup == false`。
-- β-S3: migration 後の `VacationPeriod` 件数 = 0（自動グルーピング無し）。
+- VAC-S3: migration 後の `VacationPeriod` 件数 = 0（自動グルーピング無し）。
 
 実装メモ: `SchemaMigrationPlan` は in-memory store では発火しない。
 `URL(fileURLWithPath: NSTemporaryDirectory()).appending(component: UUID
@@ -1235,7 +1495,7 @@ assert（γ-U12）。
   ケースを critical 判定。
 - **DRIFT-U1〜U5 / DRIFT-I1〜I3**: A1 ドリフト UI 統合
 - **DOW-U1〜U5 / DOW-I1〜I3**: A2 DOW ルール検出
-- **VAC-U1〜U10 / VAC-I1〜I2**: P2-β 連休越境ローテーション。U9 は UI 入力検証 /
+- **VAC-U1〜U15 / VAC-I1〜I2**: P2-β 連休越境ローテーション。U9 は UI 入力検証 /
   U10 は domain factory 側で 3 日未満 reject（`VacationPeriodError.tooShort`）。
 - **IMG-U1〜U5 / IMG-I1〜I3 / IMG-S1〜S2**: P2-γ Phase 1 画像インポート
 

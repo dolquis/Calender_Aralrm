@@ -886,8 +886,9 @@ main へ PR（Linear issue が無い緊急時のみ `feature/<topic>`）。
     時に policy に従ってオフセットを再計算する。
 - **対象ファイル**:
   - 既存 `Sources/Domain/Models/HolidayOverride.swift` に `isVacationGroup` フラグ
-  - 新規 `Sources/Domain/Models/VacationPeriod.swift`（SwiftData @Model、SchemaV1→V2
-    マイグレーション必要）
+  - 新規 `Sources/Domain/Models/VacationPeriod.swift`（SwiftData @Model、SchemaV3→V4
+    lightweight マイグレーション。現行 active が SchemaV3 のため。詳細
+    `docs/p2-algorithms.md §2.2`）
   - 既存 `Sources/Domain/Models/RotationPattern.swift` に
     `crossVacationPolicy: CrossVacationPolicy = .invert` と
     `dayStartSlotIndex: Int?` を追加
@@ -950,6 +951,11 @@ main へ PR（Linear issue が無い緊急時のみ `feature/<topic>`）。
     自動グルーピング (β-S2 / β-S3) / `.shiftalarm` import / App Intents /
     テストヘルパなど UI を経由しない write path をすべてカバーするための
     invariant。
+  - VAC-U11 ローテ実効開始（`startDate ?? anchorDate`）前に終わる連休は無視する
+  - VAC-U12 連休直前が休み(nil)スロットなら、遡った実稼働日 preset の override を使う
+  - VAC-U13 連休が実効開始を跨ぎ実稼働日が範囲内に無ければ pattern 既定（ローテ外 override を拾わない）
+  - VAC-U14 隣接/重複連休は正規化（coalesce）し、連続休みあたり policy を 1 回だけ適用
+  - VAC-U15 奇数周期の `.invert` は resolver で `.continue` にフォールバック（誤反転防止）
   - VAC-I1 HolidayManager から連休登録できる
   - VAC-I2 登録後に AlarmScheduler の expected set が変化する
 - **DoD**:
@@ -1571,8 +1577,8 @@ main へ PR（Linear issue が無い緊急時のみ `feature/<topic>`）。
    Step 1 は P0-5 と並走可能。
 
 7. **P2-β 連休越境ローテーション**: `RotationExpander` の vacation-aware 拡張、
-   `VacationPeriod` 独立 @Model 追加、SwiftData V2 マイグレーション。
-   Widget container 整合性確認。
+   `VacationPeriod` 独立 @Model 追加、SchemaV3→V4 lightweight マイグレーション
+   （現行 active は SchemaV3）。Widget container 整合性確認。
 
 8. **P2-γ 画像インポート Phase 1**: 手動グリッド + 記号マッピング UI を OCR 抜きで
    先行リリース。差分プレビューは P1-6 を経由。
@@ -1679,11 +1685,11 @@ TDD 的に最初に **赤いテスト** として並べてから実装すると�
 | β-U17 | `testAutoGroupingDetectsThreePlusConsecutiveHolidays` | A4: 連続 3 日以上で候補化、2 日以下は除外 |
 | β-U18 | `testAutoGroupingRespectsUserSelection` | A4: 候補から個別除外したら除外分は作成されない |
 
-**スキーマ — `Tests/DomainTests/SchemaV1MigrationTests.swift`（既存 or 新規）**
+**スキーマ — `Tests/DomainTests/SchemaV3ToV4MigrationTests.swift`（新規。active が SchemaV3 → V4）**
 
 | # | テスト名 | 検証する性質 |
 |---|---|---|
-| β-S1 | `testMigrationFromV1AddsCrossVacationPolicyDefault` | 既存 `RotationPattern` / `ShiftPreset` に `.invert` が付く |
+| β-S1 | `testMigrationFromV3AddsCrossVacationPolicyDefault` | 既存 `RotationPattern.crossVacationPolicy` に既定 `.invert`（rawValue 0）が付く。`ShiftPreset.crossVacationPolicy` は **nil のまま**（optional・backfill しない。preset override が pattern を不当に上書きしないため） |
 | β-S2 | `testMigrationPreservesExistingHolidayOverrides` | 既存 `HolidayOverride` が破壊されない |
 | β-S3 | `testMigrationCreatesNoVacationPeriodAutomatically` | マイグレーション時に自動で連休をまとめない（明示操作必須） |
 
@@ -1704,7 +1710,9 @@ TDD 的に最初に **赤いテスト** として並べてから実装すると�
 > 既存 β-U1〜β-I4 はそのまま消さず、対応関係（β-U1 ↔ VAC-U1 など番号順）として
 > 解釈する。実装着手時は VAC-* を Swift Testing の `@Test` 関数名に採用し、β-* は当面
 > ドキュメント上の旧名称として残置するに留める（将来の docs 整理 PR で
-> 段階的に削除）。VAC-U10 は β 系には対応物が無い新規（domain factory invariant）。
+> 段階的に削除）。VAC-U10〜U15 は β 系に対応物が無い新規（U10=domain factory invariant、
+> U11〜U15=DEV-141 設計レビューで確定した edge case: 開始前連休除外 / 実稼働日参照 /
+> coalesce / 奇数周期 invert フォールバック）。
 
 | # | テスト名 | 検証する性質 |
 |---|---|---|
@@ -1718,6 +1726,11 @@ TDD 的に最初に **赤いテスト** として並べてから実装すると�
 | VAC-U8 | `testYearBoundaryDoesNotShiftDates` | 年末年始を跨いでも日付ズレしない |
 | VAC-U9 | `testVacationPeriodLessThanThreeDaysRejectedByUI` | 3 日未満の `VacationPeriod` は UI 入力検証で reject される |
 | VAC-U10 | `testVacationPeriodFactoryRejectsLessThanThreeDays` | domain factory / throwing init が 2 日範囲を `VacationPeriodError.tooShort` で reject |
+| VAC-U11 | `testVacationBeforeRotationStartIsIgnored` | ローテ実効開始（`startDate ?? anchorDate`）前に終わる連休は phase/shift に算入しない |
+| VAC-U12 | `testPolicySourceWalksBackToLastWorkingPreset` | 連休直前が休み(nil)スロットなら遡った実稼働日 preset の override を使う |
+| VAC-U13 | `testVacationStraddlingStartFallsBackToPatternPolicy` | 実効開始を跨ぎ実稼働日が範囲内に無ければ pattern 既定（ローテ外 override を拾わない） |
+| VAC-U14 | `testAdjacentVacationsCoalesceBeforePolicy` | 隣接/重複連休を coalesce し連続休みあたり policy を 1 回だけ適用 |
+| VAC-U15 | `testOddCycleInvertFallsBackToContinue` | 奇数周期の `.invert` は resolver で `.continue` にフォールバック（誤反転防止） |
 | VAC-I1 | `testHolidayManagerCreatesVacation` | HolidayManager から連休登録できる |
 | VAC-I2 | `testAlarmSchedulerExpectedSetChangesAfterVacation` | 登録後に AlarmScheduler の expected set が変化する |
 
