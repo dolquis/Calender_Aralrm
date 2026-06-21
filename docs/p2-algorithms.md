@@ -434,10 +434,18 @@ P2-β はこの版数機構に **SchemaV4 を 1 段足す**。追加はすべて
 追従する。`/swiftdata-migration` skill のルール（store URL / App Group ID を変えない）を遵守。
 
 **`.shiftalarm`（`ShiftBundleCodec`）との境界**: 現行 bundle は `PresetDTO` / `RotationDTO`
-/ `OverrideDTO` を持つが **`VacationDTO` は無い**。P2-β v1 では `VacationPeriod` を bundle に
-含めない（スコープ外。2026-06-22 lead 確定）。`RotationPattern` / `ShiftPreset` に増える policy 列は、import 時に
-欠落していたら **既定（pattern `.invert` / preset nil）でデコード**して後方互換を壊さない。
-provenance や `.shiftalarm` への policy 反映の是非は [DEV-143] の横断設計で扱う。
+/ `OverrideDTO` を持つが **`VacationDTO` は無い**。P2-β v1 でも **`VacationPeriod`（連休範囲）は
+bundle に含めない**（連休“共有”は scope 外。2026-06-22 lead 確定。provenance / 連休共有は [DEV-143]）。
+
+ただし `RotationPattern` / `ShiftPreset` に増える **policy 列（`crossVacationPolicy`）は
+round-trip させる**: `RotationDTO` / `PresetDTO` に **optional** な `crossVacationPolicy`
+（rawValue）を追加し、export で書き出し import で復元する。理由: これらは **既に共有対象の
+エンティティ**であり、round-trip しないと `.continue` / `.resetToDay` を設定した rotation/preset を
+export→import すると **黙って pattern `.invert` / preset nil に戻り**、受信側が連休を作った時点で
+復帰後アラームが変わる（silent round-trip loss）。optional 追加なので後方互換は保たれ、**旧 bundle
+（フィールド欠落）は従来どおり既定デコード**（当時の default 値なので情報損失なし）。`ShiftBundleCodec`
+の legacy 受け入れ（PR #5）を踏襲。これは「v1 = `VacationPeriod` 非対応」確定方針の **範囲内の
+精緻化**（連休共有は依然 scope 外。round-trip するのは既存共有エンティティに載る policy 列のみ）。
 
 **不変の確定事項（旧 2026-05-27 追加分を引継ぎ）**:
 
@@ -796,8 +804,10 @@ DEV-141 スパイクの確定事項を実装 issue [DEV-257]（「P2-β: 長期�
 - [ ] V3 で起動済みストアを V4 で開いて既存データ保持（VAC-S1: pattern 列 = `.invert` 充填 /
       VAC-S2: `HolidayOverride.isVacationGroup=false` / VAC-S3: `VacationPeriod` 件数 0）。
       migration テストはファイル URL ストアで実施（in-memory では stage 不発火）。
-- [ ] `.shiftalarm`（`ShiftBundleCodec`）に `VacationDTO` を追加しない（v1 スコープ外）。
-      新 policy 列は import 欠落時に既定でデコードし後方互換維持（provenance は [DEV-143]）。
+- [ ] `.shiftalarm`（`ShiftBundleCodec`）に `VacationDTO` を追加しない（連休共有は v1 scope 外、DEV-143）。
+      ただし `RotationDTO` / `PresetDTO` に **optional `crossVacationPolicy` を追加して round-trip** し、
+      `.continue` / `.resetToDay` の export→import 消失を防ぐ。旧 bundle（欠落）は既定デコードで後方互換。
+      `ShiftBundleCodecTests` に round-trip テスト（`testCrossVacationPolicyRoundTrips`）を追加。
 
 **アルゴリズム（§2.3 / §2.3.1）**
 
