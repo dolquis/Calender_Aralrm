@@ -463,6 +463,28 @@ provenance や `.shiftalarm` への policy 反映の是非は [DEV-143] の横�
   UUID?  (preset id、連休セルは nil)
 ```
 
+**Step 0 — 連休の正規化（前提）。**
+`V` を **startDate 昇順**にソートし、**隣接（`next.startDate ≤ cur.endDate + 1 day`）または重複
+する範囲を 1 つの連続休みに併合（coalesce）** してから以降を実行する。理由: 行レベルの隣接/
+重複連休を別カウントすると `.invert` 等が連続休みあたり複数回適用され（例: `08-13…16` ＋
+`08-17…20` で invert ×2 が相殺）、単一の連続連休 `08-13…20`（invert ×1）と結果が変わる
+（**VAC-U14**）。UI / factory 側でも重複・隣接の作成を弾く/併合するのが望ましいが、resolver は
+防御的に正規化する。policy は連休固有でなく「併合後の連続休み直前の稼働日」から決まるので、
+併合で policy 情報は失われない。
+
+```
+func normalize(V):
+    sort V by startDate
+    out = []
+    for v in V:
+        if out nonempty and v.startDate <= out.last.endDate + 1 day:
+            out.last.endDate = max(out.last.endDate, v.endDate)   // 連続休みに 1 回だけ policy 適用
+        else:
+            out.append(v)
+    return out
+V = normalize(V)
+```
+
 **Step 1 — 連休所属。**
 `v.startDate ≤ d ≤ v.endDate` を満たす `v ∈ V` があれば `nil` を返す（**VAC-U2**）。
 
@@ -603,6 +625,7 @@ slots[0..6]=昼(D, alarm 06:00), slots[7..13]=夜(N, alarm 17:00) /
 | **VAC-U11** | ローテ開始前連休 `04-20〜04-24`(anchor 5-4 前) ＋ Obon、両方 `.invert` | 2026-08-17 | 7 | slot 10 = **N** | `effStart=anchor` 未満で終わる前連休を除外 → Obon 単独 `.invert`（VAC-U4）と一致。前連休のみなら VAC-U1（夜7）と一致 |
 | **VAC-U12** | 連休直前が休み(nil)スロット、その手前の稼働日 preset が `.continue` override | （policy 選択） | – | policy=**`.continue`** | 休み日を遡り実稼働日の preset override を参照（pattern 既定でなく） |
 | **VAC-U13** | 連休が `effStart` を跨ぐ（実稼働日が範囲内に無い） | （policy 選択） | – | policy=**pattern 既定** | ローテ外の preset override を拾わない（`lowerBound` ガード） |
+| **VAC-U14** | 隣接 2 連休 `08-13〜16` ＋ `08-17〜20`、両方 `.invert` | 2026-08-21 | 11 | slot 10 = **N** | Step 0 正規化で連続 `08-13〜20` に併合し invert を 1 回適用（未併合だと invert×2 相殺で slot 3=昼の誤り） |
 
 **override 優先順位の worked-example**（同一ベースライン、連休 = Obon、参照 preset = 直前稼働日
 `08-12` の preset）:
@@ -780,6 +803,8 @@ DEV-141 スパイクの確定事項を実装 issue [DEV-257]（「P2-β: 長期�
 - [ ] **policy 参照は実稼働日**: 連休直前の休み(nil)スロットを遡り、現 working segment 内
       （直前連休翌日〜）の最後の非 nil 稼働日 preset の override を使う。実稼働日が無ければ
       pattern 既定にフォールバック（**VAC-U12 / VAC-U13**。ローテ外の preset override を拾わない）。
+- [ ] **連休 `V` を正規化**: 位相計算前に隣接（`≤ end+1day`）/重複範囲を coalesce し、連続休み
+      あたり policy を 1 回だけ適用（**VAC-U14**）。UI/factory も重複・隣接作成を弾く/併合する。
 - [ ] **`VacationPeriod` は factory 唯一生成**: memberwise init を `fileprivate` 化し、
       `make(...) throws` を全 write path（UI / §2.8 / `.shiftalarm` import / App Intents / test helper）
       で必須化（**VAC-U10** をバイパス不能に）。

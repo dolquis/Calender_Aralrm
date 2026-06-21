@@ -1572,8 +1572,8 @@ main へ PR（Linear issue が無い緊急時のみ `feature/<topic>`）。
    Step 1 は P0-5 と並走可能。
 
 7. **P2-β 連休越境ローテーション**: `RotationExpander` の vacation-aware 拡張、
-   `VacationPeriod` 独立 @Model 追加、SwiftData V2 マイグレーション。
-   Widget container 整合性確認。
+   `VacationPeriod` 独立 @Model 追加、SchemaV3→V4 lightweight マイグレーション
+   （現行 active は SchemaV3）。Widget container 整合性確認。
 
 8. **P2-γ 画像インポート Phase 1**: 手動グリッド + 記号マッピング UI を OCR 抜きで
    先行リリース。差分プレビューは P1-6 を経由。
@@ -1680,11 +1680,11 @@ TDD 的に最初に **赤いテスト** として並べてから実装すると�
 | β-U17 | `testAutoGroupingDetectsThreePlusConsecutiveHolidays` | A4: 連続 3 日以上で候補化、2 日以下は除外 |
 | β-U18 | `testAutoGroupingRespectsUserSelection` | A4: 候補から個別除外したら除外分は作成されない |
 
-**スキーマ — `Tests/DomainTests/SchemaV1MigrationTests.swift`（既存 or 新規）**
+**スキーマ — `Tests/DomainTests/SchemaV3ToV4MigrationTests.swift`（新規。active が SchemaV3 → V4）**
 
 | # | テスト名 | 検証する性質 |
 |---|---|---|
-| β-S1 | `testMigrationFromV1AddsCrossVacationPolicyDefault` | 既存 `RotationPattern` / `ShiftPreset` に `.invert` が付く |
+| β-S1 | `testMigrationFromV3AddsCrossVacationPolicyDefault` | 既存 `RotationPattern` / `ShiftPreset` に `.invert` が付く |
 | β-S2 | `testMigrationPreservesExistingHolidayOverrides` | 既存 `HolidayOverride` が破壊されない |
 | β-S3 | `testMigrationCreatesNoVacationPeriodAutomatically` | マイグレーション時に自動で連休をまとめない（明示操作必須） |
 
