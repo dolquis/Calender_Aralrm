@@ -41,7 +41,8 @@ public enum ShareExporter {
                 endDate: r.endDate.flatMap { CalendarDay(date: $0, calendar: calendar) },
                 priority: r.priority,
                 isActive: r.isActive,
-                crossVacationPolicy: r.crossVacationPolicyRaw,
+                crossVacationPolicy: r.crossVacationPolicy == .invert
+                    ? nil : r.crossVacationPolicyRaw,
                 dayStartSlotIndex: r.dayStartSlotIndex
             )
         }

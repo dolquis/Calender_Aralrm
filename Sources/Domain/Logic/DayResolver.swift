@@ -54,8 +54,8 @@ public struct DayResolverInput {
         self.holidays = holidays
         self.rotations = rotations
         self.presets = presets
-        self.vacations = vacations
         self.calendar = calendar
+        self.vacations = VacationAwareRotation.normalizedVacations(vacations, calendar: calendar)
     }
 }
 
@@ -218,7 +218,7 @@ public enum DayResolver {
             if let presetID = VacationAwareRotation.presetID(
                 for: day,
                 pattern: rotation,
-                vacations: input.vacations,
+                normalizedVacations: input.vacations,
                 presets: input.presets,
                 calendar: input.calendar)
             {

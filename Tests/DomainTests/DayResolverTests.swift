@@ -188,6 +188,32 @@ struct DayResolverTests {
     }
 
     @Test
+    func testInputNormalizesVacationSnapshots() {
+        let first = VacationPeriodSnapshot(
+            startDate: date(2026, 8, 13),
+            endDate: date(2026, 8, 16),
+            label: "Obon"
+        )
+        let adjacent = VacationPeriodSnapshot(
+            startDate: date(2026, 8, 17),
+            endDate: date(2026, 8, 20),
+            label: "Extended"
+        )
+        let input = DayResolverInput(
+            manualAssignments: [:],
+            holidays: [:],
+            rotations: [],
+            presets: [:],
+            vacations: [adjacent, first],
+            calendar: calendar
+        )
+
+        #expect(input.vacations.count == 1)
+        #expect(input.vacations.first?.startDate == date(2026, 8, 13))
+        #expect(input.vacations.first?.endDate == date(2026, 8, 20))
+    }
+
+    @Test
     func testManualAssignmentTakesPrecedenceOverVacationSuppression() {
         let presetID = UUID()
         let preset = ShiftPresetSnapshot(

@@ -199,6 +199,24 @@ struct ShareImporterTests {
         #expect(
             exported.patterns.first?.crossVacationPolicy == CrossVacationPolicy.resetToDay.rawValue)
         #expect(exported.patterns.first?.dayStartSlotIndex == 2)
+
+        bundle.presets[0].crossVacationPolicy = nil
+        bundle.patterns[0].crossVacationPolicy = nil
+        bundle.patterns[0].dayStartSlotIndex = nil
+        try ShareImporter.apply(bundle: bundle, container: container)
+
+        let refreshedContext = ModelContext(container)
+        let refreshedPreset = try #require(
+            try refreshedContext.fetch(FetchDescriptor<ShiftPreset>()).first)
+        let refreshedPattern = try #require(
+            try refreshedContext.fetch(FetchDescriptor<RotationPattern>()).first)
+        let defaultExported = ShareExporter.snapshot(from: container)
+        #expect(refreshedPreset.crossVacationPolicy == nil)
+        #expect(refreshedPattern.crossVacationPolicy == .invert)
+        #expect(refreshedPattern.dayStartSlotIndex == nil)
+        #expect(defaultExported.presets.first?.crossVacationPolicy == nil)
+        #expect(defaultExported.patterns.first?.crossVacationPolicy == nil)
+        #expect(defaultExported.patterns.first?.dayStartSlotIndex == nil)
     }
 
     @Test

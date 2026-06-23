@@ -1,10 +1,28 @@
 import Foundation
 
 public enum VacationAwareRotation {
+    private static let daytimeAlarmHours = 4...12
+
     public static func presetID(
         for day: Date,
         pattern: RotationPatternSnapshot,
         vacations: [VacationPeriodSnapshot],
+        presets: [UUID: ShiftPresetSnapshot],
+        calendar: Calendar = .current
+    ) -> UUID? {
+        presetID(
+            for: day,
+            pattern: pattern,
+            normalizedVacations: Self.normalizedVacations(vacations, calendar: calendar),
+            presets: presets,
+            calendar: calendar
+        )
+    }
+
+    static func presetID(
+        for day: Date,
+        pattern: RotationPatternSnapshot,
+        normalizedVacations: [VacationPeriodSnapshot],
         presets: [UUID: ShiftPresetSnapshot],
         calendar: Calendar = .current
     ) -> UUID? {
@@ -13,7 +31,6 @@ public enum VacationAwareRotation {
         }
 
         let target = calendar.startOfDay(for: day)
-        let normalizedVacations = normalize(vacations, calendar: calendar)
 
         if normalizedVacations.contains(where: { $0.startDate <= target && target <= $0.endDate }) {
             return nil
@@ -100,7 +117,7 @@ public enum VacationAwareRotation {
         return pattern.slots[index]
     }
 
-    private static func normalize(
+    static func normalizedVacations(
         _ vacations: [VacationPeriodSnapshot],
         calendar: Calendar
     ) -> [VacationPeriodSnapshot] {
@@ -148,7 +165,8 @@ public enum VacationAwareRotation {
         calendar: Calendar
     ) -> Int? {
         guard var probe = calendar.date(byAdding: .day, value: -1, to: date) else { return nil }
-        while probe >= lowerBound {
+        var remainingLookbackDays = pattern.cycleLength
+        while probe >= lowerBound && remainingLookbackDays > 0 {
             let index = slotIndex(
                 for: probe,
                 pattern: pattern,
@@ -159,6 +177,7 @@ public enum VacationAwareRotation {
             if pattern.slots[index] != nil {
                 return index
             }
+            remainingLookbackDays -= 1
             guard let previous = calendar.date(byAdding: .day, value: -1, to: probe) else {
                 return nil
             }
@@ -201,7 +220,7 @@ public enum VacationAwareRotation {
             .compactMap { index, presetID -> (index: Int, hour: Int)? in
                 guard let presetID,
                     let hour = presets[presetID]?.alarmTime?.hour,
-                    (4...12).contains(hour)
+                    Self.daytimeAlarmHours.contains(hour)
                 else { return nil }
                 return (index, hour)
             }

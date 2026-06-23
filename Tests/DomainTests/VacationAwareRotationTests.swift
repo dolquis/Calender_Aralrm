@@ -215,6 +215,32 @@ struct VacationAwareRotationTests {
     }
 
     @Test
+    func testAllRestSlotsDoNotScanBeyondOneCycleForPreviousWorkingSlot() {
+        let pattern = RotationPatternSnapshot(
+            id: UUID(),
+            name: "all-rest",
+            anchorDate: date(2020, 1, 1),
+            cycleLength: 7,
+            slots: Array(repeating: nil, count: 7),
+            startDate: nil,
+            endDate: nil,
+            priority: 0,
+            isActive: true,
+            crossVacationPolicy: .resetToDay
+        )
+
+        let result = VacationAwareRotation.presetID(
+            for: date(2026, 8, 17),
+            pattern: pattern,
+            vacations: [vacation(date(2026, 8, 13), date(2026, 8, 16))],
+            presets: [:],
+            calendar: calendar
+        )
+
+        #expect(result == nil)
+    }
+
+    @Test
     func testVacationCrossingEffectiveStartDoesNotReadPreStartPresetOverride() {
         let ids = slotIDs
         let customPattern = RotationPatternSnapshot(
