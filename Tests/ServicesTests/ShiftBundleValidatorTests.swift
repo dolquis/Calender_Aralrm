@@ -188,6 +188,29 @@ struct ShiftBundleValidatorTests {
     }
 
     @Test
+    func sbvU15_invalidVacationPolicyFieldsAreErrors() {
+        var bundle = makeBundle()
+        bundle.presets[0].crossVacationPolicy = 999
+        bundle.patterns[0].crossVacationPolicy = -1
+        bundle.patterns[0].dayStartSlotIndex = bundle.patterns[0].cycleLength
+
+        let result = ShiftBundleValidator.validate(bundle)
+
+        #expect(
+            hasError(
+                result, .invalidCrossVacationPolicy,
+                path: "presets[0].crossVacationPolicy"))
+        #expect(
+            hasError(
+                result, .invalidCrossVacationPolicy,
+                path: "patterns[0].crossVacationPolicy"))
+        #expect(
+            hasError(
+                result, .invalidDayStartSlotIndex,
+                path: "patterns[0].dayStartSlotIndex"))
+    }
+
+    @Test
     func validatorIssueIDIsDeterministic() {
         var bundle = makeBundle()
         bundle.presets[0].defaultAlarmHour = 24

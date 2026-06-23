@@ -1,9 +1,9 @@
 import Foundation
 import SwiftData
 
-public typealias AppSettings = SchemaV3.AppSettings
+public typealias AppSettings = SchemaV4.AppSettings
 
-extension SchemaV3 {
+extension SchemaV4 {
     @Model
     public final class AppSettings {
         @Attribute(.unique) public var id: UUID

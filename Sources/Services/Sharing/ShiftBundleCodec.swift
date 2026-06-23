@@ -112,6 +112,7 @@ public struct ShiftBundle: Codable, Equatable, Sendable {
         public var defaultAlarmMinute: Int?
         public var soundID: String
         public var note: String
+        public var crossVacationPolicy: Int? = nil
     }
 
     public struct RotationDTO: Codable, Equatable, Sendable, Identifiable {
@@ -124,6 +125,8 @@ public struct ShiftBundle: Codable, Equatable, Sendable {
         public var endDate: CalendarDay?
         public var priority: Int
         public var isActive: Bool
+        public var crossVacationPolicy: Int? = nil
+        public var dayStartSlotIndex: Int? = nil
     }
 
     public struct AssignmentDTO: Codable, Equatable, Sendable {

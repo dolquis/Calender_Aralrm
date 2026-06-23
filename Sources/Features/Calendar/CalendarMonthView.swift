@@ -8,6 +8,8 @@ public struct CalendarMonthView: View {
     @Query private var assignments: [DayAssignment]
     @Query private var holidays: [HolidayOverride]
     @Query private var rotations: [RotationPattern]
+    @Query(sort: [SortDescriptor(\VacationPeriod.startDate)])
+    private var vacations: [VacationPeriod]
     @State private var viewModel = CalendarMonthViewModel()
     @State private var editingDate: Date?
 
@@ -19,6 +21,7 @@ public struct CalendarMonthView: View {
             assignments: assignments,
             holidays: holidays,
             rotations: rotations,
+            vacations: vacations,
             calendar: viewModel.calendar
         )
     }

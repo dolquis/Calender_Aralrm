@@ -1,9 +1,9 @@
 import Foundation
 import SwiftData
 
-public typealias ShiftAlarm = SchemaV3.ShiftAlarm
+public typealias ShiftAlarm = SchemaV4.ShiftAlarm
 
-extension SchemaV3 {
+extension SchemaV4 {
     @Model
     public final class ShiftAlarm {
         public static let emptyPendingCancelData = Data("[]".utf8)

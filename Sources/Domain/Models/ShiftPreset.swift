@@ -1,9 +1,9 @@
 import Foundation
 import SwiftData
 
-public typealias ShiftPreset = SchemaV3.ShiftPreset
+public typealias ShiftPreset = SchemaV4.ShiftPreset
 
-extension SchemaV3 {
+extension SchemaV4 {
     @Model
     public final class ShiftPreset {
         @Attribute(.unique) public var id: UUID
@@ -18,6 +18,8 @@ extension SchemaV3 {
         public var targetSleepDuration: Double = 8 * 3600
         /// Minutes before computed bedtime to fire the AlarmKit bedtime reminder. 0 = disabled.
         public var bedtimeLeadMinutes: Int = 30
+        /// Optional vacation-crossing policy override. nil means the rotation pattern policy applies.
+        public var crossVacationPolicyRaw: Int?
 
         @Relationship(deleteRule: .nullify, inverse: \DayAssignment.preset)
         public var assignments: [DayAssignment] = []
@@ -32,7 +34,8 @@ extension SchemaV3 {
             note: String = "",
             createdAt: Date = .now,
             targetSleepDuration: Double = 8 * 3600,
-            bedtimeLeadMinutes: Int = 30
+            bedtimeLeadMinutes: Int = 30,
+            crossVacationPolicy: CrossVacationPolicy? = nil
         ) {
             self.id = id
             self.name = name
@@ -44,6 +47,7 @@ extension SchemaV3 {
             self.createdAt = createdAt
             self.targetSleepDuration = targetSleepDuration
             self.bedtimeLeadMinutes = bedtimeLeadMinutes
+            self.crossVacationPolicyRaw = crossVacationPolicy?.rawValue
         }
 
         public var defaultAlarmTime: DateComponents? {
@@ -52,6 +56,11 @@ extension SchemaV3 {
             dc.hour = h
             dc.minute = m
             return dc
+        }
+
+        public var crossVacationPolicy: CrossVacationPolicy? {
+            get { crossVacationPolicyRaw.flatMap(CrossVacationPolicy.init(rawValue:)) }
+            set { crossVacationPolicyRaw = newValue?.rawValue }
         }
     }
 }
