@@ -105,3 +105,28 @@ jobs:
 
       - name: Lint Swift sources
         run: bash scripts/lint.sh check
+
+  quality:
+    # Cross-platform checks that do not need Xcode; run on Linux so they
+    # mirror what is available in the Claude Code on the web cloud sandbox.
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install gitleaks
+        run: |
+          set -euo pipefail
+          ver="8.30.1"
+          url="https://github.com/gitleaks/gitleaks/releases/download/v${ver}/gitleaks_${ver}_linux_x64.tar.gz"
+          curl -fsSL "$url" -o /tmp/gitleaks.tgz
+          sudo tar -xzf /tmp/gitleaks.tgz -C /usr/local/bin gitleaks
+
+      - name: Secret scan (gitleaks)
+        run: bash scripts/scan-secrets.sh
+
+      - name: Spell check sources (typos)
+        uses: crate-ci/typos@v1.47.2
+        with:
+          files: Sources App Widget Tests scripts

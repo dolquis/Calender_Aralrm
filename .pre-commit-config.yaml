@@ -1,0 +1,23 @@
+# pre-commit — local commit-time guards using the Homebrew-installed tools.
+# Enable once:  pre-commit install
+# Run on all:   pre-commit run --all-files
+# Tools come from the system PATH (Homebrew); see scripts/install-tools.sh.
+repos:
+  - repo: local
+    hooks:
+      - id: swift-format
+        name: swift-format (lint)
+        entry: bash scripts/lint.sh check
+        language: system
+        types_or: [swift]
+        pass_filenames: false
+      - id: gitleaks
+        name: gitleaks (secret scan)
+        entry: gitleaks dir . --no-banner --redact
+        language: system
+        pass_filenames: false
+      - id: typos
+        name: typos (source spell check)
+        entry: typos Sources App Widget Tests scripts
+        language: system
+        pass_filenames: false

@@ -1,0 +1,21 @@
+# lychee — documentation link checker (network).
+# Run: bash scripts/check-docs.sh --links
+max_concurrency = 8
+max_retries = 2
+retry_wait_time = 2
+timeout = 20
+
+# Treat success and rate-limiting as non-failures.
+accept = [200, 206, 429]
+
+exclude_path = [
+  "DerivedData",
+  ".codegraph",
+  ".serena",
+]
+
+exclude = [
+  '^mailto:',
+  '^https?://localhost',
+  '^https?://127\.0\.0\.1',
+]

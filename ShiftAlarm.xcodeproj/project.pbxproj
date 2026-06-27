@@ -226,9 +226,11 @@
 		4C225FB49C8AC78F1CFE806C /* PresetEditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PresetEditorView.swift; sourceTree = "<group>"; };
 		4DF8BFCE4E014ADD1045BDA2 /* ShiftAlarmApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShiftAlarmApp.swift; sourceTree = "<group>"; };
 		52D57AD950572E2CCA4232B2 /* Color+Hex.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Color+Hex.swift"; sourceTree = "<group>"; };
+		534A04933E549E3E9C71CD45 /* periphery.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = periphery.sh; sourceTree = "<group>"; };
 		54B9557854989FD02866E581 /* AppRuntimeConfigurationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppRuntimeConfigurationTests.swift; sourceTree = "<group>"; };
 		5519552DFB9E79D2033B2AF3 /* verify.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = verify.sh; sourceTree = "<group>"; };
 		55223407E0767E40503E1B8F /* SleepWindowResolver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SleepWindowResolver.swift; sourceTree = "<group>"; };
+		57E7955B7EBF2AB1CDC5E1FD /* scan-secrets.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = "scan-secrets.sh"; sourceTree = "<group>"; };
 		57F47D5F67892D9AA6A05A22 /* SchemaV3.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SchemaV3.swift; sourceTree = "<group>"; };
 		57FEF2F22EDF88E58C805408 /* PresetListViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PresetListViewModel.swift; sourceTree = "<group>"; };
 		58CAFC82AB82E58ACD5E06C9 /* LiveActivityController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveActivityController.swift; sourceTree = "<group>"; };
@@ -240,11 +242,13 @@
 		625E7CC86536529ACA657B37 /* NextAlarmTimelineProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NextAlarmTimelineProvider.swift; sourceTree = "<group>"; };
 		67263117617C1CDCCAB3C087 /* ShiftBundleValidatorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShiftBundleValidatorTests.swift; sourceTree = "<group>"; };
 		673C606ED6BA23FE6B6938A2 /* ShiftAlarm.store */ = {isa = PBXFileReference; path = ShiftAlarm.store; sourceTree = "<group>"; };
+		6763AC7FC5665AA016E7B3F1 /* cloud-setup.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = "cloud-setup.sh"; sourceTree = "<group>"; };
 		6A15CFD2D5D45A1C0701F7D3 /* EventKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = EventKit.framework; path = System/Library/Frameworks/EventKit.framework; sourceTree = SDKROOT; };
 		6FED4227C112BBB2ED2E01C3 /* AppIntents.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppIntents.framework; path = System/Library/Frameworks/AppIntents.framework; sourceTree = SDKROOT; };
 		7310BE2E2465D1FB0C936204 /* PatternSuggestionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PatternSuggestionView.swift; sourceTree = "<group>"; };
 		73A9019F34A732E83D802506 /* FakeAlarmSchedulingClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FakeAlarmSchedulingClient.swift; sourceTree = "<group>"; };
 		75776467D4B5146AC2590CA0 /* regen.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = regen.sh; sourceTree = "<group>"; };
+		75D194E442BCA2B618544C67 /* check-docs.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = "check-docs.sh"; sourceTree = "<group>"; };
 		79166C1FB771273ABC4C9109 /* PresetListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PresetListView.swift; sourceTree = "<group>"; };
 		793BB747CA26E40B93C6FE2F /* BGRefreshControllerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BGRefreshControllerTests.swift; sourceTree = "<group>"; };
 		79761B901134C68B19CCC864 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
@@ -253,6 +257,7 @@
 		81391A3DDB291E81E864ABD5 /* AppRuntimeConfiguration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppRuntimeConfiguration.swift; sourceTree = "<group>"; };
 		85B243772253502C6C97C193 /* CalendarMonthView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarMonthView.swift; sourceTree = "<group>"; };
 		86AC780F46CD0EFCA4DF5AEF /* AlarmAuthorization.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlarmAuthorization.swift; sourceTree = "<group>"; };
+		87191D5D8DB8BEDB95D8033C /* install-tools.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = "install-tools.sh"; sourceTree = "<group>"; };
 		8A532F9C6BCE6B4A84D0F7A5 /* ChangePreview.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChangePreview.swift; sourceTree = "<group>"; };
 		8A6B508E593CCDB0EE71C16C /* ExportView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExportView.swift; sourceTree = "<group>"; };
 		8BE434E979A31ACF1C177CA4 /* DateRange.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DateRange.swift; sourceTree = "<group>"; };
@@ -307,6 +312,7 @@
 		EBB1ECB93A0D683208D123C6 /* AlarmService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlarmService.swift; sourceTree = "<group>"; };
 		EC87F1DFCE568D6F82190C34 /* HolidayManagerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HolidayManagerView.swift; sourceTree = "<group>"; };
 		EE3CC80D73634D745A6A655B /* ICSTestParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ICSTestParser.swift; sourceTree = "<group>"; };
+		EE7B445F1C1BB5329940DDC4 /* lsp-setup.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = "lsp-setup.sh"; sourceTree = "<group>"; };
 		EEEDE35FE689D0012567B5C9 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 		F0FC8D2A94B6B50E7DAE5819 /* DayResolverInputBuilderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DayResolverInputBuilderTests.swift; sourceTree = "<group>"; };
 		F459C419D55D6AA9892B4346 /* DeepLinkRouter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeepLinkRouter.swift; sourceTree = "<group>"; };
@@ -553,10 +559,16 @@
 			isa = PBXGroup;
 			children = (
 				38A9A64D424E2652211F06CD /* bootstrap.sh */,
+				75D194E442BCA2B618544C67 /* check-docs.sh */,
+				6763AC7FC5665AA016E7B3F1 /* cloud-setup.sh */,
+				87191D5D8DB8BEDB95D8033C /* install-tools.sh */,
 				E7752C183FAC43230B13F687 /* lint.sh */,
+				EE7B445F1C1BB5329940DDC4 /* lsp-setup.sh */,
 				AFBCDB115B2369CE5B59FB61 /* p0-device-build.sh */,
 				94376553203919F2B3B29262 /* p0-readiness.sh */,
+				534A04933E549E3E9C71CD45 /* periphery.sh */,
 				75776467D4B5146AC2590CA0 /* regen.sh */,
+				57E7955B7EBF2AB1CDC5E1FD /* scan-secrets.sh */,
 				5519552DFB9E79D2033B2AF3 /* verify.sh */,
 			);
 			path = scripts;

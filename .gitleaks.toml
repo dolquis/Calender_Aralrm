@@ -1,0 +1,13 @@
+# gitleaks — secret scanning. Extends the bundled default ruleset.
+# Run: bash scripts/scan-secrets.sh
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Build artifacts, local indexes, and example / placeholder files"
+paths = [
+  '''DerivedData/''',
+  '''\.codegraph/''',
+  '''\.serena/''',
+  '''Config/LocalSigning\.xcconfig\.example''',
+]
