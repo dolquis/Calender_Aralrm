@@ -7,6 +7,7 @@ public struct DayDetailEditorView: View {
     @Environment(AppDependencies.self) private var dependencies
     @Query private var presets: [ShiftPreset]
     @Query private var assignments: [DayAssignment]
+    @Query private var swapRecords: [SwapRecord]
 
     public let date: Date
 
@@ -15,6 +16,10 @@ public struct DayDetailEditorView: View {
     @State private var customTime: Date = Date()
     @State private var skipAlarm = false
     @State private var note: String = ""
+    @State private var swapEnabled = false
+    @State private var swapKind: SwapRecord.Kind = .covered
+    @State private var swapCounterpartyLabel = ""
+    @State private var swapNote = ""
 
     public init(date: Date) {
         self.date = date
@@ -23,6 +28,30 @@ public struct DayDetailEditorView: View {
     private var existingAssignment: DayAssignment? {
         let day = Calendar.current.startOfDay(for: date)
         return assignments.first { Calendar.current.isDate($0.date, inSameDayAs: day) }
+    }
+
+    private var existingSwapRecords: [SwapRecord] {
+        let day = Calendar.current.startOfDay(for: date)
+        return swapRecords.filter { Calendar.current.isDate($0.date, inSameDayAs: day) }
+    }
+
+    private var existingSwapRecord: SwapRecord? {
+        existingSwapRecords.first
+    }
+
+    private var trimmedSwapCounterpartyLabel: String {
+        swapCounterpartyLabel.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private var canSave: Bool {
+        guard swapEnabled else { return true }
+        guard !trimmedSwapCounterpartyLabel.isEmpty else { return false }
+        switch swapKind {
+        case .covered:
+            return true
+        case .covering, .exchange:
+            return selectedPresetID != nil
+        }
     }
 
     public var body: some View {
@@ -53,6 +82,25 @@ public struct DayDetailEditorView: View {
                     TextField("day.note_placeholder", text: $note, axis: .vertical)
                         .lineLimit(2...4)
                 }
+
+                Section("day.swap_section") {
+                    Toggle("day.swap_enabled", isOn: $swapEnabled)
+                    if swapEnabled {
+                        Picker("day.swap_kind", selection: $swapKind) {
+                            ForEach(SwapRecord.Kind.allCases, id: \.self) { kind in
+                                Text(title(for: kind)).tag(kind)
+                            }
+                        }
+                        .pickerStyle(.segmented)
+
+                        TextField(
+                            "day.swap_counterparty_placeholder",
+                            text: $swapCounterpartyLabel
+                        )
+                        TextField("day.swap_note_placeholder", text: $swapNote, axis: .vertical)
+                            .lineLimit(1...3)
+                    }
+                }
             }
             .navigationTitle(formattedDate)
             .toolbar {
@@ -61,9 +109,18 @@ public struct DayDetailEditorView: View {
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("common.save", action: save)
+                        .disabled(!canSave)
                 }
             }
             .onAppear(perform: load)
+            .onChange(of: swapEnabled) { _, enabled in
+                guard enabled else { return }
+                applySwapDefaults(for: swapKind)
+            }
+            .onChange(of: swapKind) { _, kind in
+                guard swapEnabled else { return }
+                applySwapDefaults(for: kind)
+            }
         }
     }
 
@@ -82,37 +139,58 @@ public struct DayDetailEditorView: View {
     }
 
     private func load() {
-        guard let assignment = existingAssignment else { return }
-        selectedPresetID = assignment.preset?.id
-        skipAlarm = assignment.skipAlarm
-        note = assignment.note
-        if let h = assignment.overrideAlarmHour, let m = assignment.overrideAlarmMinute {
-            customTimeEnabled = true
-            var dc = Calendar.current.dateComponents([.year, .month, .day], from: date)
-            dc.hour = h
-            dc.minute = m
-            customTime = Calendar.current.date(from: dc) ?? Date()
+        if let assignment = existingAssignment {
+            selectedPresetID = assignment.preset?.id
+            skipAlarm = assignment.skipAlarm
+            note = assignment.note
+            if let h = assignment.overrideAlarmHour, let m = assignment.overrideAlarmMinute {
+                customTimeEnabled = true
+                var dc = Calendar.current.dateComponents([.year, .month, .day], from: date)
+                dc.hour = h
+                dc.minute = m
+                customTime = Calendar.current.date(from: dc) ?? Date()
+            }
+        }
+
+        if let swap = existingSwapRecord {
+            swapEnabled = true
+            swapKind = swap.kind
+            swapCounterpartyLabel = swap.counterpartyLabel
+            swapNote = swap.note
         }
     }
 
     private func save() {
+        guard canSave else { return }
         let day = Calendar.current.startOfDay(for: date)
-        let preset = selectedPresetID.flatMap { id in presets.first { $0.id == id } }
-        let timeComponents: (Int, Int)? =
+        var preset = selectedPresetID.flatMap { id in presets.first { $0.id == id } }
+        var timeComponents: (Int, Int)? =
             customTimeEnabled
             ? {
                 let dc = Calendar.current.dateComponents([.hour, .minute], from: customTime)
                 return (dc.hour ?? 0, dc.minute ?? 0)
             }() : nil
+        var shouldSkipAlarm = skipAlarm
+
+        if swapEnabled {
+            switch swapKind {
+            case .covered:
+                preset = nil
+                timeComponents = nil
+                shouldSkipAlarm = true
+            case .covering, .exchange:
+                shouldSkipAlarm = false
+            }
+        }
 
         if let assignment = existingAssignment {
             assignment.preset = preset
-            assignment.skipAlarm = skipAlarm
+            assignment.skipAlarm = shouldSkipAlarm
             assignment.note = note
             assignment.overrideAlarmHour = timeComponents?.0
             assignment.overrideAlarmMinute = timeComponents?.1
         } else if isNonEmpty(
-            preset: preset, timeComponents: timeComponents, skipAlarm: skipAlarm, note: note)
+            preset: preset, timeComponents: timeComponents, skipAlarm: shouldSkipAlarm, note: note)
         {
             // Only create a new manual assignment when the user actually specified something.
             // A blank record would take precedence over rotation/holiday rules in DayResolver
@@ -122,16 +200,66 @@ public struct DayDetailEditorView: View {
                 preset: preset,
                 overrideAlarmHour: timeComponents?.0,
                 overrideAlarmMinute: timeComponents?.1,
-                skipAlarm: skipAlarm,
+                skipAlarm: shouldSkipAlarm,
                 note: note
             )
             modelContext.insert(assignment)
         }
+        saveSwapRecord(for: day)
         try? modelContext.save()
         Task {
             await dependencies.alarmScheduler.refreshScheduledAlarms()
             await dependencies.liveActivityController.evaluate()
         }
         dismiss()
+    }
+
+    private func saveSwapRecord(for day: Date) {
+        if swapEnabled {
+            let record =
+                existingSwapRecord
+                ?? SwapRecord(
+                    date: day,
+                    kind: swapKind,
+                    counterpartyLabel: trimmedSwapCounterpartyLabel,
+                    note: swapNote
+                )
+            record.date = day
+            record.kind = swapKind
+            record.counterpartyLabel = trimmedSwapCounterpartyLabel
+            record.note = swapNote
+            if existingSwapRecord == nil {
+                modelContext.insert(record)
+            }
+            for duplicate in existingSwapRecords.dropFirst() {
+                modelContext.delete(duplicate)
+            }
+        } else {
+            for record in existingSwapRecords {
+                modelContext.delete(record)
+            }
+        }
+    }
+
+    private func applySwapDefaults(for kind: SwapRecord.Kind) {
+        switch kind {
+        case .covered:
+            selectedPresetID = nil
+            customTimeEnabled = false
+            skipAlarm = true
+        case .covering, .exchange:
+            skipAlarm = false
+        }
+    }
+
+    private func title(for kind: SwapRecord.Kind) -> LocalizedStringKey {
+        switch kind {
+        case .covered:
+            return "day.swap_kind_covered"
+        case .covering:
+            return "day.swap_kind_covering"
+        case .exchange:
+            return "day.swap_kind_exchange"
+        }
     }
 }

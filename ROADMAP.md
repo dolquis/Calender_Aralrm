@@ -1137,11 +1137,11 @@ HolidayManager から `VacationPeriod` を作る UI（VAC-I1 / VAC-U9）は未�
 
 ---
 
-### P2-δ. シフトスワップ — 代行 / 被代行のアラーム正当性（未着手）
+### P2-δ. シフトスワップ — 代行 / 被代行のアラーム正当性 ✅ 実装済み (DEV-305)
 
 > アルゴリズム詳細: [docs/p2-algorithms.md §5](docs/p2-algorithms.md#5-p2-δ--シフトスワップ)
 >
-> 追跡: Linear DEV-281（team Dev / project Shift Alarm / Backlog / P2）。
+> 追跡: Linear DEV-305（team Dev / project Shift Alarm / In Progress / P2）。
 
 - **目的**: 同僚と勤務を交換した日でも **正しいシフトのアラームが鳴る** ことを保証する。
   「火曜の昼勤を A に代わってもらった / 水曜の夜勤を代わってあげた」を 1 操作で記録し、
@@ -1167,8 +1167,8 @@ HolidayManager から `VacationPeriod` を作る UI（VAC-I1 / VAC-U9）は未�
   - 既存 `Sources/Domain/Logic/DayResolverInputBuilder.swift` に SwapRecord スナップ
     ショット同梱（UI バッジ用、resolver 自体は使わない）
   - テスト: 新規 `Tests/DomainTests/SwapRecordTests.swift` /
-    `Tests/DomainTests/SchemaV2MigrationTests.swift` /
-    `Tests/ServicesTests/AlarmSchedulerTests.swift` 拡張
+    `Tests/ServicesTests/SchemaV4ToV5MigrationTests.swift` /
+    `Tests/DomainTests/DayResolverInputBuilderTests.swift` 拡張
 - **UX**:
   - 日付詳細画面に「シフト交代」ボタン → kind 選択 → 相手ラベル入力 → 該当日の
     `DayAssignment` を upsert（出勤化なら preset 選択、欠勤化なら skip）→ `SwapRecord`
@@ -1177,7 +1177,7 @@ HolidayManager から `VacationPeriod` を作る UI（VAC-I1 / VAC-U9）は未�
 - **DoD**:
   - 「代行 (on)」記録後、当日のアラームが指定プリセットの時刻で AlarmKit に登録。
   - 「被代行 (off)」記録後、当日のアラーム登録が消える。
-  - SwiftData V2 → V3 マイグレーション後、既存データ非破壊。
+  - SwiftData V4 → V5 マイグレーション後、既存データ非破壊。
   - 月カレンダーで「↔」バッジが該当日に出る（VoiceOver 含む）。
 
 ---

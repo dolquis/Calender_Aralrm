@@ -14,6 +14,7 @@ public enum DayResolverInputBuilder {
         holidays: [HolidayOverride],
         rotations: [RotationPattern],
         vacations: [VacationPeriod] = [],
+        swapRecords: [SwapRecord] = [],
         calendar: Calendar
     ) -> DayResolverInput {
         let presetSnapshots: [UUID: ShiftPresetSnapshot] = presets.reduce(into: [:]) {
@@ -73,12 +74,27 @@ public enum DayResolverInputBuilder {
             )
         }
 
+        let swapSnapshots: [Date: [SwapRecordSnapshot]] = swapRecords.reduce(into: [:]) {
+            acc, swap in
+            let day = calendar.startOfDay(for: swap.date)
+            acc[day, default: []].append(
+                SwapRecordSnapshot(
+                    id: swap.id,
+                    date: day,
+                    kind: swap.kind,
+                    counterpartyLabel: swap.counterpartyLabel,
+                    note: swap.note,
+                    createdAt: swap.createdAt
+                ))
+        }
+
         return DayResolverInput(
             manualAssignments: assignmentSnapshots,
             holidays: holidaySnapshots,
             rotations: rotationSnapshots,
             presets: presetSnapshots,
             vacations: vacationSnapshots,
+            swapRecords: swapSnapshots,
             calendar: calendar
         )
     }
@@ -94,12 +110,15 @@ public enum DayResolverInputBuilder {
             (try? context.fetch(FetchDescriptor<RotationPattern>())) ?? []
         let vacations: [VacationPeriod] =
             (try? context.fetch(FetchDescriptor<VacationPeriod>())) ?? []
+        let swapRecords: [SwapRecord] =
+            (try? context.fetch(FetchDescriptor<SwapRecord>())) ?? []
         return make(
             presets: presets,
             assignments: assignments,
             holidays: holidays,
             rotations: rotations,
             vacations: vacations,
+            swapRecords: swapRecords,
             calendar: calendar
         )
     }

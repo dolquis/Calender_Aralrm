@@ -8,6 +8,8 @@
 
 /* Begin PBXBuildFile section */
 		0174AAF68B2E3E2A19D663D0 /* AppSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 25EF6E612249CDD90B0DF266 /* AppSettings.swift */; };
+		036007569D939C5CBCA1A7FC /* SwapRecord.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13111C921E7306A09AE2FE67 /* SwapRecord.swift */; };
+		052C653A224A406C2EB6A76B /* SchemaV4ToV5MigrationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0EE517014C2F513502E01B1 /* SchemaV4ToV5MigrationTests.swift */; };
 		06EC3C472A5E23E3F3E6325C /* DeepLinkRouterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5EEDC6043940812D023C62FC /* DeepLinkRouterTests.swift */; };
 		09AE8637AA7A1550C68CCF21 /* NextAlarmWidgetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 901393113CB436834EDD704A /* NextAlarmWidgetView.swift */; };
 		0A57A6A18030668A011EBC05 /* ShiftPatternDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0BD8459A156DE552C6D27A01 /* ShiftPatternDetector.swift */; };
@@ -19,8 +21,10 @@
 		1AF0CB961721667FB6A16D1F /* ShiftPatternDetectorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 481125C64907856732CF7C61 /* ShiftPatternDetectorTests.swift */; };
 		1BE23D5E8DB38367593F8938 /* SchemaV2Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = 40CFE6FF128FE69B459B29F8 /* SchemaV2Models.swift */; };
 		1D91354AF5A61F6AB8A2BA34 /* AlarmAuthorization.swift in Sources */ = {isa = PBXBuildFile; fileRef = 86AC780F46CD0EFCA4DF5AEF /* AlarmAuthorization.swift */; };
+		1F2155E5C2B3F8A7BD1AEC75 /* SwapRecordTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA592FA67FE8C4E1FF02DC95 /* SwapRecordTests.swift */; };
 		1FA8627BBE71AEB50CF94BBC /* RotationPattern.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01A6D3137CBF6EC9B8450199 /* RotationPattern.swift */; };
 		271A542E7230393125620C4A /* ChangePreview.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A532F9C6BCE6B4A84D0F7A5 /* ChangePreview.swift */; };
+		2829E5F2A162E736B6D4808C /* SchemaV5.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB34847E164BB4D57BB4687B /* SchemaV5.swift */; };
 		29C5B9FC87E29EED01023BB0 /* VacationAwareRotationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 539D3B98124DB8867A3C2FAE /* VacationAwareRotationTests.swift */; };
 		2E24C232F9A0BBA799E0B687 /* RootTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C8378ACE0174B3C7539D092 /* RootTabView.swift */; };
 		33D2C8DCD9FB22111833D5E7 /* GetSleepWindowIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = D576F83E5FD97CB62FABC307 /* GetSleepWindowIntent.swift */; };
@@ -30,6 +34,7 @@
 		383B5DB7A2F34517217C819D /* Color+Hex.swift in Sources */ = {isa = PBXBuildFile; fileRef = 52D57AD950572E2CCA4232B2 /* Color+Hex.swift */; };
 		39A8CDF23526D9EF7ABA5E33 /* SleepSampleWriter.swift in Sources */ = {isa = PBXBuildFile; fileRef = C043264095B90E0E95E70527 /* SleepSampleWriter.swift */; };
 		39BD5B1B121ECD026E2C9D08 /* ICSExporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B20C6E8ABF5C82878661E3F /* ICSExporter.swift */; };
+		3B0F6F67A39D71A4F83A0616 /* SchemaV5.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB34847E164BB4D57BB4687B /* SchemaV5.swift */; };
 		3BD18C6F32FDE39AEEC9207F /* AppRuntimeConfigurationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 54B9557854989FD02866E581 /* AppRuntimeConfigurationTests.swift */; };
 		3C984403E021A44165F6AD0A /* LiveActivityController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 58CAFC82AB82E58ACD5E06C9 /* LiveActivityController.swift */; };
 		3D77E06B4465F4CA89C752F8 /* ChangePreview.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A532F9C6BCE6B4A84D0F7A5 /* ChangePreview.swift */; };
@@ -128,6 +133,7 @@
 		CC7B9E8BF96EBFE8C66E7E66 /* AlarmSchedulingClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B55FF9A7AD80C1726DABEA2 /* AlarmSchedulingClient.swift */; };
 		D09D65AE13BF991F1CC95C77 /* AppSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 25EF6E612249CDD90B0DF266 /* AppSettings.swift */; };
 		D277C5E9D8EF1C8087E347ED /* ExportView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A6B508E593CCDB0EE71C16C /* ExportView.swift */; };
+		D2A077B25676D94DBA3AC3B0 /* SwapRecord.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13111C921E7306A09AE2FE67 /* SwapRecord.swift */; };
 		D3905621E207B592F8A6FCAF /* ShareImporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 160C6B232ACAFA66D4BF9A70 /* ShareImporter.swift */; };
 		D4863C3E8B3FE0A4A97E2011 /* MigrationPlan.swift in Sources */ = {isa = PBXBuildFile; fileRef = BC87BA11FC84BC10F333DC83 /* MigrationPlan.swift */; };
 		D4CDC0B8C3557D54B63419A4 /* RotationExpanderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 03B220A2866CA3CF0D63D6C6 /* RotationExpanderTests.swift */; };
@@ -206,6 +212,7 @@
 		11BF3297B350F41CF2486DDC /* ShiftAlarm.store-wal */ = {isa = PBXFileReference; path = "ShiftAlarm.store-wal"; sourceTree = "<group>"; };
 		11E8D2A64477D09713A87A66 /* ICSExporterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ICSExporterTests.swift; sourceTree = "<group>"; };
 		120336887FAA78783C26767B /* CalendarMonthViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarMonthViewModel.swift; sourceTree = "<group>"; };
+		13111C921E7306A09AE2FE67 /* SwapRecord.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SwapRecord.swift; sourceTree = "<group>"; };
 		160C6B232ACAFA66D4BF9A70 /* ShareImporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareImporter.swift; sourceTree = "<group>"; };
 		169F03BD2562EF87D45D75D8 /* SleepWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SleepWindow.swift; sourceTree = "<group>"; };
 		171EE9996E1C3FE247EF5A26 /* HealthKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = HealthKit.framework; path = System/Library/Frameworks/HealthKit.framework; sourceTree = SDKROOT; };
@@ -290,6 +297,7 @@
 		9AD5FF73898458735C20CCB6 /* SleepIntentHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SleepIntentHelper.swift; sourceTree = "<group>"; };
 		9ED995FDE72A7859141DE705 /* RotationPreviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RotationPreviewView.swift; sourceTree = "<group>"; };
 		A0D4D986762C8D945AEFA63C /* coverage.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = coverage.sh; sourceTree = "<group>"; };
+		A0EE517014C2F513502E01B1 /* SchemaV4ToV5MigrationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SchemaV4ToV5MigrationTests.swift; sourceTree = "<group>"; };
 		A214DB45013EEFB8CA74ABEE /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		A2F13F2ECD849640849504F6 /* ShiftAlarmWidget.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = ShiftAlarmWidget.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		A522E98EA6E15973C441472A /* ShiftAlarm.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = ShiftAlarm.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -314,6 +322,7 @@
 		C4426481B926C070D52F5B98 /* SleepWindowResolverTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SleepWindowResolverTests.swift; sourceTree = "<group>"; };
 		C5A4BEA0B464B11496544190 /* RotationEditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RotationEditorView.swift; sourceTree = "<group>"; };
 		C9468BD339BBAC10E24E2F16 /* ShiftAlarm.store-shm */ = {isa = PBXFileReference; path = "ShiftAlarm.store-shm"; sourceTree = "<group>"; };
+		CA592FA67FE8C4E1FF02DC95 /* SwapRecordTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SwapRecordTests.swift; sourceTree = "<group>"; };
 		CC70896375FEE52E7BE86999 /* SchemaV1.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SchemaV1.swift; sourceTree = "<group>"; };
 		D121166BA0AF022566DC9E6D /* AlarmDiagnosticsService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlarmDiagnosticsService.swift; sourceTree = "<group>"; };
 		D214BE2ED9B4C83570153B68 /* DeepLinkAction.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeepLinkAction.swift; sourceTree = "<group>"; };
@@ -327,6 +336,7 @@
 		E6966462FDD7CC0A26D6C5CF /* HolidaysJP.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = HolidaysJP.json; sourceTree = "<group>"; };
 		E7752C183FAC43230B13F687 /* lint.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = lint.sh; sourceTree = "<group>"; };
 		E79E459829FCB649F8B069DF /* DayResolverInputBuilder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DayResolverInputBuilder.swift; sourceTree = "<group>"; };
+		EB34847E164BB4D57BB4687B /* SchemaV5.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SchemaV5.swift; sourceTree = "<group>"; };
 		EBB1ECB93A0D683208D123C6 /* AlarmService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlarmService.swift; sourceTree = "<group>"; };
 		EC87F1DFCE568D6F82190C34 /* HolidayManagerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HolidayManagerView.swift; sourceTree = "<group>"; };
 		EE3CC80D73634D745A6A655B /* ICSTestParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ICSTestParser.swift; sourceTree = "<group>"; };
@@ -414,6 +424,7 @@
 				18F14DAB503EF5551F43C60A /* ShiftAlarm.swift */,
 				0D19828236FA58FCCD74F1E8 /* ShiftPreset.swift */,
 				169F03BD2562EF87D45D75D8 /* SleepWindow.swift */,
+				13111C921E7306A09AE2FE67 /* SwapRecord.swift */,
 				D3E62CA1BDC74B3209009B4A /* VacationPeriod.swift */,
 			);
 			path = Models;
@@ -627,6 +638,7 @@
 				5B9A56B5CB8BC65C024F6709 /* ICSExportDateRangeTests.swift */,
 				11E8D2A64477D09713A87A66 /* ICSExporterTests.swift */,
 				2627AC31545ED01826DFF3FF /* SchemaV3ToV4MigrationTests.swift */,
+				A0EE517014C2F513502E01B1 /* SchemaV4ToV5MigrationTests.swift */,
 				4F10D1F3A54CDC20521438F3 /* ShareExporterTests.swift */,
 				D6F3F7A3FCC6C7B97F57BC23 /* ShareImporterTests.swift */,
 				67263117617C1CDCCAB3C087 /* ShiftBundleValidatorTests.swift */,
@@ -675,6 +687,7 @@
 				0B5D48CC86C2125679C92B3B /* ShiftBundleCodecTests.swift */,
 				481125C64907856732CF7C61 /* ShiftPatternDetectorTests.swift */,
 				C4426481B926C070D52F5B98 /* SleepWindowResolverTests.swift */,
+				CA592FA67FE8C4E1FF02DC95 /* SwapRecordTests.swift */,
 				539D3B98124DB8867A3C2FAE /* VacationAwareRotationTests.swift */,
 			);
 			path = DomainTests;
@@ -712,6 +725,7 @@
 				57F47D5F67892D9AA6A05A22 /* SchemaV3.swift */,
 				55A57ED47AC3F32B4346B21C /* SchemaV3Models.swift */,
 				FC95AB597BB57AF7418EF0DF /* SchemaV4.swift */,
+				EB34847E164BB4D57BB4687B /* SchemaV5.swift */,
 			);
 			path = Persistence;
 			sourceTree = "<group>";
@@ -1015,6 +1029,7 @@
 				561A1C34E5122F321A7FE147 /* ICSTestParser.swift in Sources */,
 				D4CDC0B8C3557D54B63419A4 /* RotationExpanderTests.swift in Sources */,
 				7CD2B27ABC43A0ACE93650EA /* SchemaV3ToV4MigrationTests.swift in Sources */,
+				052C653A224A406C2EB6A76B /* SchemaV4ToV5MigrationTests.swift in Sources */,
 				4128BE6A93C1B1E914484750 /* ShareExporterTests.swift in Sources */,
 				5F5B012597E124236B6C80C6 /* ShareImporterTests.swift in Sources */,
 				BA6498C6496DB7B7CA011551 /* ShiftBundleCodecTests.swift in Sources */,
@@ -1024,6 +1039,7 @@
 				DDC572A572EFD4828440ADB8 /* SleepSampleWriterTests.swift in Sources */,
 				3F50CE5EF85830766A92B0A3 /* SleepWindowResolverTests.swift in Sources */,
 				A63008445DA7C8B0CA2F212E /* SnapshotTestSupport.swift in Sources */,
+				1F2155E5C2B3F8A7BD1AEC75 /* SwapRecordTests.swift in Sources */,
 				29C5B9FC87E29EED01023BB0 /* VacationAwareRotationTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -1090,6 +1106,7 @@
 				7960359FE7FCBE4D695D29BA /* SchemaV3.swift in Sources */,
 				7A92D4F0FA5D7899AA6F98CF /* SchemaV3Models.swift in Sources */,
 				B06A1264BE7939203BD847AE /* SchemaV4.swift in Sources */,
+				2829E5F2A162E736B6D4808C /* SchemaV5.swift in Sources */,
 				5FE572458982245B0FFBBB2E /* SettingsView.swift in Sources */,
 				C442F74D6FF8221A34BE483E /* ShareExporter.swift in Sources */,
 				D3905621E207B592F8A6FCAF /* ShareImporter.swift in Sources */,
@@ -1108,6 +1125,7 @@
 				C6FF50D5C19FF9C4C465DC11 /* SleepWindow.swift in Sources */,
 				DF4E12CE7FD087B0ED8A3CDC /* SleepWindowEntity.swift in Sources */,
 				4D9F5895CD7278737103138F /* SleepWindowResolver.swift in Sources */,
+				036007569D939C5CBCA1A7FC /* SwapRecord.swift in Sources */,
 				68FC44DD3A580835F0BA5CEF /* VacationAwareRotation.swift in Sources */,
 				F04E77883D40ED2BA28139F8 /* VacationPeriod.swift in Sources */,
 			);
@@ -1143,6 +1161,7 @@
 				16A196E2170A9BDC5F588013 /* SchemaV3.swift in Sources */,
 				437701AA97DD4063239E9A31 /* SchemaV3Models.swift in Sources */,
 				5FCE35B63C4355861DFA9A24 /* SchemaV4.swift in Sources */,
+				3B0F6F67A39D71A4F83A0616 /* SchemaV5.swift in Sources */,
 				5C7030B898B9580DCE2D12CA /* ShiftAlarm.swift in Sources */,
 				BFEBC0400406189DEA7D64F9 /* ShiftAlarmAttributes.swift in Sources */,
 				111A9CBA9F6F30EE2C85FD61 /* ShiftAlarmWidgetBundle.swift in Sources */,
@@ -1150,6 +1169,7 @@
 				FB34CB81EEE05F0566DCFF02 /* ShiftPreset.swift in Sources */,
 				4F79487B08D15B0A5613F341 /* SleepWindow.swift in Sources */,
 				37E3A90E7EA9CE9C9DF95660 /* SleepWindowResolver.swift in Sources */,
+				D2A077B25676D94DBA3AC3B0 /* SwapRecord.swift in Sources */,
 				BE831E8C47706C51C5F3A69C /* VacationAwareRotation.swift in Sources */,
 				60EBB629EF3EC658250E490A /* VacationPeriod.swift in Sources */,
 			);

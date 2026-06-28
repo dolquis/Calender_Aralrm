@@ -1509,12 +1509,18 @@ assert（γ-U12）。
 ROADMAP §4 P2-δ に対応。同僚との勤務交換を 1 操作で記録し、**スワップした日でも
 正しいシフトのアラームが鳴る** ことを保証する。
 
-### 5.1 データモデル追加（Schema V3）
+### 5.1 データモデル追加（Schema V5）
 
 **新規 @Model `SwapRecord`**（`Sources/Domain/Models/SwapRecord.swift`）:
 
 ```swift
 @Model public final class SwapRecord {
+    public enum Kind: Int, Codable, Sendable, CaseIterable, Hashable {
+        case covered = 0      // 自分が休む（同僚が代わってくれた）
+        case covering = 1     // 自分が出る（同僚の代わりに出勤）
+        case exchange = 2     // 双方向（v2 検討）
+    }
+
     @Attribute(.unique) public var id: UUID
     public var date: Date              // startOfDay 正規化
     public var kindRaw: Int            // 0=.covered, 1=.covering, 2=.exchange
@@ -1525,17 +1531,11 @@ ROADMAP §4 P2-δ に対応。同僚との勤務交換を 1 操作で記録し�
     public init(
         id: UUID = UUID(),
         date: Date,
-        kind: SwapKind,
+        kind: Kind,
         counterpartyLabel: String,
         note: String = "",
-        createdAt: Date = Date()
+        createdAt: Date = .now
     )
-}
-
-public enum SwapKind: Int, Codable, Sendable, CaseIterable {
-    case covered = 0      // 自分が休む（同僚が代わってくれた）
-    case covering = 1     // 自分が出る（同僚の代わりに出勤）
-    case exchange = 2     // 双方向（v2 検討）
 }
 ```
 
@@ -2161,7 +2161,7 @@ P2 本体 (α / β / γ) と派生 (A1-A4) と新規 (δ / η) の **推奨着�
 | 3 | P2-η (.ics エクスポート) | 既存 `DayResolver` / `ShareImporter` 経路だけ使うので独立、UI も小規模 |
 | 4 | A4 (β 自動グルーピング) | β 本体 (Schema V2) が landing した直後に同型 sheet で追加 |
 | 5 | A2 (DOW 検出) | `HolidayOverride` 大量 insert があるため、α 本体と並列稼動の検証が必要 |
-| 6 | P2-δ (シフトスワップ) | Schema V3 を要するため β の V2 が landing した後。最大規模 |
+| 6 | P2-δ (シフトスワップ) | Schema V5 を要するため β / 連休対応の schema 更新後に実装。最大規模 |
 
 α / β / γ 本体と派生機能の **依存関係は強くない** ため、人員リソースに応じて
 派生機能を先行させることも可能。
