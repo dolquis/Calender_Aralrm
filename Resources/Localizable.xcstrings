@@ -478,6 +478,22 @@
         }
       }
     },
+    "export.error.invalid_calendar_day": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Some saved calendar data could not be exported. Please review your shift data and try again."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "保存済みのカレンダーデータの一部をエクスポートできませんでした。シフトデータを確認してからもう一度お試しください。"
+          }
+        }
+      }
+    },
     "export.share": {
       "localizations": {
         "en": {

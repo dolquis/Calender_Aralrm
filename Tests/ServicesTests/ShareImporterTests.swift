@@ -189,7 +189,7 @@ struct ShareImporterTests {
         let context = ModelContext(container)
         let preset = try #require(try context.fetch(FetchDescriptor<ShiftPreset>()).first)
         let pattern = try #require(try context.fetch(FetchDescriptor<RotationPattern>()).first)
-        let exported = ShareExporter.snapshot(from: container)
+        let exported = try ShareExporter.snapshot(from: container)
 
         #expect(preset.crossVacationPolicy == .continue)
         #expect(pattern.crossVacationPolicy == .resetToDay)
@@ -210,7 +210,7 @@ struct ShareImporterTests {
             try refreshedContext.fetch(FetchDescriptor<ShiftPreset>()).first)
         let refreshedPattern = try #require(
             try refreshedContext.fetch(FetchDescriptor<RotationPattern>()).first)
-        let defaultExported = ShareExporter.snapshot(from: container)
+        let defaultExported = try ShareExporter.snapshot(from: container)
         #expect(refreshedPreset.crossVacationPolicy == nil)
         #expect(refreshedPattern.crossVacationPolicy == .invert)
         #expect(refreshedPattern.dayStartSlotIndex == nil)

@@ -43,13 +43,15 @@ public struct ExportView: View {
     private func prepare() {
         preparing = true
         errorMessage = nil
+        fileURL = nil
         let container = dependencies.modelContainer
         Task {
             do {
-                let bundle = ShareExporter.snapshot(from: container)
+                let bundle = try ShareExporter.snapshot(from: container)
                 let url = try ShareExporter.writeTemporaryFile(bundle: bundle)
                 fileURL = url
             } catch {
+                fileURL = nil
                 errorMessage = error.localizedDescription
             }
             preparing = false

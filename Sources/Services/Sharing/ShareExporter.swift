@@ -3,9 +3,25 @@ import SwiftData
 
 @MainActor
 public enum ShareExporter {
+    typealias CalendarDayFactory = (Date, Calendar) -> CalendarDay?
+
     public static func snapshot(
         from container: ModelContainer, calendar: Calendar = .current
-    ) -> ShiftBundle {
+    ) throws -> ShiftBundle {
+        try snapshot(
+            from: container,
+            calendar: calendar,
+            makeCalendarDay: { date, calendar in
+                CalendarDay(date: date, calendar: calendar)
+            }
+        )
+    }
+
+    static func snapshot(
+        from container: ModelContainer,
+        calendar: Calendar,
+        makeCalendarDay: CalendarDayFactory
+    ) throws -> ShiftBundle {
         let context = ModelContext(container)
         let presets: [ShiftPreset] = (try? context.fetch(FetchDescriptor<ShiftPreset>())) ?? []
         let patterns: [RotationPattern] =
@@ -27,18 +43,38 @@ public enum ShareExporter {
                 crossVacationPolicy: p.crossVacationPolicyRaw
             )
         }
-        let rotationDTOs: [ShiftBundle.RotationDTO] = patterns.compactMap { r in
-            guard let anchor = CalendarDay(date: r.anchorDate, calendar: calendar) else {
-                return nil
-            }
+        let rotationDTOs: [ShiftBundle.RotationDTO] = try patterns.map { r in
+            let anchor = try calendarDay(
+                from: r.anchorDate,
+                entity: "RotationPattern",
+                field: "anchorDate",
+                calendar: calendar,
+                makeCalendarDay: makeCalendarDay
+            )
             return ShiftBundle.RotationDTO(
                 id: r.id,
                 name: r.name,
                 anchorDate: anchor,
                 cycleLength: r.cycleLength,
                 slots: r.slots,
-                startDate: r.startDate.flatMap { CalendarDay(date: $0, calendar: calendar) },
-                endDate: r.endDate.flatMap { CalendarDay(date: $0, calendar: calendar) },
+                startDate: try r.startDate.map {
+                    try calendarDay(
+                        from: $0,
+                        entity: "RotationPattern",
+                        field: "startDate",
+                        calendar: calendar,
+                        makeCalendarDay: makeCalendarDay
+                    )
+                },
+                endDate: try r.endDate.map {
+                    try calendarDay(
+                        from: $0,
+                        entity: "RotationPattern",
+                        field: "endDate",
+                        calendar: calendar,
+                        makeCalendarDay: makeCalendarDay
+                    )
+                },
                 priority: r.priority,
                 isActive: r.isActive,
                 crossVacationPolicy: r.crossVacationPolicy == .invert
@@ -46,8 +82,14 @@ public enum ShareExporter {
                 dayStartSlotIndex: r.dayStartSlotIndex
             )
         }
-        let assignmentDTOs: [ShiftBundle.AssignmentDTO] = assignments.compactMap { a in
-            guard let day = CalendarDay(date: a.date, calendar: calendar) else { return nil }
+        let assignmentDTOs: [ShiftBundle.AssignmentDTO] = try assignments.map { a in
+            let day = try calendarDay(
+                from: a.date,
+                entity: "DayAssignment",
+                field: "date",
+                calendar: calendar,
+                makeCalendarDay: makeCalendarDay
+            )
             return ShiftBundle.AssignmentDTO(
                 date: day,
                 presetID: a.preset?.id,
@@ -57,8 +99,14 @@ public enum ShareExporter {
                 note: a.note
             )
         }
-        let overrideDTOs: [ShiftBundle.OverrideDTO] = overrides.compactMap { o in
-            guard let day = CalendarDay(date: o.date, calendar: calendar) else { return nil }
+        let overrideDTOs: [ShiftBundle.OverrideDTO] = try overrides.map { o in
+            let day = try calendarDay(
+                from: o.date,
+                entity: "HolidayOverride",
+                field: "date",
+                calendar: calendar,
+                makeCalendarDay: makeCalendarDay
+            )
             return ShiftBundle.OverrideDTO(
                 date: day,
                 kind: o.kind,
@@ -82,5 +130,29 @@ public enum ShareExporter {
         let url = directory.appendingPathComponent(filename)
         try data.write(to: url, options: [.atomic])
         return url
+    }
+
+    private static func calendarDay(
+        from date: Date,
+        entity: String,
+        field: String,
+        calendar: Calendar,
+        makeCalendarDay: CalendarDayFactory
+    ) throws -> CalendarDay {
+        guard let day = makeCalendarDay(date, calendar) else {
+            throw ShareExportError.invalidCalendarDay(entity: entity, field: field)
+        }
+        return day
+    }
+}
+
+public enum ShareExportError: LocalizedError, Equatable {
+    case invalidCalendarDay(entity: String, field: String)
+
+    public var errorDescription: String? {
+        switch self {
+        case .invalidCalendarDay:
+            return String(localized: "export.error.invalid_calendar_day")
+        }
     }
 }
