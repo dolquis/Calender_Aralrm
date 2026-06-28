@@ -58,6 +58,8 @@ public enum ShiftBundleValidationCode: String, Sendable {
     case missingPresetReference
     case textTooLong
     case invalidColorHex
+    case invalidCrossVacationPolicy
+    case invalidDayStartSlotIndex
 }
 
 public struct ShiftBundleValidationError: Error, LocalizedError, Equatable, Sendable {
@@ -151,6 +153,11 @@ public enum ShiftBundleValidator {
             if let minute = preset.defaultAlarmMinute, !isValidMinute(minute) {
                 addError(.invalidAlarmMinute, path: "\(path).defaultAlarmMinute")
             }
+            if let policy = preset.crossVacationPolicy,
+                CrossVacationPolicy(rawValue: policy) == nil
+            {
+                addError(.invalidCrossVacationPolicy, path: "\(path).crossVacationPolicy")
+            }
         }
 
         for (index, pattern) in bundle.patterns.enumerated() {
@@ -160,6 +167,17 @@ public enum ShiftBundleValidator {
             }
             if pattern.slots.count != pattern.cycleLength {
                 addError(.slotCountMismatch, path: "\(path).slots")
+            }
+            if let policy = pattern.crossVacationPolicy,
+                CrossVacationPolicy(rawValue: policy) == nil
+            {
+                addError(.invalidCrossVacationPolicy, path: "\(path).crossVacationPolicy")
+            }
+            if let dayStartSlotIndex = pattern.dayStartSlotIndex,
+                pattern.cycleLength < 1 || dayStartSlotIndex < 0
+                    || dayStartSlotIndex >= pattern.cycleLength
+            {
+                addError(.invalidDayStartSlotIndex, path: "\(path).dayStartSlotIndex")
             }
             for (slotIndex, presetID) in pattern.slots.enumerated() {
                 guard let presetID, !presetIDs.contains(presetID) else { continue }
@@ -297,6 +315,10 @@ public enum ShiftBundleValidator {
             format = String(localized: "import.validation.text_too_long")
         case .invalidColorHex:
             format = String(localized: "import.validation.invalid_color_hex")
+        case .invalidCrossVacationPolicy:
+            format = String(localized: "import.validation.invalid_cross_vacation_policy")
+        case .invalidDayStartSlotIndex:
+            format = String(localized: "import.validation.invalid_day_start_slot_index")
         }
         return String(format: format, path)
     }

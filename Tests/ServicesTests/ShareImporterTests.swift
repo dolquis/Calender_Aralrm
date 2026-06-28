@@ -175,6 +175,50 @@ struct ShareImporterTests {
         #expect(overrides.count == 1)
         #expect(overrides.first?.label == "Holiday")
     }
+
+    @Test
+    func testApplyAndExportPreservesCrossVacationPolicyFields() throws {
+        let container = SharedPersistence.makeContainer(inMemory: true)
+        var bundle = makeBundle()
+        bundle.presets[0].crossVacationPolicy = CrossVacationPolicy.continue.rawValue
+        bundle.patterns[0].crossVacationPolicy = CrossVacationPolicy.resetToDay.rawValue
+        bundle.patterns[0].dayStartSlotIndex = 2
+
+        try ShareImporter.apply(bundle: bundle, container: container)
+
+        let context = ModelContext(container)
+        let preset = try #require(try context.fetch(FetchDescriptor<ShiftPreset>()).first)
+        let pattern = try #require(try context.fetch(FetchDescriptor<RotationPattern>()).first)
+        let exported = ShareExporter.snapshot(from: container)
+
+        #expect(preset.crossVacationPolicy == .continue)
+        #expect(pattern.crossVacationPolicy == .resetToDay)
+        #expect(pattern.dayStartSlotIndex == 2)
+        #expect(
+            exported.presets.first?.crossVacationPolicy == CrossVacationPolicy.continue.rawValue)
+        #expect(
+            exported.patterns.first?.crossVacationPolicy == CrossVacationPolicy.resetToDay.rawValue)
+        #expect(exported.patterns.first?.dayStartSlotIndex == 2)
+
+        bundle.presets[0].crossVacationPolicy = nil
+        bundle.patterns[0].crossVacationPolicy = nil
+        bundle.patterns[0].dayStartSlotIndex = nil
+        try ShareImporter.apply(bundle: bundle, container: container)
+
+        let refreshedContext = ModelContext(container)
+        let refreshedPreset = try #require(
+            try refreshedContext.fetch(FetchDescriptor<ShiftPreset>()).first)
+        let refreshedPattern = try #require(
+            try refreshedContext.fetch(FetchDescriptor<RotationPattern>()).first)
+        let defaultExported = ShareExporter.snapshot(from: container)
+        #expect(refreshedPreset.crossVacationPolicy == nil)
+        #expect(refreshedPattern.crossVacationPolicy == .invert)
+        #expect(refreshedPattern.dayStartSlotIndex == nil)
+        #expect(defaultExported.presets.first?.crossVacationPolicy == nil)
+        #expect(defaultExported.patterns.first?.crossVacationPolicy == nil)
+        #expect(defaultExported.patterns.first?.dayStartSlotIndex == nil)
+    }
+
     @Test
     func testApplyIdempotent() throws {
         let container = SharedPersistence.makeContainer(inMemory: true)

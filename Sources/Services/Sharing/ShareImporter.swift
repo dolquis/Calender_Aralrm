@@ -284,6 +284,7 @@ public enum ShareImporter {
             .reduce(into: [:]) { $0[$1.id] = $1 }
         for p in presets {
             let colorHex = ShiftBundleValidator.normalizedColorHex(p.colorHex)
+            let crossVacationPolicy = crossVacationPolicy(from: p.crossVacationPolicy)
             if let existing = byID[p.id] {
                 existing.name = p.name
                 existing.colorHex = colorHex
@@ -291,6 +292,7 @@ public enum ShareImporter {
                 existing.defaultAlarmMinute = p.defaultAlarmMinute
                 existing.soundID = p.soundID
                 existing.note = p.note
+                existing.crossVacationPolicyRaw = crossVacationPolicy?.rawValue
             } else {
                 let new = ShiftPreset(
                     id: p.id,
@@ -299,7 +301,8 @@ public enum ShareImporter {
                     defaultAlarmHour: p.defaultAlarmHour,
                     defaultAlarmMinute: p.defaultAlarmMinute,
                     soundID: p.soundID,
-                    note: p.note
+                    note: p.note,
+                    crossVacationPolicy: crossVacationPolicy
                 )
                 context.insert(new)
                 byID[p.id] = new
@@ -318,6 +321,8 @@ public enum ShareImporter {
             guard let anchor = r.anchorDate.date(in: calendar) else { continue }
             let start = r.startDate?.date(in: calendar)
             let end = r.endDate?.date(in: calendar)
+            let crossVacationPolicy =
+                crossVacationPolicy(from: r.crossVacationPolicy) ?? .invert
             if let existing = byID[r.id] {
                 existing.name = r.name
                 existing.anchorDate = anchor
@@ -327,6 +332,8 @@ public enum ShareImporter {
                 existing.endDate = end
                 existing.priority = r.priority
                 existing.isActive = r.isActive
+                existing.crossVacationPolicyRaw = crossVacationPolicy.rawValue
+                existing.dayStartSlotIndex = r.dayStartSlotIndex
             } else {
                 let new = RotationPattern(
                     id: r.id,
@@ -337,12 +344,18 @@ public enum ShareImporter {
                     startDate: start,
                     endDate: end,
                     priority: r.priority,
-                    isActive: r.isActive
+                    isActive: r.isActive,
+                    crossVacationPolicy: crossVacationPolicy,
+                    dayStartSlotIndex: r.dayStartSlotIndex
                 )
                 context.insert(new)
                 byID[r.id] = new
             }
         }
+    }
+
+    private static func crossVacationPolicy(from rawValue: Int?) -> CrossVacationPolicy? {
+        rawValue.flatMap(CrossVacationPolicy.init(rawValue:))
     }
 
     private static func applyAssignments(

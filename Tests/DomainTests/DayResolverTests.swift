@@ -144,4 +144,117 @@ struct DayResolverTests {
             Issue.record("Expected rotation")
         }
     }
+
+    @Test
+    func testVacationSuppressesLowerPriorityRotation() {
+        let lowID = UUID()
+        let highID = UUID()
+        let presets: [UUID: ShiftPresetSnapshot] = [
+            lowID: ShiftPresetSnapshot(
+                id: lowID, name: "Low", colorHex: "#0",
+                alarmTime: DateComponents(hour: 5, minute: 0), soundID: "s"),
+            highID: ShiftPresetSnapshot(
+                id: highID, name: "High", colorHex: "#1",
+                alarmTime: DateComponents(hour: 7, minute: 0), soundID: "s"),
+        ]
+        let day = date(2026, 8, 15)
+        let low = RotationPatternSnapshot(
+            id: UUID(), name: "low", anchorDate: day, cycleLength: 1, slots: [lowID],
+            startDate: nil, endDate: nil, priority: 0, isActive: true)
+        let high = RotationPatternSnapshot(
+            id: UUID(), name: "high", anchorDate: day, cycleLength: 1, slots: [highID],
+            startDate: nil, endDate: nil, priority: 5, isActive: true)
+        let input = DayResolverInput(
+            manualAssignments: [:],
+            holidays: [:],
+            rotations: [low, high],
+            presets: presets,
+            vacations: [
+                VacationPeriodSnapshot(
+                    startDate: date(2026, 8, 13),
+                    endDate: date(2026, 8, 16),
+                    label: "Obon")
+            ],
+            calendar: calendar
+        )
+
+        let resolved = DayResolver.resolve(date: day, input: input)
+
+        if case .none = resolved {
+            #expect(resolved.fireTime == nil)
+        } else {
+            Issue.record("Expected vacation suppression")
+        }
+    }
+
+    @Test
+    func testInputNormalizesVacationSnapshots() {
+        let first = VacationPeriodSnapshot(
+            startDate: date(2026, 8, 13),
+            endDate: date(2026, 8, 16),
+            label: "Obon"
+        )
+        let adjacent = VacationPeriodSnapshot(
+            startDate: date(2026, 8, 17),
+            endDate: date(2026, 8, 20),
+            label: "Extended"
+        )
+        let input = DayResolverInput(
+            manualAssignments: [:],
+            holidays: [:],
+            rotations: [],
+            presets: [:],
+            vacations: [adjacent, first],
+            calendar: calendar
+        )
+
+        #expect(input.vacations.count == 1)
+        #expect(input.vacations.first?.startDate == date(2026, 8, 13))
+        #expect(input.vacations.first?.endDate == date(2026, 8, 20))
+    }
+
+    @Test
+    func testManualAssignmentTakesPrecedenceOverVacationSuppression() {
+        let presetID = UUID()
+        let preset = ShiftPresetSnapshot(
+            id: presetID, name: "Manual", colorHex: "#fff",
+            alarmTime: DateComponents(hour: 9, minute: 0),
+            soundID: "system.default"
+        )
+        let day = date(2026, 8, 15)
+        let manual = DayAssignmentSnapshot(
+            presetID: presetID,
+            overrideTime: nil,
+            skipAlarm: false,
+            note: ""
+        )
+        let rotation = RotationPatternSnapshot(
+            id: UUID(), name: "r", anchorDate: date(2026, 5, 4),
+            cycleLength: 1, slots: [presetID],
+            startDate: nil, endDate: nil, priority: 0, isActive: true
+        )
+        let input = DayResolverInput(
+            manualAssignments: [day: manual],
+            holidays: [:],
+            rotations: [rotation],
+            presets: [presetID: preset],
+            vacations: [
+                VacationPeriodSnapshot(
+                    startDate: date(2026, 8, 13),
+                    endDate: date(2026, 8, 16),
+                    label: "Obon")
+            ],
+            calendar: calendar
+        )
+
+        let resolved = DayResolver.resolve(date: day, input: input)
+
+        if case .manual(let id, let time, let skip, _) = resolved {
+            #expect(id == presetID)
+            #expect(time?.hour == 9)
+            #expect(!skip)
+        } else {
+            Issue.record("Expected manual")
+        }
+    }
 }

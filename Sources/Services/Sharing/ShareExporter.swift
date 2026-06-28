@@ -23,7 +23,8 @@ public enum ShareExporter {
                 defaultAlarmHour: p.defaultAlarmHour,
                 defaultAlarmMinute: p.defaultAlarmMinute,
                 soundID: p.soundID,
-                note: p.note
+                note: p.note,
+                crossVacationPolicy: p.crossVacationPolicyRaw
             )
         }
         let rotationDTOs: [ShiftBundle.RotationDTO] = patterns.compactMap { r in
@@ -39,7 +40,10 @@ public enum ShareExporter {
                 startDate: r.startDate.flatMap { CalendarDay(date: $0, calendar: calendar) },
                 endDate: r.endDate.flatMap { CalendarDay(date: $0, calendar: calendar) },
                 priority: r.priority,
-                isActive: r.isActive
+                isActive: r.isActive,
+                crossVacationPolicy: r.crossVacationPolicy == .invert
+                    ? nil : r.crossVacationPolicyRaw,
+                dayStartSlotIndex: r.dayStartSlotIndex
             )
         }
         let assignmentDTOs: [ShiftBundle.AssignmentDTO] = assignments.compactMap { a in
