@@ -161,8 +161,8 @@ Recently shipped:
 - **Alarm reliability diagnostics** — a settings screen that shows at a glance whether the
   next alarm will actually fire (permissions, scheduler sync, App Group, BG refresh,
   Live Activity, HealthKit), with one-tap recovery actions when something is off.
-- **Shift swap records** — mark a day as covered by a coworker, covering for someone else,
-  or exchanged, while the underlying manual assignment keeps AlarmKit scheduling correct.
+- **Shift swap records** — mark a day as covered by a coworker or covering for someone
+  else, while the underlying manual assignment keeps AlarmKit scheduling correct.
 
 Designed, not yet implemented:
 

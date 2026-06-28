@@ -49,4 +49,10 @@ struct SwapRecordTests {
 
         #expect(record.kind == .exchange)
     }
+
+    @Test
+    func testManuallyEditableKindsExcludeExchange() {
+        #expect(SwapRecord.Kind.manuallyEditableCases == [.covered, .covering])
+        #expect(SwapRecord.Kind.allCases.contains(.exchange))
+    }
 }

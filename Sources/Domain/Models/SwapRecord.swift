@@ -10,6 +10,8 @@ extension SchemaV5 {
             case covered
             case covering
             case exchange
+
+            public static let manuallyEditableCases: [Kind] = [.covered, .covering]
         }
 
         @Attribute(.unique) public var id: UUID

@@ -87,7 +87,7 @@ public struct DayDetailEditorView: View {
                     Toggle("day.swap_enabled", isOn: $swapEnabled)
                     if swapEnabled {
                         Picker("day.swap_kind", selection: $swapKind) {
-                            ForEach(SwapRecord.Kind.allCases, id: \.self) { kind in
+                            ForEach(SwapRecord.Kind.manuallyEditableCases, id: \.self) { kind in
                                 Text(title(for: kind)).tag(kind)
                             }
                         }

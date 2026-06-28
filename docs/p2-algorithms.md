@@ -1506,8 +1506,8 @@ assert（γ-U12）。
 
 ## 5. P2-δ — シフトスワップ
 
-ROADMAP §4 P2-δ に対応。同僚との勤務交換を 1 操作で記録し、**スワップした日でも
-正しいシフトのアラームが鳴る** ことを保証する。
+ROADMAP §4 P2-δ に対応。同僚との勤務交代を日付ごとに記録し、**スワップした日でも
+正しいシフトのアラームが鳴る** ことを保証する。双方向の同時スワップ操作は v2 で扱う。
 
 ### 5.1 データモデル追加（Schema V5）
 
@@ -1557,15 +1557,16 @@ ROADMAP §4 P2-δ に対応。同僚との勤務交換を 1 操作で記録し�
 `DayDetailEditorView` に「シフト交代」ボタンを追加し、以下のハンドラを実装:
 
 ```
-入力: (date, kind, counterpartyLabel, optionalPresetID)
+入力: (date, kind=.covered|.covering, counterpartyLabel, optionalPresetID)
 処理:
   1. DayAssignment を upsert:
      - .covered: presetID = nil, skipAlarm = true
      - .covering: presetID = optionalPresetID (必須), skipAlarm = false
-     - .exchange: 2 つの date を順次処理（v2）
   2. SwapRecord を insert (date, kind, counterpartyLabel, note)
   3. await AlarmScheduler.refreshScheduledAlarms()
 ```
+
+`.exchange` は schema 互換性のため予約し、2 つの date を同時に処理する UX は v2 で扱う。
 
 **重要:** `DayResolver` / `AlarmScheduler` は **完全に無改変**。
 手動 `DayAssignment` がローテーション / 連休 / 祝日に勝つ既存の優先順位
