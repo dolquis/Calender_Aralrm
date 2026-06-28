@@ -127,4 +127,23 @@ struct ShareExporterTests {
         #expect(url.pathExtension == "shiftalarm")
         #expect(decoded == bundle)
     }
+
+    @Test
+    func testSnapshotThrowsWhenCalendarDayCannotBeExported() throws {
+        let container = SharedPersistence.makeContainer(inMemory: true)
+        let day = try #require(CalendarDay(year: 2026, month: 5, day: 1).date(in: calendar))
+        let context = ModelContext(container)
+        context.insert(DayAssignment(date: day, note: "invalid day seam"))
+        try context.save()
+
+        #expect(
+            throws: ShareExportError.invalidCalendarDay(entity: "DayAssignment", field: "date")
+        ) {
+            try ShareExporter.snapshot(
+                from: container,
+                calendar: calendar,
+                makeCalendarDay: { _, _ in nil }
+            )
+        }
+    }
 }

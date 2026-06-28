@@ -3,8 +3,24 @@ import SwiftData
 
 @MainActor
 public enum ShareExporter {
+    typealias CalendarDayFactory = (Date, Calendar) -> CalendarDay?
+
     public static func snapshot(
         from container: ModelContainer, calendar: Calendar = .current
+    ) throws -> ShiftBundle {
+        try snapshot(
+            from: container,
+            calendar: calendar,
+            makeCalendarDay: { date, calendar in
+                CalendarDay(date: date, calendar: calendar)
+            }
+        )
+    }
+
+    static func snapshot(
+        from container: ModelContainer,
+        calendar: Calendar,
+        makeCalendarDay: CalendarDayFactory
     ) throws -> ShiftBundle {
         let context = ModelContext(container)
         let presets: [ShiftPreset] = (try? context.fetch(FetchDescriptor<ShiftPreset>())) ?? []
@@ -32,7 +48,8 @@ public enum ShareExporter {
                 from: r.anchorDate,
                 entity: "RotationPattern",
                 field: "anchorDate",
-                calendar: calendar
+                calendar: calendar,
+                makeCalendarDay: makeCalendarDay
             )
             return ShiftBundle.RotationDTO(
                 id: r.id,
@@ -45,7 +62,8 @@ public enum ShareExporter {
                         from: $0,
                         entity: "RotationPattern",
                         field: "startDate",
-                        calendar: calendar
+                        calendar: calendar,
+                        makeCalendarDay: makeCalendarDay
                     )
                 },
                 endDate: try r.endDate.map {
@@ -53,7 +71,8 @@ public enum ShareExporter {
                         from: $0,
                         entity: "RotationPattern",
                         field: "endDate",
-                        calendar: calendar
+                        calendar: calendar,
+                        makeCalendarDay: makeCalendarDay
                     )
                 },
                 priority: r.priority,
@@ -68,7 +87,8 @@ public enum ShareExporter {
                 from: a.date,
                 entity: "DayAssignment",
                 field: "date",
-                calendar: calendar
+                calendar: calendar,
+                makeCalendarDay: makeCalendarDay
             )
             return ShiftBundle.AssignmentDTO(
                 date: day,
@@ -84,7 +104,8 @@ public enum ShareExporter {
                 from: o.date,
                 entity: "HolidayOverride",
                 field: "date",
-                calendar: calendar
+                calendar: calendar,
+                makeCalendarDay: makeCalendarDay
             )
             return ShiftBundle.OverrideDTO(
                 date: day,
@@ -115,9 +136,10 @@ public enum ShareExporter {
         from date: Date,
         entity: String,
         field: String,
-        calendar: Calendar = .current
+        calendar: Calendar,
+        makeCalendarDay: CalendarDayFactory
     ) throws -> CalendarDay {
-        guard let day = CalendarDay(date: date, calendar: calendar) else {
+        guard let day = makeCalendarDay(date, calendar) else {
             throw ShareExportError.invalidCalendarDay(entity: entity, field: field)
         }
         return day
@@ -129,8 +151,8 @@ public enum ShareExportError: LocalizedError, Equatable {
 
     public var errorDescription: String? {
         switch self {
-        case .invalidCalendarDay(let entity, let field):
-            return "Unable to export \(entity).\(field) as a calendar day."
+        case .invalidCalendarDay:
+            return String(localized: "export.error.invalid_calendar_day")
         }
     }
 }
