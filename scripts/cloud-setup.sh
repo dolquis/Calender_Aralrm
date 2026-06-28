@@ -13,6 +13,12 @@ set -euo pipefail
 # No-op unless we are inside a cloud sandbox session.
 [ "${CLAUDE_CODE_REMOTE:-}" = "true" ] || exit 0
 
+# Claude Code injects a SessionStart hook's stdout into the model context.
+# Keep this installer side-effect-only: redirect all output (our logs and the
+# package managers') to stderr so it stays as setup diagnostics, not as
+# conversation input on every new/resumed cloud session.
+exec >&2
+
 GITLEAKS_VERSION="${GITLEAKS_VERSION:-8.30.1}"
 
 have() { command -v "$1" >/dev/null 2>&1; }
