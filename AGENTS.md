@@ -84,6 +84,7 @@ bash scripts/check-docs.sh          # typos: ソース / ドキュメントの�
 bash scripts/check-docs.sh --links  # 追加で lychee による外部リンク切れ検査
 bash scripts/periphery.sh           # periphery: 未使用 Swift コード検出（要 Xcode）
 bash scripts/lsp-setup.sh           # buildServer.json 生成（VS Code / SourceKit-LSP）
+bash scripts/coverage.sh            # 直近の .xcresult からカバレッジ要約（要 xcresultparser）
 pre-commit install                  # commit 前に swift-format / gitleaks / typos を実行
 ```
 
@@ -94,6 +95,11 @@ Xcode 非依存のクロスプラットフォームチェックのため、Claud
 または `.claude/settings.json` の SessionStart フックに登録すれば同じツールを導入できる。
 periphery / xcresultparser / buildServer.json は Xcode 依存のためローカル mac と
 macOS CI 専用。
+
+なお `scripts/lint.sh check` は swift-format に加え、SwiftLint 導入時は
+`.swiftlint.yml`（非 strict・警告は CI を割らない）も実行する。`scripts/verify.sh`
+は `xcbeautify` があれば出力を整形し、test 時に `-enableCodeCoverage YES` を付与する
+（カバレッジ要約は `xcresultparser` 在時のみ表示）。
 
 ---
 

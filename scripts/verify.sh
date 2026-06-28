@@ -91,12 +91,20 @@ fi
 
 echo "Using destination: $DESTINATION_VALUE"
 
+# Pretty-print xcodebuild output when xcbeautify is available; otherwise pass
+# through unchanged so CI (which may not have it) still works. pipefail is set
+# globally above, so a build/test failure still propagates through the pipe.
+BEAUTIFY=(cat)
+if command -v xcbeautify >/dev/null 2>&1; then
+  BEAUTIFY=(xcbeautify)
+fi
+
 run_build() {
   xcodebuild build \
     -project "$PROJECT" \
     -scheme "$SCHEME" \
     -destination "$DESTINATION_VALUE" \
-    -derivedDataPath "$DERIVED_DATA_PATH"
+    -derivedDataPath "$DERIVED_DATA_PATH" | "${BEAUTIFY[@]}"
 }
 
 run_test() {
@@ -104,7 +112,18 @@ run_test() {
     -project "$PROJECT" \
     -scheme "$SCHEME" \
     -destination "$DESTINATION_VALUE" \
-    -derivedDataPath "$DERIVED_DATA_PATH"
+    -derivedDataPath "$DERIVED_DATA_PATH" \
+    -enableCodeCoverage YES | "${BEAUTIFY[@]}"
+}
+
+report_coverage() {
+  # Best-effort coverage summary from the latest .xcresult; never fails the run.
+  command -v xcresultparser >/dev/null 2>&1 || return 0
+  local xcresult
+  xcresult="$(/bin/ls -dt "$DERIVED_DATA_PATH"/Logs/Test/*.xcresult 2>/dev/null | head -1)"
+  [ -n "$xcresult" ] || return 0
+  echo "==> coverage ($xcresult)"
+  xcresultparser -c -o cli "$xcresult" || true
 }
 
 case "$ACTION" in
@@ -113,9 +132,11 @@ case "$ACTION" in
     ;;
   test)
     run_test
+    report_coverage
     ;;
   all)
     run_build
     run_test
+    report_coverage
     ;;
 esac

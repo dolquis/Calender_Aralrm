@@ -1,0 +1,44 @@
+# SwiftLint — complements swift-format (which owns pure formatting).
+# Run via: bash scripts/lint.sh check
+# Rollout: non-strict (findings surface as warnings, do not fail CI). Tighten
+# to --strict in scripts/lint.sh after the flagged smells are triaged.
+included:
+  - Sources
+  - App
+  - Widget
+  - Tests
+
+# Pure-formatting rules are owned by swift-format (.swift-format); disabling
+# them avoids two tools fighting. identifier_name is intentional domain naming.
+disabled_rules:
+  - identifier_name
+  - trailing_comma
+  - opening_brace
+  - closure_parameter_position
+  - void_function_in_ternary
+  - line_length
+
+# Length / complexity thresholds raised above current usage: catch future
+# regressions without flagging today's code. Tune down during cleanup.
+function_body_length:
+  warning: 120
+  error: 400
+type_body_length:
+  warning: 400
+  error: 800
+file_length:
+  warning: 700
+  error: 1200
+cyclomatic_complexity:
+  warning: 20
+  error: 40
+function_parameter_count:
+  warning: 8
+  error: 12
+nesting:
+  type_level: 3
+
+# Real smells kept visible but downgraded to warning so the initial rollout
+# does not fail CI (their default severity is error). Address, then remove.
+force_cast: warning
+force_try: warning
