@@ -25,6 +25,12 @@ fastlane/test_output
 # XcodeGen — keep project.yml; .xcodeproj is regeneratable but committed
 # (do NOT ignore *.xcodeproj here)
 
+# SourceKit-LSP (machine-specific paths; regenerate via scripts/lsp-setup.sh)
+buildServer.json
+
+# lychee link-checker cache
+.lycheecache
+
 # Misc
 *.log
 .env

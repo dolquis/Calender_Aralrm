@@ -1,0 +1,20 @@
+# typos — source & documentation spell checker.
+# CI gates the source dirs; scripts/check-docs.sh also scans docs.
+[files]
+extend-exclude = [
+  "DerivedData/",
+  ".codegraph/",
+  ".serena/",
+  "ShiftAlarm.xcodeproj/",
+  "*.xcstrings",
+  "*.xcassets",
+  "*.pbxproj",
+]
+
+[default]
+locale = "en"
+
+[default.extend-words]
+# Intentional spellings (project name & domain terms) that are not typos.
+calender = "calender"
+aralrm = "aralrm"

@@ -74,6 +74,33 @@ CI は `.github/workflows/ios.yml` が `macos-26` / Xcode 26+ で実行する。
 実機向け P0 確認は `bash scripts/p0-readiness.sh`、実機 build 入口は
 `bash scripts/p0-device-build.sh`。
 
+### 補助的な品質ツール（任意）
+
+ローカルツールは `bash scripts/install-tools.sh`（`Brewfile` を `brew bundle`）で一括導入する。
+
+```sh
+bash scripts/scan-secrets.sh        # gitleaks: secret 混入検査（CI と同じ）
+bash scripts/check-docs.sh          # typos: ソース / ドキュメントの綴り検査
+bash scripts/check-docs.sh --links  # 追加で lychee による外部リンク切れ検査
+bash scripts/periphery.sh           # periphery: 未使用 Swift コード検出（要 Xcode）
+bash scripts/lsp-setup.sh           # buildServer.json 生成（VS Code / SourceKit-LSP）
+bash scripts/coverage.sh            # 直近の .xcresult からカバレッジ要約（要 xcresultparser）
+pre-commit install                  # commit 前に swift-format / gitleaks / typos を実行
+```
+
+CI（`.github/workflows/ios.yml`）の `quality` ジョブ（`ubuntu-latest`）が
+`scripts/scan-secrets.sh`（gitleaks）と `typos`（ソース）を実行する。これらは
+Xcode 非依存のクロスプラットフォームチェックのため、Claude Code on the Web の
+クラウド環境（Ubuntu 24.04）でも、`scripts/cloud-setup.sh` を Web UI の Setup script
+または `.claude/settings.json` の SessionStart フックに登録すれば同じツールを導入できる。
+periphery / xcresultparser / buildServer.json は Xcode 依存のためローカル mac と
+macOS CI 専用。
+
+なお `scripts/lint.sh check` は swift-format に加え、SwiftLint 導入時は
+`.swiftlint.yml`（非 strict・警告は CI を割らない）も実行する。`scripts/verify.sh`
+は `xcbeautify` があれば出力を整形し、test 時に `-enableCodeCoverage YES` を付与する
+（カバレッジ要約は `xcresultparser` 在時のみ表示）。
+
 ---
 
 ## 5. 触ってよい / 触ってはいけないもの

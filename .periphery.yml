@@ -1,0 +1,13 @@
+# Periphery — unused Swift code detection.
+# Run: bash scripts/periphery.sh   (regenerates the project, then scans)
+# macOS + Xcode only: Periphery builds the project to analyze references.
+project: ShiftAlarm.xcodeproj
+# Targets are derived from the scheme (Periphery 3.x has no `targets` key).
+schemes:
+  - ShiftAlarm
+# Keep symbols reachable from the Objective-C runtime (App Intents, WidgetKit,
+# #Preview, EventKit / HealthKit callbacks) from being reported as unused.
+retain_objc_accessible: true
+# This is an app, not a library: skip "redundant public" access-level noise
+# and focus on genuinely unused code.
+disable_redundant_public_analysis: true

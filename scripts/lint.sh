@@ -48,9 +48,21 @@ case "$ACTION" in
   check)
     "${SWIFT_FORMAT[@]}" lint --strict --recursive --parallel "${TARGETS[@]}"
     echo "swift-format: no violations."
+    if command -v swiftlint >/dev/null 2>&1; then
+      # Non-strict rollout: SwiftLint findings surface as warnings without
+      # failing CI yet (config: .swiftlint.yml). Tighten to --strict later.
+      swiftlint lint --quiet
+      echo "swiftlint: check complete (warnings non-blocking)."
+    else
+      echo "swiftlint: not installed; skipped (brew install swiftlint)." >&2
+    fi
     ;;
   fix)
     "${SWIFT_FORMAT[@]}" format --in-place --recursive --parallel "${TARGETS[@]}"
     echo "swift-format: reformatted ${TARGETS[*]}."
+    if command -v swiftlint >/dev/null 2>&1; then
+      swiftlint --fix --quiet || true
+      echo "swiftlint: applied autocorrect."
+    fi
     ;;
 esac
