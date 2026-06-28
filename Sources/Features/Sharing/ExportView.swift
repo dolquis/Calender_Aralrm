@@ -43,6 +43,7 @@ public struct ExportView: View {
     private func prepare() {
         preparing = true
         errorMessage = nil
+        fileURL = nil
         let container = dependencies.modelContainer
         Task {
             do {
@@ -50,6 +51,7 @@ public struct ExportView: View {
                 let url = try ShareExporter.writeTemporaryFile(bundle: bundle)
                 fileURL = url
             } catch {
+                fileURL = nil
                 errorMessage = error.localizedDescription
             }
             preparing = false
