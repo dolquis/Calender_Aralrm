@@ -46,7 +46,7 @@ public struct ExportView: View {
         let container = dependencies.modelContainer
         Task {
             do {
-                let bundle = ShareExporter.snapshot(from: container)
+                let bundle = try ShareExporter.snapshot(from: container)
                 let url = try ShareExporter.writeTemporaryFile(bundle: bundle)
                 fileURL = url
             } catch {
