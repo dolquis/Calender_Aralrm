@@ -79,6 +79,7 @@
 		68FC44DD3A580835F0BA5CEF /* VacationAwareRotation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6622CB9B29CD88A5C371F319 /* VacationAwareRotation.swift */; };
 		6D7BA26244A90C4BC79F61DD /* DynamicIslandViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = C022CC0962033A45DDBB8195 /* DynamicIslandViews.swift */; };
 		6DFCA6A3C644793948543DF4 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D8943DE1A572A76A702F17B2 /* OnboardingView.swift */; };
+		741400E2F183AE23F2DFD3DE /* DayDetailEditorSavePlanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 179DF514F84EF41ACB6AA94F /* DayDetailEditorSavePlanner.swift */; };
 		7772C677C567D25266CDD47C /* RotationEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5A4BEA0B464B11496544190 /* RotationEditorView.swift */; };
 		7960359FE7FCBE4D695D29BA /* SchemaV3.swift in Sources */ = {isa = PBXBuildFile; fileRef = 57F47D5F67892D9AA6A05A22 /* SchemaV3.swift */; };
 		7A58C7870F4FBD5ACF07354C /* DayResolverInputBuilder.swift in Sources */ = {isa = PBXBuildFile; fileRef = E79E459829FCB649F8B069DF /* DayResolverInputBuilder.swift */; };
@@ -104,6 +105,7 @@
 		A8754A160D3BD308928BA96E /* HealthKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 171EE9996E1C3FE247EF5A26 /* HealthKit.framework */; };
 		A9858B3C33AE0D19EFCED879 /* BGRefreshControllerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 793BB747CA26E40B93C6FE2F /* BGRefreshControllerTests.swift */; };
 		AB3300150FD310CC14FEF5D5 /* AppDependencies.swift in Sources */ = {isa = PBXBuildFile; fileRef = 03C968AF8D979FD4E3C856F1 /* AppDependencies.swift */; };
+		AC3ED85DA4FDAF255F060A8E /* DayDetailEditorSavePlannerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D26321DF778E074B048B3EF2 /* DayDetailEditorSavePlannerTests.swift */; };
 		AE5CAB3DF3B1DF69378C3CBF /* SchemaV2.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF1718B66EE8A572AA0D24A7 /* SchemaV2.swift */; };
 		AEB91B55706491AEF917EDEB /* ModelContainer+Shared.swift in Sources */ = {isa = PBXBuildFile; fileRef = 92E60C55AE72C8545FA85312 /* ModelContainer+Shared.swift */; };
 		B06A1264BE7939203BD847AE /* SchemaV4.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC95AB597BB57AF7418EF0DF /* SchemaV4.swift */; };
@@ -217,6 +219,7 @@
 		169F03BD2562EF87D45D75D8 /* SleepWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SleepWindow.swift; sourceTree = "<group>"; };
 		171EE9996E1C3FE247EF5A26 /* HealthKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = HealthKit.framework; path = System/Library/Frameworks/HealthKit.framework; sourceTree = SDKROOT; };
 		1797D91A1016B3E2CEE78A9C /* EventKitHolidayProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventKitHolidayProvider.swift; sourceTree = "<group>"; };
+		179DF514F84EF41ACB6AA94F /* DayDetailEditorSavePlanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DayDetailEditorSavePlanner.swift; sourceTree = "<group>"; };
 		18F14DAB503EF5551F43C60A /* ShiftAlarm.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShiftAlarm.swift; sourceTree = "<group>"; };
 		19AB3E4AB0FEE40CF754C939 /* ShiftAlarmShortcutsProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShiftAlarmShortcutsProvider.swift; sourceTree = "<group>"; };
 		1B55FF9A7AD80C1726DABEA2 /* AlarmSchedulingClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlarmSchedulingClient.swift; sourceTree = "<group>"; };
@@ -326,6 +329,7 @@
 		CC70896375FEE52E7BE86999 /* SchemaV1.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SchemaV1.swift; sourceTree = "<group>"; };
 		D121166BA0AF022566DC9E6D /* AlarmDiagnosticsService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlarmDiagnosticsService.swift; sourceTree = "<group>"; };
 		D214BE2ED9B4C83570153B68 /* DeepLinkAction.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeepLinkAction.swift; sourceTree = "<group>"; };
+		D26321DF778E074B048B3EF2 /* DayDetailEditorSavePlannerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DayDetailEditorSavePlannerTests.swift; sourceTree = "<group>"; };
 		D3E62CA1BDC74B3209009B4A /* VacationPeriod.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VacationPeriod.swift; sourceTree = "<group>"; };
 		D41E08794DF55638993BF943 /* NextAlarmWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NextAlarmWidget.swift; sourceTree = "<group>"; };
 		D576F83E5FD97CB62FABC307 /* GetSleepWindowIntent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GetSleepWindowIntent.swift; sourceTree = "<group>"; };
@@ -681,6 +685,7 @@
 			isa = PBXGroup;
 			children = (
 				43E985E71221AF6697CE65AD /* ChangePreviewTests.swift */,
+				D26321DF778E074B048B3EF2 /* DayDetailEditorSavePlannerTests.swift */,
 				F0FC8D2A94B6B50E7DAE5819 /* DayResolverInputBuilderTests.swift */,
 				0606D6A04A403EED752A5D77 /* DayResolverTests.swift */,
 				03B220A2866CA3CF0D63D6C6 /* RotationExpanderTests.swift */,
@@ -859,6 +864,7 @@
 				85B243772253502C6C97C193 /* CalendarMonthView.swift */,
 				120336887FAA78783C26767B /* CalendarMonthViewModel.swift */,
 				35D13566B54208E503CFBB27 /* DayCellView.swift */,
+				179DF514F84EF41ACB6AA94F /* DayDetailEditorSavePlanner.swift */,
 				B802C79CC0812E19E7EC3657 /* DayDetailEditorView.swift */,
 			);
 			path = Calendar;
@@ -1020,6 +1026,7 @@
 				3F95208ED0C3C184B86A845A /* ChangePreviewSnapshotTests.swift in Sources */,
 				EDB0C6A133F753857C780A5F /* ChangePreviewTests.swift in Sources */,
 				9F203F39564DAECC9F3AD91E /* DayCellViewSnapshotTests.swift in Sources */,
+				AC3ED85DA4FDAF255F060A8E /* DayDetailEditorSavePlannerTests.swift in Sources */,
 				5AA85CFFDCF9BD51C9237456 /* DayResolverInputBuilderTests.swift in Sources */,
 				B14334F8AF073CD6391C6AC0 /* DayResolverTests.swift in Sources */,
 				06EC3C472A5E23E3F3E6325C /* DeepLinkRouterTests.swift in Sources */,
@@ -1070,6 +1077,7 @@
 				59E045412F860A1A96A16407 /* DateRange.swift in Sources */,
 				F1281D14AB5A37E3958AA359 /* DayAssignment.swift in Sources */,
 				BA2FA46E01934413D794D79F /* DayCellView.swift in Sources */,
+				741400E2F183AE23F2DFD3DE /* DayDetailEditorSavePlanner.swift in Sources */,
 				C79C2F1A3422D1B41D2FAAF9 /* DayDetailEditorView.swift in Sources */,
 				E5890B71F1AEB32DB9E764CB /* DayResolver.swift in Sources */,
 				7A58C7870F4FBD5ACF07354C /* DayResolverInputBuilder.swift in Sources */,

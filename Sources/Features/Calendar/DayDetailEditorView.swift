@@ -20,6 +20,8 @@ public struct DayDetailEditorView: View {
     @State private var swapKind: SwapRecord.Kind = .covered
     @State private var swapCounterpartyLabel = ""
     @State private var swapNote = ""
+    @State private var loadedAssignmentDraft: DayAssignmentDraft?
+    @State private var preSwapAssignmentDraft: DayAssignmentDraft?
 
     public init(date: Date) {
         self.date = date
@@ -52,6 +54,19 @@ public struct DayDetailEditorView: View {
         case .covering, .exchange:
             return selectedPresetID != nil
         }
+    }
+
+    private var currentAssignmentDraft: DayAssignmentDraft {
+        let timeComponents =
+            customTimeEnabled
+            ? Calendar.current.dateComponents([.hour, .minute], from: customTime) : nil
+        return DayAssignmentDraft(
+            presetID: selectedPresetID,
+            overrideAlarmHour: timeComponents?.hour,
+            overrideAlarmMinute: timeComponents?.minute,
+            skipAlarm: skipAlarm,
+            note: note
+        )
     }
 
     public var body: some View {
@@ -114,21 +129,18 @@ public struct DayDetailEditorView: View {
             }
             .onAppear(perform: load)
             .onChange(of: swapEnabled) { _, enabled in
-                guard enabled else { return }
-                applySwapDefaults(for: swapKind)
+                if enabled {
+                    preSwapAssignmentDraft = currentAssignmentDraft
+                    applySwapDefaults(for: swapKind)
+                } else {
+                    restorePreSwapAssignmentDraft()
+                }
             }
             .onChange(of: swapKind) { _, kind in
                 guard swapEnabled else { return }
                 applySwapDefaults(for: kind)
             }
         }
-    }
-
-    private func isNonEmpty(
-        preset: ShiftPreset?, timeComponents: (Int, Int)?, skipAlarm: Bool, note: String
-    ) -> Bool {
-        preset != nil || timeComponents != nil || skipAlarm
-            || !note.trimmingCharacters(in: .whitespaces).isEmpty
     }
 
     private var formattedDate: String {
@@ -140,6 +152,8 @@ public struct DayDetailEditorView: View {
 
     private func load() {
         if let assignment = existingAssignment {
+            let draft = DayAssignmentDraft(assignment: assignment)
+            loadedAssignmentDraft = draft
             selectedPresetID = assignment.preset?.id
             skipAlarm = assignment.skipAlarm
             note = assignment.note
@@ -157,54 +171,24 @@ public struct DayDetailEditorView: View {
             swapKind = swap.kind
             swapCounterpartyLabel = swap.counterpartyLabel
             swapNote = swap.note
+            preSwapAssignmentDraft = loadedAssignmentDraft
         }
     }
 
     private func save() {
         guard canSave else { return }
         let day = Calendar.current.startOfDay(for: date)
-        var preset = selectedPresetID.flatMap { id in presets.first { $0.id == id } }
-        var timeComponents: (Int, Int)? =
-            customTimeEnabled
-            ? {
-                let dc = Calendar.current.dateComponents([.hour, .minute], from: customTime)
-                return (dc.hour ?? 0, dc.minute ?? 0)
-            }() : nil
-        var shouldSkipAlarm = skipAlarm
-
-        if swapEnabled {
-            switch swapKind {
-            case .covered:
-                preset = nil
-                timeComponents = nil
-                shouldSkipAlarm = true
-            case .covering, .exchange:
-                shouldSkipAlarm = false
-            }
-        }
-
-        if let assignment = existingAssignment {
-            assignment.preset = preset
-            assignment.skipAlarm = shouldSkipAlarm
-            assignment.note = note
-            assignment.overrideAlarmHour = timeComponents?.0
-            assignment.overrideAlarmMinute = timeComponents?.1
-        } else if isNonEmpty(
-            preset: preset, timeComponents: timeComponents, skipAlarm: shouldSkipAlarm, note: note)
-        {
-            // Only create a new manual assignment when the user actually specified something.
-            // A blank record would take precedence over rotation/holiday rules in DayResolver
-            // and suppress the alarm for that day.
-            let assignment = DayAssignment(
-                date: day,
-                preset: preset,
-                overrideAlarmHour: timeComponents?.0,
-                overrideAlarmMinute: timeComponents?.1,
-                skipAlarm: shouldSkipAlarm,
-                note: note
-            )
-            modelContext.insert(assignment)
-        }
+        applyAssignmentAction(
+            DayDetailEditorSavePlanner.assignmentAction(
+                currentDraft: currentAssignmentDraft,
+                swapEnabled: swapEnabled,
+                swapKind: swapKind,
+                hasExistingAssignment: existingAssignment != nil,
+                existingSwapKind: existingSwapRecord?.kind,
+                loadedAssignmentDraft: loadedAssignmentDraft
+            ),
+            day: day
+        )
         saveSwapRecord(for: day)
         try? modelContext.save()
         Task {
@@ -212,6 +196,36 @@ public struct DayDetailEditorView: View {
             await dependencies.liveActivityController.evaluate()
         }
         dismiss()
+    }
+
+    private func applyAssignmentAction(_ action: DayAssignmentPersistenceAction, day: Date) {
+        switch action {
+        case .none:
+            return
+        case .delete:
+            if let assignment = existingAssignment {
+                modelContext.delete(assignment)
+            }
+        case .upsert(let draft):
+            let preset = draft.presetID.flatMap { id in presets.first { $0.id == id } }
+            if let assignment = existingAssignment {
+                assignment.preset = preset
+                assignment.skipAlarm = draft.skipAlarm
+                assignment.note = draft.note
+                assignment.overrideAlarmHour = draft.overrideAlarmHour
+                assignment.overrideAlarmMinute = draft.overrideAlarmMinute
+            } else {
+                let assignment = DayAssignment(
+                    date: day,
+                    preset: preset,
+                    overrideAlarmHour: draft.overrideAlarmHour,
+                    overrideAlarmMinute: draft.overrideAlarmMinute,
+                    skipAlarm: draft.skipAlarm,
+                    note: draft.note
+                )
+                modelContext.insert(assignment)
+            }
+        }
     }
 
     private func saveSwapRecord(for day: Date) {
@@ -250,6 +264,22 @@ public struct DayDetailEditorView: View {
         case .covering, .exchange:
             skipAlarm = false
         }
+    }
+
+    private func restorePreSwapAssignmentDraft() {
+        guard let draft = preSwapAssignmentDraft else { return }
+        selectedPresetID = draft.presetID
+        if let hour = draft.overrideAlarmHour, let minute = draft.overrideAlarmMinute {
+            customTimeEnabled = true
+            var dc = Calendar.current.dateComponents([.year, .month, .day], from: date)
+            dc.hour = hour
+            dc.minute = minute
+            customTime = Calendar.current.date(from: dc) ?? Date()
+        } else {
+            customTimeEnabled = false
+        }
+        skipAlarm = draft.skipAlarm
+        note = draft.note
     }
 
     private func title(for kind: SwapRecord.Kind) -> LocalizedStringKey {
