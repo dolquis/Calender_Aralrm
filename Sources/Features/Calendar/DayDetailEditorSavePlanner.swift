@@ -39,7 +39,6 @@ struct DayAssignmentDraft: Equatable, Sendable {
 
 enum DayAssignmentPersistenceAction: Equatable {
     case none
-    case delete
     case upsert(DayAssignmentDraft)
 }
 
@@ -48,17 +47,8 @@ enum DayDetailEditorSavePlanner {
         currentDraft: DayAssignmentDraft,
         swapEnabled: Bool,
         swapKind: SwapRecord.Kind,
-        hasExistingAssignment: Bool,
-        existingSwapKind: SwapRecord.Kind?,
-        loadedAssignmentDraft: DayAssignmentDraft?
+        hasExistingAssignment: Bool
     ) -> DayAssignmentPersistenceAction {
-        if !swapEnabled,
-            existingSwapKind != nil,
-            loadedAssignmentDraft.map({ $0 == currentDraft }) == true
-        {
-            return hasExistingAssignment ? .delete : .none
-        }
-
         let resolvedDraft = resolvedAssignmentDraft(
             from: currentDraft,
             swapEnabled: swapEnabled,

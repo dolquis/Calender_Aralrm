@@ -20,7 +20,6 @@ public struct DayDetailEditorView: View {
     @State private var swapKind: SwapRecord.Kind = .covered
     @State private var swapCounterpartyLabel = ""
     @State private var swapNote = ""
-    @State private var loadedAssignmentDraft: DayAssignmentDraft?
     @State private var preSwapAssignmentDraft: DayAssignmentDraft?
 
     public init(date: Date) {
@@ -152,8 +151,6 @@ public struct DayDetailEditorView: View {
 
     private func load() {
         if let assignment = existingAssignment {
-            let draft = DayAssignmentDraft(assignment: assignment)
-            loadedAssignmentDraft = draft
             selectedPresetID = assignment.preset?.id
             skipAlarm = assignment.skipAlarm
             note = assignment.note
@@ -171,7 +168,7 @@ public struct DayDetailEditorView: View {
             swapKind = swap.kind
             swapCounterpartyLabel = swap.counterpartyLabel
             swapNote = swap.note
-            preSwapAssignmentDraft = loadedAssignmentDraft
+            preSwapAssignmentDraft = existingAssignment.map(DayAssignmentDraft.init(assignment:))
         }
     }
 
@@ -183,9 +180,7 @@ public struct DayDetailEditorView: View {
                 currentDraft: currentAssignmentDraft,
                 swapEnabled: swapEnabled,
                 swapKind: swapKind,
-                hasExistingAssignment: existingAssignment != nil,
-                existingSwapKind: existingSwapRecord?.kind,
-                loadedAssignmentDraft: loadedAssignmentDraft
+                hasExistingAssignment: existingAssignment != nil
             ),
             day: day
         )
@@ -202,10 +197,6 @@ public struct DayDetailEditorView: View {
         switch action {
         case .none:
             return
-        case .delete:
-            if let assignment = existingAssignment {
-                modelContext.delete(assignment)
-            }
         case .upsert(let draft):
             let preset = draft.presetID.flatMap { id in presets.first { $0.id == id } }
             if let assignment = existingAssignment {

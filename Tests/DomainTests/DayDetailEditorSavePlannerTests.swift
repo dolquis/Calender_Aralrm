@@ -19,9 +19,7 @@ struct DayDetailEditorSavePlannerTests {
             currentDraft: draft,
             swapEnabled: true,
             swapKind: .covered,
-            hasExistingAssignment: false,
-            existingSwapKind: nil,
-            loadedAssignmentDraft: nil
+            hasExistingAssignment: false
         )
 
         #expect(
@@ -49,9 +47,7 @@ struct DayDetailEditorSavePlannerTests {
             currentDraft: draft,
             swapEnabled: true,
             swapKind: .covering,
-            hasExistingAssignment: false,
-            existingSwapKind: nil,
-            loadedAssignmentDraft: nil
+            hasExistingAssignment: false
         )
 
         #expect(
@@ -65,7 +61,7 @@ struct DayDetailEditorSavePlannerTests {
     }
 
     @Test
-    func testDisablingExistingSwapDeletesUnchangedLoadedAssignment() {
+    func testDisablingExistingSwapKeepsUnchangedLoadedAssignment() {
         let presetID = UUID()
         let loadedDraft = DayAssignmentDraft(
             presetID: presetID,
@@ -77,22 +73,15 @@ struct DayDetailEditorSavePlannerTests {
             currentDraft: loadedDraft,
             swapEnabled: false,
             swapKind: .covering,
-            hasExistingAssignment: true,
-            existingSwapKind: .covering,
-            loadedAssignmentDraft: loadedDraft
+            hasExistingAssignment: true
         )
 
-        #expect(action == .delete)
+        #expect(action == .upsert(loadedDraft))
     }
 
     @Test
     func testDisablingExistingSwapKeepsUserEditedManualAssignment() {
         let presetID = UUID()
-        let loadedDraft = DayAssignmentDraft(
-            presetID: presetID,
-            skipAlarm: false,
-            note: ""
-        )
         let editedDraft = DayAssignmentDraft(
             presetID: presetID,
             skipAlarm: false,
@@ -103,9 +92,7 @@ struct DayDetailEditorSavePlannerTests {
             currentDraft: editedDraft,
             swapEnabled: false,
             swapKind: .covering,
-            hasExistingAssignment: true,
-            existingSwapKind: .covering,
-            loadedAssignmentDraft: loadedDraft
+            hasExistingAssignment: true
         )
 
         #expect(action == .upsert(editedDraft))
