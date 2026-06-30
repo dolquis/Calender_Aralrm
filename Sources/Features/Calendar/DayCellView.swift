@@ -7,6 +7,7 @@ public struct DayCellView: View {
     public let presetColorHex: String?
     public let alarmTime: DateComponents?
     public let holidayLabel: String?
+    public let hasSwapRecord: Bool
 
     @ScaledMetric(relativeTo: .callout) private var dotSize: CGFloat = 8
 
@@ -16,7 +17,8 @@ public struct DayCellView: View {
         presetName: String?,
         presetColorHex: String?,
         alarmTime: DateComponents?,
-        holidayLabel: String?
+        holidayLabel: String?,
+        hasSwapRecord: Bool = false
     ) {
         self.date = date
         self.inCurrentMonth = inCurrentMonth
@@ -24,6 +26,7 @@ public struct DayCellView: View {
         self.presetColorHex = presetColorHex
         self.alarmTime = alarmTime
         self.holidayLabel = holidayLabel
+        self.hasSwapRecord = hasSwapRecord
     }
 
     private var dayString: String {
@@ -46,6 +49,7 @@ public struct DayCellView: View {
             parts.append(String(localized: "a11y.cell.alarm_at") + " " + t)
         }
         if let holidayLabel { parts.append(holidayLabel) }
+        if hasSwapRecord { parts.append(String(localized: "a11y.cell.swap_recorded")) }
         return parts.joined(separator: ", ")
     }
 
@@ -68,24 +72,32 @@ public struct DayCellView: View {
                     .frame(width: dotSize, height: dotSize)
                     .accessibilityHidden(true)
             }
-            if let timeString {
-                Text(timeString)
-                    .font(.caption2.monospacedDigit())
-                    .foregroundStyle(.secondary)
-                    .minimumScaleFactor(0.6)
-                    .lineLimit(1)
-                    .accessibilityHidden(true)
-            } else if holidayLabel != nil {
-                Text("calendar.holiday_short")
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
-                    .minimumScaleFactor(0.6)
-                    .lineLimit(1)
-                    .accessibilityHidden(true)
-            } else {
-                Text(" ")
-                    .font(.caption2)
-                    .accessibilityHidden(true)
+            HStack(spacing: 2) {
+                if hasSwapRecord {
+                    Image(systemName: "arrow.left.arrow.right")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                        .accessibilityHidden(true)
+                }
+                if let timeString {
+                    Text(timeString)
+                        .font(.caption2.monospacedDigit())
+                        .foregroundStyle(.secondary)
+                        .minimumScaleFactor(0.6)
+                        .lineLimit(1)
+                        .accessibilityHidden(true)
+                } else if holidayLabel != nil {
+                    Text("calendar.holiday_short")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                        .minimumScaleFactor(0.6)
+                        .lineLimit(1)
+                        .accessibilityHidden(true)
+                } else if !hasSwapRecord {
+                    Text(" ")
+                        .font(.caption2)
+                        .accessibilityHidden(true)
+                }
             }
         }
         .frame(maxWidth: .infinity, minHeight: 56)

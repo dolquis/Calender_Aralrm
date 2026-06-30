@@ -10,6 +10,8 @@ public struct CalendarMonthView: View {
     @Query private var rotations: [RotationPattern]
     @Query(sort: [SortDescriptor(\VacationPeriod.startDate)])
     private var vacations: [VacationPeriod]
+    @Query(sort: [SortDescriptor(\SwapRecord.date)])
+    private var swapRecords: [SwapRecord]
     @State private var viewModel = CalendarMonthViewModel()
     @State private var editingDate: Date?
 
@@ -22,6 +24,7 @@ public struct CalendarMonthView: View {
             holidays: holidays,
             rotations: rotations,
             vacations: vacations,
+            swapRecords: swapRecords,
             calendar: viewModel.calendar
         )
     }
@@ -122,7 +125,8 @@ public struct CalendarMonthView: View {
             presetName: preset?.name,
             presetColorHex: preset?.colorHex,
             alarmTime: resolved.fireTime,
-            holidayLabel: holiday?.label
+            holidayLabel: holiday?.label,
+            hasSwapRecord: !(resolverInput.swapRecords[normalized]?.isEmpty ?? true)
         )
     }
 }

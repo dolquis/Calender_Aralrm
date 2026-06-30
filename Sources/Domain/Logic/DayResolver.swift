@@ -40,6 +40,7 @@ public struct DayResolverInput {
     public let rotations: [RotationPatternSnapshot]
     public let presets: [UUID: ShiftPresetSnapshot]
     public let vacations: [VacationPeriodSnapshot]
+    public let swapRecords: [Date: [SwapRecordSnapshot]]
     public let calendar: Calendar
 
     public init(
@@ -48,6 +49,7 @@ public struct DayResolverInput {
         rotations: [RotationPatternSnapshot],
         presets: [UUID: ShiftPresetSnapshot],
         vacations: [VacationPeriodSnapshot] = [],
+        swapRecords: [Date: [SwapRecordSnapshot]] = [:],
         calendar: Calendar = .current
     ) {
         self.manualAssignments = manualAssignments
@@ -56,6 +58,9 @@ public struct DayResolverInput {
         self.presets = presets
         self.calendar = calendar
         self.vacations = VacationAwareRotation.normalizedVacations(vacations, calendar: calendar)
+        self.swapRecords = swapRecords.reduce(into: [:]) { acc, element in
+            acc[calendar.startOfDay(for: element.key)] = element.value
+        }
     }
 }
 
@@ -165,6 +170,31 @@ public struct VacationPeriodSnapshot: Sendable, Equatable {
         self.startDate = startDate
         self.endDate = endDate
         self.label = label
+    }
+}
+
+public struct SwapRecordSnapshot: Sendable, Equatable {
+    public let id: UUID
+    public let date: Date
+    public let kind: SwapRecord.Kind
+    public let counterpartyLabel: String
+    public let note: String
+    public let createdAt: Date
+
+    public init(
+        id: UUID,
+        date: Date,
+        kind: SwapRecord.Kind,
+        counterpartyLabel: String,
+        note: String,
+        createdAt: Date
+    ) {
+        self.id = id
+        self.date = date
+        self.kind = kind
+        self.counterpartyLabel = counterpartyLabel
+        self.note = note
+        self.createdAt = createdAt
     }
 }
 

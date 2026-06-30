@@ -138,6 +138,8 @@ readiness script が意図的に失敗します。device build script は同じ 
 - **アラーム診断画面** — 設定から次回アラームが実際に鳴る状態かを確認し、AlarmKit 権限、
   scheduler 同期、App Group、BG refresh、Live Activity、HealthKit の状態と復旧アクションを
   表示する。
+- **シフト交代記録** — 同僚に代わってもらう日 / 代わって出勤する日 / 勤務交換を記録し、
+  手動割当の更新を通じて AlarmKit のスケジュールを正しく保つ。
 
 設計済み（未実装）:
 

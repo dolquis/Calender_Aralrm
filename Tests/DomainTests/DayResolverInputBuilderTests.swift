@@ -50,6 +50,31 @@ struct DayResolverInputBuilderTests {
         #expect(input.manualAssignments.count == 1)
         #expect(input.manualAssignments[day] != nil)
     }
+
+    @Test
+    func testSwapRecordsKeyedByStartOfDay() throws {
+        let container = SharedPersistence.makeContainer(inMemory: true)
+        let context = ModelContext(container)
+        let day = calendar.startOfDay(for: .now)
+        let timestamp = calendar.date(byAdding: .hour, value: 12, to: day)!
+        context.insert(
+            SwapRecord(
+                date: timestamp,
+                kind: .covered,
+                counterpartyLabel: "A",
+                note: "covered",
+                calendar: calendar
+            ))
+        try context.save()
+
+        let input = DayResolverInputBuilder.make(context: context, calendar: calendar)
+        let snapshots = try #require(input.swapRecords[day])
+        #expect(snapshots.count == 1)
+        #expect(snapshots.first?.kind == .covered)
+        #expect(snapshots.first?.counterpartyLabel == "A")
+        #expect(snapshots.first?.note == "covered")
+    }
+
     @Test
     func testInputMirrorsModelLayer() throws {
         let container = SharedPersistence.makeContainer(inMemory: true)
