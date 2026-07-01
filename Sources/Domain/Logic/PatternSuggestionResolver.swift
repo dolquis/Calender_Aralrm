@@ -21,7 +21,7 @@ public struct PatternSuggestionResolver: Sendable {
 
     public init(
         detector: ShiftPatternDetector = ShiftPatternDetector(),
-        driftThreshold: Double = 0.15
+        driftThreshold: Double = AppSettings.defaultPatternDriftThreshold
     ) {
         self.detector = detector
         self.driftThreshold = driftThreshold

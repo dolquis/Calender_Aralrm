@@ -594,7 +594,13 @@ struct ShiftPatternDetectorTests {
 
     @Test
     func testAppSettingsDefaultDriftThresholdIsFifteenPercent() {
-        #expect(abs(AppSettings().effectivePatternDriftThreshold - 0.15) <= 0.0001)
+        #expect(abs(AppSettings.defaultPatternDriftThreshold - 0.15) <= 0.0001)
+        #expect(
+            abs(
+                AppSettings().effectivePatternDriftThreshold
+                    - AppSettings.defaultPatternDriftThreshold
+            ) <= 0.0001
+        )
     }
 
     // MARK: - A1 Drift detection

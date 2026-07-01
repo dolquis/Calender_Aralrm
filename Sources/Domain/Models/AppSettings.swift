@@ -23,8 +23,10 @@ extension SchemaV4 {
         /// Human-readable scheduler result. Structured diagnostics are deferred to P3-8.
         public var lastAlarmSchedulerResultRaw: String?
 
+        public static let defaultPatternDriftThreshold = 0.15
+
         public var effectivePatternDriftThreshold: Double {
-            patternDriftThreshold ?? 0.15
+            patternDriftThreshold ?? Self.defaultPatternDriftThreshold
         }
 
         public init(
@@ -36,7 +38,7 @@ extension SchemaV4 {
             hasOnboarded: Bool = false,
             patternSuggestionSnoozedUntil: Date? = nil,
             patternSuggestionSnoozedFingerprint: String? = nil,
-            patternDriftThreshold: Double = 0.15,
+            patternDriftThreshold: Double = AppSettings.defaultPatternDriftThreshold,
             lastAlarmSchedulerRunAt: Date? = nil,
             lastAlarmSchedulerResultRaw: String? = nil
         ) {

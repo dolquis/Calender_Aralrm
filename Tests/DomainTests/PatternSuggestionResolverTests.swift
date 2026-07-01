@@ -76,7 +76,9 @@ struct PatternSuggestionResolverTests {
         )
     }
 
-    func resolver(threshold: Double = 0.15) -> PatternSuggestionResolver {
+    func resolver(
+        threshold: Double = AppSettings.defaultPatternDriftThreshold
+    ) -> PatternSuggestionResolver {
         PatternSuggestionResolver(driftThreshold: threshold)
     }
 

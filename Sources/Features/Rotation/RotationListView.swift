@@ -75,7 +75,8 @@ public struct RotationListView: View {
         )
         presetSnapshots = input.presets
         let resolver = PatternSuggestionResolver(
-            driftThreshold: settings?.effectivePatternDriftThreshold ?? 0.15
+            driftThreshold: settings?.effectivePatternDriftThreshold
+                ?? AppSettings.defaultPatternDriftThreshold
         )
         suggestion = resolver.resolve(
             input: input,
