@@ -387,6 +387,7 @@ struct ShiftPatternDetectorTests {
         let r2 = detector.detect(
             manualAssignments: a, presets: makePresets(), today: Self.today, calendar: calendar)
         #expect(r1?.fingerprint == r2?.fingerprint)
+        #expect(r1?.fingerprint.hasPrefix("v1:") == true)
         #expect(r1?.fingerprint.isEmpty == false)
     }
 

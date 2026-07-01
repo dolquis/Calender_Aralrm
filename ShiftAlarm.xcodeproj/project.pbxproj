@@ -19,6 +19,7 @@
 		171C6BED9FDE00AF5D23F313 /* NextAlarmWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = D41E08794DF55638993BF943 /* NextAlarmWidget.swift */; };
 		1AA60F370276D3F3DDD0858C /* SnapshotTesting in Frameworks */ = {isa = PBXBuildFile; productRef = 211E6AD0D1FC41D4BA961064 /* SnapshotTesting */; };
 		1AF0CB961721667FB6A16D1F /* ShiftPatternDetectorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 481125C64907856732CF7C61 /* ShiftPatternDetectorTests.swift */; };
+		1B8439D8E8DD04FD234F5F75 /* PatternSuggestionResolverTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7B8856DC0C008DA75C75C3BC /* PatternSuggestionResolverTests.swift */; };
 		1BE23D5E8DB38367593F8938 /* SchemaV2Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = 40CFE6FF128FE69B459B29F8 /* SchemaV2Models.swift */; };
 		1D91354AF5A61F6AB8A2BA34 /* AlarmAuthorization.swift in Sources */ = {isa = PBXBuildFile; fileRef = 86AC780F46CD0EFCA4DF5AEF /* AlarmAuthorization.swift */; };
 		1F2155E5C2B3F8A7BD1AEC75 /* SwapRecordTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA592FA67FE8C4E1FF02DC95 /* SwapRecordTests.swift */; };
@@ -50,6 +51,7 @@
 		47BCB8CE39BFD3E8D6B877CF /* NextAlarmTimelineProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 625E7CC86536529ACA657B37 /* NextAlarmTimelineProvider.swift */; };
 		47C3348EA3730101C94FDF73 /* ShiftBundleValidatorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 67263117617C1CDCCAB3C087 /* ShiftBundleValidatorTests.swift */; };
 		48D9A4D6A5B89234DCE0AA1D /* AlarmSchedulerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44A558A859D64ED35D3CDBDC /* AlarmSchedulerTests.swift */; };
+		4A9A95C77F7D121DA5449491 /* PatternSuggestionResolver.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6952B27C829FCA67B2B9E118 /* PatternSuggestionResolver.swift */; };
 		4AF4B70277A466A66A7BB27C /* PresetEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C225FB49C8AC78F1CFE806C /* PresetEditorView.swift */; };
 		4BED736D108F38EE3C7339C8 /* ShiftPatternDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0BD8459A156DE552C6D27A01 /* ShiftPatternDetector.swift */; };
 		4D5ACDDB0532537788D068D1 /* SchemaV2Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = 40CFE6FF128FE69B459B29F8 /* SchemaV2Models.swift */; };
@@ -134,6 +136,7 @@
 		CAC0B300A91642D7424D1DD4 /* CalendarMonthViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 120336887FAA78783C26767B /* CalendarMonthViewModel.swift */; };
 		CC7B9E8BF96EBFE8C66E7E66 /* AlarmSchedulingClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B55FF9A7AD80C1726DABEA2 /* AlarmSchedulingClient.swift */; };
 		D09D65AE13BF991F1CC95C77 /* AppSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 25EF6E612249CDD90B0DF266 /* AppSettings.swift */; };
+		D17565D7E0CDDE016B08DA91 /* PatternSuggestionResolver.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6952B27C829FCA67B2B9E118 /* PatternSuggestionResolver.swift */; };
 		D277C5E9D8EF1C8087E347ED /* ExportView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A6B508E593CCDB0EE71C16C /* ExportView.swift */; };
 		D2A077B25676D94DBA3AC3B0 /* SwapRecord.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13111C921E7306A09AE2FE67 /* SwapRecord.swift */; };
 		D3905621E207B592F8A6FCAF /* ShareImporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 160C6B232ACAFA66D4BF9A70 /* ShareImporter.swift */; };
@@ -269,6 +272,7 @@
 		67263117617C1CDCCAB3C087 /* ShiftBundleValidatorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShiftBundleValidatorTests.swift; sourceTree = "<group>"; };
 		673C606ED6BA23FE6B6938A2 /* ShiftAlarm.store */ = {isa = PBXFileReference; path = ShiftAlarm.store; sourceTree = "<group>"; };
 		6763AC7FC5665AA016E7B3F1 /* cloud-setup.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = "cloud-setup.sh"; sourceTree = "<group>"; };
+		6952B27C829FCA67B2B9E118 /* PatternSuggestionResolver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PatternSuggestionResolver.swift; sourceTree = "<group>"; };
 		6A15CFD2D5D45A1C0701F7D3 /* EventKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = EventKit.framework; path = System/Library/Frameworks/EventKit.framework; sourceTree = SDKROOT; };
 		6FED4227C112BBB2ED2E01C3 /* AppIntents.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppIntents.framework; path = System/Library/Frameworks/AppIntents.framework; sourceTree = SDKROOT; };
 		7310BE2E2465D1FB0C936204 /* PatternSuggestionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PatternSuggestionView.swift; sourceTree = "<group>"; };
@@ -279,6 +283,7 @@
 		793BB747CA26E40B93C6FE2F /* BGRefreshControllerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BGRefreshControllerTests.swift; sourceTree = "<group>"; };
 		79761B901134C68B19CCC864 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		7B386C1771070A3C7393DAC5 /* ImportPreviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImportPreviewView.swift; sourceTree = "<group>"; };
+		7B8856DC0C008DA75C75C3BC /* PatternSuggestionResolverTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PatternSuggestionResolverTests.swift; sourceTree = "<group>"; };
 		7E1ABFDF04BF0349708FA790 /* HolidayOverride.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HolidayOverride.swift; sourceTree = "<group>"; };
 		81391A3DDB291E81E864ABD5 /* AppRuntimeConfiguration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppRuntimeConfiguration.swift; sourceTree = "<group>"; };
 		85B243772253502C6C97C193 /* CalendarMonthView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarMonthView.swift; sourceTree = "<group>"; };
@@ -488,6 +493,7 @@
 				8BE434E979A31ACF1C177CA4 /* DateRange.swift */,
 				35017C9D5FB36DA39CD9EC30 /* DayResolver.swift */,
 				E79E459829FCB649F8B069DF /* DayResolverInputBuilder.swift */,
+				6952B27C829FCA67B2B9E118 /* PatternSuggestionResolver.swift */,
 				B0DE13B9D3287B1416F5A8E7 /* RotationExpander.swift */,
 				0BD8459A156DE552C6D27A01 /* ShiftPatternDetector.swift */,
 				55223407E0767E40503E1B8F /* SleepWindowResolver.swift */,
@@ -688,6 +694,7 @@
 				D26321DF778E074B048B3EF2 /* DayDetailEditorSavePlannerTests.swift */,
 				F0FC8D2A94B6B50E7DAE5819 /* DayResolverInputBuilderTests.swift */,
 				0606D6A04A403EED752A5D77 /* DayResolverTests.swift */,
+				7B8856DC0C008DA75C75C3BC /* PatternSuggestionResolverTests.swift */,
 				03B220A2866CA3CF0D63D6C6 /* RotationExpanderTests.swift */,
 				0B5D48CC86C2125679C92B3B /* ShiftBundleCodecTests.swift */,
 				481125C64907856732CF7C61 /* ShiftPatternDetectorTests.swift */,
@@ -1034,6 +1041,7 @@
 				67F24FB99340A320B99A1BAE /* ICSExportDateRangeTests.swift in Sources */,
 				4DFF01B7820780E95870D469 /* ICSExporterTests.swift in Sources */,
 				561A1C34E5122F321A7FE147 /* ICSTestParser.swift in Sources */,
+				1B8439D8E8DD04FD234F5F75 /* PatternSuggestionResolverTests.swift in Sources */,
 				D4CDC0B8C3557D54B63419A4 /* RotationExpanderTests.swift in Sources */,
 				7CD2B27ABC43A0ACE93650EA /* SchemaV3ToV4MigrationTests.swift in Sources */,
 				052C653A224A406C2EB6A76B /* SchemaV4ToV5MigrationTests.swift in Sources */,
@@ -1097,6 +1105,7 @@
 				87333F173A0E4CD698C30452 /* MigrationPlan.swift in Sources */,
 				AEB91B55706491AEF917EDEB /* ModelContainer+Shared.swift in Sources */,
 				6DFCA6A3C644793948543DF4 /* OnboardingView.swift in Sources */,
+				D17565D7E0CDDE016B08DA91 /* PatternSuggestionResolver.swift in Sources */,
 				FED03603887DF55C4CEF2D6B /* PatternSuggestionView.swift in Sources */,
 				EA0816E558BA0EE98B14EE8E /* PermissionStatusView.swift in Sources */,
 				4AF4B70277A466A66A7BB27C /* PresetEditorView.swift in Sources */,
@@ -1161,6 +1170,7 @@
 				47BCB8CE39BFD3E8D6B877CF /* NextAlarmTimelineProvider.swift in Sources */,
 				171C6BED9FDE00AF5D23F313 /* NextAlarmWidget.swift in Sources */,
 				09AE8637AA7A1550C68CCF21 /* NextAlarmWidgetView.swift in Sources */,
+				4A9A95C77F7D121DA5449491 /* PatternSuggestionResolver.swift in Sources */,
 				46045A6FA1E4545493700D67 /* RotationExpander.swift in Sources */,
 				3D9AD07FA135279F069A95B7 /* RotationPattern.swift in Sources */,
 				348D0734B840F997B7935B34 /* SchemaV1.swift in Sources */,
