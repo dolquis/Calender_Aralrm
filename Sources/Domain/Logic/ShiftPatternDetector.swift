@@ -33,7 +33,7 @@ public struct ShiftPatternDetector: Sendable {
         public let slots: [UUID?]
         public let confidence: Double
         public let observedDays: Int
-        /// SHA-256 hex of "\(cycleLength)|\(slots)" — used for snooze matching.
+        /// Versioned SHA-256 hex of "\(cycleLength)|\(slots)" — used for snooze matching.
         public let fingerprint: String
 
         public init(
@@ -327,7 +327,7 @@ public struct ShiftPatternDetector: Sendable {
     private func fingerprint(cycleLength: Int, slots: [UUID?]) -> String {
         let raw = "\(cycleLength)|\(slots.map { $0?.uuidString ?? "nil" }.joined(separator: ","))"
         let hash = SHA256.hash(data: Data(raw.utf8))
-        return hash.compactMap { String(format: "%02x", $0) }.joined()
+        return "v1:" + hash.compactMap { String(format: "%02x", $0) }.joined()
     }
 
     private func patternDrivesDay(

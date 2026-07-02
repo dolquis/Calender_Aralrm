@@ -387,6 +387,7 @@ struct ShiftPatternDetectorTests {
         let r2 = detector.detect(
             manualAssignments: a, presets: makePresets(), today: Self.today, calendar: calendar)
         #expect(r1?.fingerprint == r2?.fingerprint)
+        #expect(r1?.fingerprint.hasPrefix("v1:") == true)
         #expect(r1?.fingerprint.isEmpty == false)
     }
 
@@ -593,7 +594,13 @@ struct ShiftPatternDetectorTests {
 
     @Test
     func testAppSettingsDefaultDriftThresholdIsFifteenPercent() {
-        #expect(abs(AppSettings().effectivePatternDriftThreshold - 0.15) <= 0.0001)
+        #expect(abs(AppSettings.defaultPatternDriftThreshold - 0.15) <= 0.0001)
+        #expect(
+            abs(
+                AppSettings().effectivePatternDriftThreshold
+                    - AppSettings.defaultPatternDriftThreshold
+            ) <= 0.0001
+        )
     }
 
     // MARK: - A1 Drift detection
