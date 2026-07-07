@@ -43,7 +43,7 @@ bash scripts/verify.sh test
 
 - `ShiftAlarm.xcodeproj` を **直接編集しない**。`project.yml` を編集して `regen.sh`。
 - `project.yml` を編集したら必ず `verify.sh` を回す（ビルド成功・通常実行の Swift Testing 175 件パスを確認）。
-- Snapshot テスト 6 件は既定でスキップ。動かしたい場合は `SNAPSHOT_TESTING_ENABLED=1`。
+- Snapshot テスト 8 件は既定でスキップ。動かしたい場合は `SNAPSHOT_TESTING_ENABLED=1`。
 - XcodeBuildMCP を入れている場合でも、CI と乖離しないよう `scripts/verify.sh` を一次手段とする。
 
 ## やってはいけない
