@@ -11,8 +11,6 @@ public struct DayCellView: View {
     public let hasSwapRecord: Bool
     public let calendar: Calendar
 
-    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
-
     public init(
         date: Date,
         inCurrentMonth: Bool,
@@ -58,8 +56,20 @@ public struct DayCellView: View {
         return AnyShapeStyle(.primary)
     }
 
-    private var showsCompactDetails: Bool {
-        !dynamicTypeSize.isAccessibilitySize
+    @ViewBuilder private var dayNumberText: some View {
+        Text(dayString)
+            .font(.callout.monospacedDigit().weight(isToday ? .bold : .regular))
+            .foregroundStyle(dayNumberStyle)
+            .minimumScaleFactor(0.7)
+            .lineLimit(1)
+            .accessibilityHidden(true)
+    }
+
+    @ViewBuilder private var holidayBadge: some View {
+        if holidayLabel != nil {
+            StatusPill("calendar.holiday_short", tint: .red)
+                .accessibilityHidden(true)
+        }
     }
 
     private var accessibilityDescription: String {
@@ -78,16 +88,17 @@ public struct DayCellView: View {
 
     public var body: some View {
         VStack(spacing: 2) {
-            HStack(spacing: 2) {
-                Text(dayString)
-                    .font(.callout.monospacedDigit().weight(isToday ? .bold : .regular))
-                    .foregroundStyle(dayNumberStyle)
-                    .minimumScaleFactor(0.7)
-                    .lineLimit(1)
-                    .accessibilityHidden(true)
-                if holidayLabel != nil, showsCompactDetails {
-                    StatusPill("calendar.holiday_short", tint: .red)
-                        .accessibilityHidden(true)
+            // Day number and holiday badge sit side by side when there is
+            // room, and stack vertically at large Dynamic Type sizes so the
+            // badge is never dropped just because it no longer fits on one line.
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: 2) {
+                    dayNumberText
+                    holidayBadge
+                }
+                VStack(spacing: 2) {
+                    dayNumberText
+                    holidayBadge
                 }
             }
             PresetColorDot(colorHex: presetColorHex)
@@ -98,7 +109,7 @@ public struct DayCellView: View {
                         .foregroundStyle(.secondary)
                         .accessibilityHidden(true)
                 }
-                if let timeString, showsCompactDetails {
+                if let timeString {
                     Text(timeString)
                         .font(.caption2.monospacedDigit())
                         .foregroundStyle(.secondary)

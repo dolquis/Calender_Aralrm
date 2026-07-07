@@ -18,7 +18,6 @@ public struct OnboardingView: View {
         }
         .tabViewStyle(.page(indexDisplayMode: .always))
         .indexViewStyle(.page(backgroundDisplayMode: .always))
-        .ignoresSafeArea(edges: .bottom)
     }
 
     private var isPermissionDenied: Bool {
@@ -27,8 +26,7 @@ public struct OnboardingView: View {
 
     @ViewBuilder
     private var welcomePage: some View {
-        VStack(spacing: 24) {
-            Spacer()
+        pageScaffold {
             Image(systemName: "alarm.waves.left.and.right.fill")
                 .font(.system(size: 80))
                 .foregroundStyle(.tint)
@@ -39,22 +37,18 @@ public struct OnboardingView: View {
                 .font(.body)
                 .multilineTextAlignment(.center)
                 .foregroundStyle(.secondary)
-                .padding(.horizontal)
-            Spacer()
+        } cta: {
             Button("onboarding.next") {
                 withAnimation { page = 1 }
             }
             .buttonStyle(.borderedProminent)
             .controlSize(.large)
-            .padding(.bottom, 60)
         }
-        .padding(.horizontal)
     }
 
     @ViewBuilder
     private var permissionPage: some View {
-        VStack(spacing: 24) {
-            Spacer()
+        pageScaffold {
             Image(systemName: "bell.badge.fill")
                 .font(.system(size: 80))
                 .foregroundStyle(.tint)
@@ -65,21 +59,14 @@ public struct OnboardingView: View {
                 .font(.body)
                 .multilineTextAlignment(.center)
                 .foregroundStyle(.secondary)
-                .padding(.horizontal)
             VStack(alignment: .leading, spacing: 12) {
                 bulletRow("onboarding.permission_point_silent", systemImage: "moon.fill")
                 bulletRow("onboarding.permission_point_lockscreen", systemImage: "lock.iphone")
                 bulletRow("onboarding.permission_point_revocable", systemImage: "gearshape")
             }
-            .padding(.horizontal)
-            Spacer()
+        } cta: {
             Button {
-                isRequestingPermission = true
-                Task {
-                    await dependencies.alarmAuthorization.request()
-                    isRequestingPermission = false
-                    withAnimation { page = 2 }
-                }
+                requestPermission()
             } label: {
                 if isRequestingPermission {
                     ProgressView().frame(maxWidth: .infinity)
@@ -95,35 +82,26 @@ public struct OnboardingView: View {
                 withAnimation { page = 2 }
             }
             .foregroundStyle(.secondary)
-            .padding(.bottom, 60)
         }
-        .padding(.horizontal)
     }
 
     @ViewBuilder
     private var readyPage: some View {
-        VStack(spacing: 24) {
-            Spacer()
+        pageScaffold {
             Image(
                 systemName: isPermissionDenied
                     ? "exclamationmark.triangle.fill" : "checkmark.seal.fill"
             )
             .font(.system(size: 80))
             .foregroundStyle(isPermissionDenied ? Color.orange : Color.green)
-            Text("onboarding.ready_title")
+            Text(isPermissionDenied ? "onboarding.denied_title" : "onboarding.ready_title")
                 .font(.largeTitle.bold())
                 .multilineTextAlignment(.center)
-            Text("onboarding.ready_subtitle")
+            Text(isPermissionDenied ? "onboarding.denied_hint" : "onboarding.ready_subtitle")
                 .font(.body)
                 .multilineTextAlignment(.center)
                 .foregroundStyle(.secondary)
-                .padding(.horizontal)
             if isPermissionDenied {
-                Text("onboarding.denied_hint")
-                    .font(.subheadline)
-                    .multilineTextAlignment(.center)
-                    .foregroundStyle(.secondary)
-                    .padding(.horizontal)
                 Button("settings.open_system_settings") {
                     if let url = URL(string: "app-settings:") {
                         openURL(url)
@@ -136,18 +114,50 @@ public struct OnboardingView: View {
                     bulletRow("onboarding.next_step_2", systemImage: "2.circle.fill")
                     bulletRow("onboarding.next_step_3", systemImage: "3.circle.fill")
                 }
-                .padding(.horizontal)
             }
-            Spacer()
+        } cta: {
             Button("onboarding.get_started") {
                 seedSamplePresets()
                 completeOnboarding()
             }
             .buttonStyle(.borderedProminent)
             .controlSize(.large)
-            .padding(.bottom, 60)
         }
-        .padding(.horizontal)
+    }
+
+    /// Shared page chrome: scrollable content so it never clips at large
+    /// Dynamic Type sizes, with the call-to-action pinned to the bottom
+    /// safe area instead of a fixed offset.
+    @ViewBuilder
+    private func pageScaffold(
+        @ViewBuilder content: () -> some View,
+        @ViewBuilder cta: () -> some View
+    ) -> some View {
+        ScrollView {
+            VStack(spacing: 24) {
+                content()
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.horizontal)
+            .padding(.vertical, 40)
+        }
+        .scrollBounceBehavior(.basedOnSize)
+        .safeAreaInset(edge: .bottom) {
+            VStack(spacing: 12) {
+                cta()
+            }
+            .padding(.horizontal)
+            .padding(.bottom, 20)
+        }
+    }
+
+    private func requestPermission() {
+        isRequestingPermission = true
+        Task {
+            await dependencies.alarmAuthorization.request()
+            isRequestingPermission = false
+            withAnimation { page = 2 }
+        }
     }
 
     private func bulletRow(_ key: LocalizedStringKey, systemImage: String) -> some View {

@@ -2361,6 +2361,23 @@
         }
       }
     },
+    "onboarding.denied_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Permission Needed"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "許可が必要です"
+          }
+        }
+      }
+    },
     "onboarding.next_step_1": {
       "extractionState": "manual",
       "localizations": {

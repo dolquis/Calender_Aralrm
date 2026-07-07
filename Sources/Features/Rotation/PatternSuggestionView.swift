@@ -65,25 +65,40 @@ public struct PatternSuggestionView: View {
 
             slotPreview
 
-            HStack(spacing: 12) {
-                Button(action: onReject) {
-                    Text("pattern.suggestion.reject_30d")
-                        .frame(maxWidth: .infinity)
+            // Side by side when both button labels fit, otherwise stacked so
+            // longer localized wording stays comfortably tappable.
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: 12) {
+                    rejectButton
+                    acceptButton
                 }
-                .buttonStyle(.bordered)
-                .accessibilityLabel(String(localized: "pattern.suggestion.reject.a11y"))
-
-                Button(action: onAccept) {
-                    Text("pattern.suggestion.accept")
-                        .frame(maxWidth: .infinity)
+                VStack(spacing: 12) {
+                    acceptButton
+                    rejectButton
                 }
-                .buttonStyle(.borderedProminent)
-                .accessibilityLabel(String(localized: "pattern.suggestion.accept.a11y"))
             }
         }
         .padding()
         .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
         .accessibilityElement(children: .contain)
+    }
+
+    @ViewBuilder private var rejectButton: some View {
+        Button(action: onReject) {
+            Text("pattern.suggestion.reject_30d")
+                .frame(maxWidth: .infinity)
+        }
+        .buttonStyle(.bordered)
+        .accessibilityLabel(String(localized: "pattern.suggestion.reject.a11y"))
+    }
+
+    @ViewBuilder private var acceptButton: some View {
+        Button(action: onAccept) {
+            Text("pattern.suggestion.accept")
+                .frame(maxWidth: .infinity)
+        }
+        .buttonStyle(.borderedProminent)
+        .accessibilityLabel(String(localized: "pattern.suggestion.accept.a11y"))
     }
 
     private var bodyText: String {
