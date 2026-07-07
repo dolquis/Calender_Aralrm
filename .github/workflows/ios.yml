@@ -15,6 +15,16 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v4
 
+      - name: Cache SwiftPM packages
+        uses: actions/cache@v4
+        with:
+          # verify.sh resolves packages into ./DerivedData/SourcePackages via
+          # -derivedDataPath, so cache that directory rather than ~/Library.
+          path: DerivedData/SourcePackages
+          key: spm-${{ runner.os }}-${{ hashFiles('ShiftAlarm.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved') }}
+          restore-keys: |
+            spm-${{ runner.os }}-
+
       - name: Select Xcode
         run: |
           set -euo pipefail
