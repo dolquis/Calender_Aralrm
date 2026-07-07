@@ -5,6 +5,7 @@ public struct SettingsView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(AppDependencies.self) private var dependencies
     @Query private var settingsList: [AppSettings]
+    @State private var diagnosticsStatus: AlarmDiagnosticsStatus?
 
     public init() {}
 
@@ -20,6 +21,8 @@ public struct SettingsView: View {
         .navigationTitle("tab.settings")
         .task {
             await dependencies.alarmAuthorization.refresh()
+            diagnosticsStatus =
+                await dependencies.alarmDiagnosticsService.generate().overallStatus
         }
     }
 
@@ -29,7 +32,7 @@ public struct SettingsView: View {
             Section("settings.permission_section") {
                 PermissionStatusView()
             }
-            Section("settings.scheduling_section") {
+            Section("settings.alarm_section") {
                 Stepper(
                     value: Binding(
                         get: { s.lookaheadDays },
@@ -43,7 +46,7 @@ public struct SettingsView: View {
                         }
                     ), in: 7...90
                 ) {
-                    Text(String(localized: "settings.lookahead_days") + ": \(s.lookaheadDays)")
+                    LabeledContent("settings.lookahead_days", value: "\(s.lookaheadDays)")
                 }
                 Stepper(
                     value: Binding(
@@ -55,12 +58,9 @@ public struct SettingsView: View {
                         }
                     ), in: 1...24
                 ) {
-                    Text(
-                        String(localized: "settings.live_activity_lead_hours")
-                            + ": \(s.liveActivityLeadHours)")
+                    LabeledContent(
+                        "settings.live_activity_lead_hours", value: "\(s.liveActivityLeadHours)")
                 }
-            }
-            Section("settings.sound_section") {
                 Picker(
                     "settings.default_sound",
                     selection: Binding(
@@ -81,23 +81,46 @@ public struct SettingsView: View {
                 }
             }
             Section("settings.safety_diagnostics_section") {
-                NavigationLink("diagnostics.title") {
+                NavigationLink {
                     AlarmDiagnosticsView()
+                } label: {
+                    HStack {
+                        Label("diagnostics.title", systemImage: "stethoscope")
+                        Spacer()
+                        if let diagnosticsStatus {
+                            StatusPill(
+                                LocalizedStringKey(diagnosticsStatus.pillKey),
+                                tint: diagnosticsStatus.pillTint
+                            )
+                        }
+                    }
                 }
             }
             Section {
-                NavigationLink("settings.holidays") {
+                NavigationLink {
                     HolidayManagerView()
+                } label: {
+                    Label("settings.holidays", systemImage: "calendar.badge.exclamationmark")
                 }
-                NavigationLink("settings.export") {
+                NavigationLink {
                     ExportView()
+                } label: {
+                    Label("settings.export", systemImage: "square.and.arrow.up")
                 }
-                NavigationLink("ics.export.nav_title") {
+                NavigationLink {
                     ICSExportView()
+                } label: {
+                    Label("ics.export.nav_title", systemImage: "calendar.badge.plus")
                 }
-                NavigationLink("settings.import") {
+                NavigationLink {
                     ImportView()
+                } label: {
+                    Label("settings.import", systemImage: "square.and.arrow.down")
                 }
+            } header: {
+                Text("settings.data_section")
+            } footer: {
+                Text("settings.data_footer")
             }
             Section("settings.about") {
                 LabeledContent("settings.version", value: appVersionString())
@@ -110,5 +133,25 @@ public struct SettingsView: View {
             Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "?"
         let b = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "?"
         return "\(v) (\(b))"
+    }
+}
+
+extension AlarmDiagnosticsStatus {
+    fileprivate var pillKey: String {
+        switch self {
+        case .normal: "diagnostics.status.normal"
+        case .warning: "diagnostics.status.warning"
+        case .attention: "diagnostics.status.attention"
+        case .critical: "diagnostics.status.critical"
+        }
+    }
+
+    fileprivate var pillTint: Color {
+        switch self {
+        case .normal: .green
+        case .warning: .orange
+        case .attention: .orange
+        case .critical: .red
+        }
     }
 }

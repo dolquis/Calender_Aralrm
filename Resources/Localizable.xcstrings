@@ -69,6 +69,23 @@
         }
       }
     },
+    "a11y.cell.today": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Today"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "今日"
+          }
+        }
+      }
+    },
     "alarm.default_label": {
       "extractionState": "manual",
       "localizations": {
@@ -147,6 +164,74 @@
           "stringUnit": {
             "state": "translated",
             "value": "祝"
+          }
+        }
+      }
+    },
+    "calendar.legend.holiday": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Holiday"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "祝日・休み"
+          }
+        }
+      }
+    },
+    "calendar.legend.shift": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Shift"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "シフト"
+          }
+        }
+      }
+    },
+    "calendar.legend.swap": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Swap"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "交代"
+          }
+        }
+      }
+    },
+    "calendar.today_button": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Today"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "今日"
           }
         }
       }
@@ -2259,6 +2344,125 @@
         }
       }
     },
+    "onboarding.denied_hint": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alarm permission is off. You can enable it in the Settings app."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "アラームの許可がありません。設定アプリから許可してください。"
+          }
+        }
+      }
+    },
+    "onboarding.next_step_1": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Review the sample presets (day & night shifts)"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "サンプルのプリセット(日勤・夜勤)を確認する"
+          }
+        }
+      }
+    },
+    "onboarding.next_step_2": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tap a date on the calendar to assign a shift"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "カレンダーで日付をタップしてシフトを割り当てる"
+          }
+        }
+      }
+    },
+    "onboarding.next_step_3": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Done — just wait for your alarm to ring"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "あとはアラームが鳴るのを待つだけ"
+          }
+        }
+      }
+    },
+    "onboarding.permission_point_lockscreen": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Shows full screen on the Lock Screen"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ロック画面に全画面で表示されます"
+          }
+        }
+      }
+    },
+    "onboarding.permission_point_revocable": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You can change this anytime in Settings"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "許可はいつでも設定から変更できます"
+          }
+        }
+      }
+    },
+    "onboarding.permission_point_silent": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rings through Silent and Focus modes"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "サイレント・集中モード中でも鳴ります"
+          }
+        }
+      }
+    },
     "onboarding.next": {
       "extractionState": "manual",
       "localizations": {
@@ -2540,6 +2744,23 @@
         }
       }
     },
+    "preset.empty_action": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Create a Preset"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "プリセットを作成"
+          }
+        }
+      }
+    },
     "preset.enable_default_time": {
       "localizations": {
         "en": {
@@ -2748,6 +2969,23 @@
         }
       }
     },
+    "rotation.anchor_label": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Anchor date"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "開始基準日"
+          }
+        }
+      }
+    },
     "rotation.cycle_label": {
       "localizations": {
         "en": {
@@ -2840,6 +3078,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "ローテーションがありません"
+          }
+        }
+      }
+    },
+    "rotation.empty_action": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Create a Rotation"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ローテーションを作成"
           }
         }
       }
@@ -3112,6 +3367,57 @@
           "stringUnit": {
             "state": "translated",
             "value": "情報"
+          }
+        }
+      }
+    },
+    "settings.alarm_section": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alarm"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "アラーム"
+          }
+        }
+      }
+    },
+    "settings.data_footer": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Back up and share your data in the .shiftalarm format."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": ".shiftalarm形式でバックアップ・共有できます。"
+          }
+        }
+      }
+    },
+    "settings.data_section": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Data"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "データ管理"
           }
         }
       }
@@ -4998,6 +5304,23 @@
         }
       }
     },
+    "pattern.suggestion.reject_30d": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Don't show for 30 days"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "30日間表示しない"
+          }
+        }
+      }
+    },
     "pattern.suggestion.default_name": {
       "extractionState": "manual",
       "localizations": {
@@ -5028,6 +5351,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "更新パターン"
+          }
+        }
+      }
+    },
+    "pattern.suggestion.drift.replace_note": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Replaces the existing pattern “%@”"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "既存のパターン「%@」を置き換えます"
           }
         }
       }

@@ -4,6 +4,7 @@ import SwiftUI
 public struct OnboardingView: View {
     @Environment(AppDependencies.self) private var dependencies
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.openURL) private var openURL
     @State private var page = 0
     @State private var isRequestingPermission = false
 
@@ -16,7 +17,12 @@ public struct OnboardingView: View {
             readyPage.tag(2)
         }
         .tabViewStyle(.page(indexDisplayMode: .always))
+        .indexViewStyle(.page(backgroundDisplayMode: .always))
         .ignoresSafeArea(edges: .bottom)
+    }
+
+    private var isPermissionDenied: Bool {
+        dependencies.alarmAuthorization.state == .denied
     }
 
     @ViewBuilder
@@ -60,6 +66,12 @@ public struct OnboardingView: View {
                 .multilineTextAlignment(.center)
                 .foregroundStyle(.secondary)
                 .padding(.horizontal)
+            VStack(alignment: .leading, spacing: 12) {
+                bulletRow("onboarding.permission_point_silent", systemImage: "moon.fill")
+                bulletRow("onboarding.permission_point_lockscreen", systemImage: "lock.iphone")
+                bulletRow("onboarding.permission_point_revocable", systemImage: "gearshape")
+            }
+            .padding(.horizontal)
             Spacer()
             Button {
                 isRequestingPermission = true
@@ -92,9 +104,12 @@ public struct OnboardingView: View {
     private var readyPage: some View {
         VStack(spacing: 24) {
             Spacer()
-            Image(systemName: "checkmark.seal.fill")
-                .font(.system(size: 80))
-                .foregroundStyle(.green)
+            Image(
+                systemName: isPermissionDenied
+                    ? "exclamationmark.triangle.fill" : "checkmark.seal.fill"
+            )
+            .font(.system(size: 80))
+            .foregroundStyle(isPermissionDenied ? Color.orange : Color.green)
             Text("onboarding.ready_title")
                 .font(.largeTitle.bold())
                 .multilineTextAlignment(.center)
@@ -103,6 +118,26 @@ public struct OnboardingView: View {
                 .multilineTextAlignment(.center)
                 .foregroundStyle(.secondary)
                 .padding(.horizontal)
+            if isPermissionDenied {
+                Text("onboarding.denied_hint")
+                    .font(.subheadline)
+                    .multilineTextAlignment(.center)
+                    .foregroundStyle(.secondary)
+                    .padding(.horizontal)
+                Button("settings.open_system_settings") {
+                    if let url = URL(string: "app-settings:") {
+                        openURL(url)
+                    }
+                }
+                .buttonStyle(.bordered)
+            } else {
+                VStack(alignment: .leading, spacing: 12) {
+                    bulletRow("onboarding.next_step_1", systemImage: "1.circle.fill")
+                    bulletRow("onboarding.next_step_2", systemImage: "2.circle.fill")
+                    bulletRow("onboarding.next_step_3", systemImage: "3.circle.fill")
+                }
+                .padding(.horizontal)
+            }
             Spacer()
             Button("onboarding.get_started") {
                 seedSamplePresets()
@@ -113,6 +148,17 @@ public struct OnboardingView: View {
             .padding(.bottom, 60)
         }
         .padding(.horizontal)
+    }
+
+    private func bulletRow(_ key: LocalizedStringKey, systemImage: String) -> some View {
+        Label {
+            Text(key)
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+        } icon: {
+            Image(systemName: systemImage)
+                .foregroundStyle(.tint)
+        }
     }
 
     private func seedSamplePresets() {

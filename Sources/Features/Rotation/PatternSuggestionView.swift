@@ -6,6 +6,7 @@ public struct PatternSuggestionView: View {
     let suggestion: ShiftPatternDetector.SuggestedRotation
     let presets: [UUID: ShiftPresetSnapshot]
     let isDriftUpdate: Bool
+    let replacingPatternName: String?
     let onAccept: @MainActor () -> Void
     let onReject: @MainActor () -> Void
 
@@ -13,12 +14,14 @@ public struct PatternSuggestionView: View {
         suggestion: ShiftPatternDetector.SuggestedRotation,
         presets: [UUID: ShiftPresetSnapshot],
         isDriftUpdate: Bool = false,
+        replacingPatternName: String? = nil,
         onAccept: @escaping @MainActor () -> Void,
         onReject: @escaping @MainActor () -> Void
     ) {
         self.suggestion = suggestion
         self.presets = presets
         self.isDriftUpdate = isDriftUpdate
+        self.replacingPatternName = replacingPatternName
         self.onAccept = onAccept
         self.onReject = onReject
     }
@@ -26,9 +29,12 @@ public struct PatternSuggestionView: View {
     public var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Image(systemName: "sparkles")
-                    .foregroundStyle(.orange)
-                    .accessibilityHidden(true)
+                Image(
+                    systemName: isDriftUpdate
+                        ? "arrow.triangle.2.circlepath.circle.fill" : "sparkles"
+                )
+                .foregroundStyle(.orange)
+                .accessibilityHidden(true)
                 if isDriftUpdate {
                     Text("pattern.suggestion.drift.title")
                         .font(.headline)
@@ -41,11 +47,27 @@ public struct PatternSuggestionView: View {
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
 
+            if isDriftUpdate, let replacingPatternName {
+                Label {
+                    Text(
+                        String(
+                            format: String(localized: "pattern.suggestion.drift.replace_note"),
+                            replacingPatternName
+                        )
+                    )
+                } icon: {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .foregroundStyle(.orange)
+                }
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            }
+
             slotPreview
 
             HStack(spacing: 12) {
                 Button(action: onReject) {
-                    Text("pattern.suggestion.reject")
+                    Text("pattern.suggestion.reject_30d")
                         .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.bordered)
@@ -75,22 +97,34 @@ public struct PatternSuggestionView: View {
     }
 
     @ViewBuilder private var slotPreview: some View {
-        let names = uniquePresetNames()
-        if !names.isEmpty {
-            Text(names.joined(separator: " → "))
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .lineLimit(1)
+        let entries = uniquePresetEntries()
+        if !entries.isEmpty {
+            HStack(spacing: 4) {
+                ForEach(entries.enumerated(), id: \.offset) { index, entry in
+                    if index > 0 {
+                        Image(systemName: "arrow.right")
+                            .font(.caption2)
+                            .accessibilityHidden(true)
+                    }
+                    PresetColorDot(colorHex: entry.colorHex)
+                    Text(entry.name)
+                }
+            }
+            .font(.caption)
+            .foregroundStyle(.secondary)
+            .lineLimit(1)
         }
     }
 
-    private func uniquePresetNames() -> [String] {
+    private func uniquePresetEntries() -> [(name: String, colorHex: String?)] {
         var seen = Set<UUID>()
-        var names: [String] = []
+        var entries: [(name: String, colorHex: String?)] = []
         for id in suggestion.slots.compactMap({ $0 }) {
             guard seen.insert(id).inserted else { continue }
-            if let name = presets[id]?.name { names.append(name) }
+            if let snapshot = presets[id] {
+                entries.append((snapshot.name, snapshot.colorHex))
+            }
         }
-        return names
+        return entries
     }
 }

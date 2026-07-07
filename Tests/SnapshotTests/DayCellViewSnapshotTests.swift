@@ -89,4 +89,31 @@ struct DayCellViewSnapshotTests {
         .environment(\.dynamicTypeSize, .accessibility3)
         assertSnapshot(of: host(view, size: CGSize(width: 80, height: 120)), as: .image)
     }
+    @Test(.enabled { SnapshotTestGate.isEnabled })
+    func testCellToday_highlighted() {
+        let view = DayCellView(
+            date: fixedDate(),
+            inCurrentMonth: true,
+            isToday: true,
+            presetName: "Day",
+            presetColorHex: "#1E88E5",
+            alarmTime: DateComponents(hour: 6, minute: 30),
+            holidayLabel: nil
+        )
+        .environment(\.colorScheme, .light)
+        assertSnapshot(of: host(view), as: .image)
+    }
+    @Test(.enabled { SnapshotTestGate.isEnabled })
+    func testCellHolidayWithAlarm() {
+        let view = DayCellView(
+            date: fixedDate(),
+            inCurrentMonth: true,
+            presetName: "Day",
+            presetColorHex: "#1E88E5",
+            alarmTime: DateComponents(hour: 6, minute: 30),
+            holidayLabel: "祝"
+        )
+        .environment(\.colorScheme, .light)
+        assertSnapshot(of: host(view), as: .image)
+    }
 }

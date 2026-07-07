@@ -22,8 +22,8 @@ main へ PR（Linear issue が無い緊急時のみ `feature/<topic>`）。
 - P0-1 は Xcode 26.5 / iOS 26.5 SDK でコードレベル検証に着手済み。
   `AlarmPresentation.Alert.stopButton` の iOS 26.1 deprecation を回避し、
   `AlarmManager.AlarmConfiguration.alarm(...)` に寄せた。実機確認は未完了。
-- テストは Apple の Swift Testing（`@Test` / `#expect`）で記述。181 件 (27 スイート /
-  27 ファイル) を定義し、通常の `scripts/verify.sh` では 6 件の snapshot test が
+- テストは Apple の Swift Testing（`@Test` / `#expect`）で記述。183 件 (27 スイート /
+  27 ファイル) を定義し、通常の `scripts/verify.sh` では 8 件の snapshot test が
   `SNAPSHOT_TESTING_ENABLED=1` 未指定のため skip され、175 件が緑。
   CI は `macos-26` / Xcode 26+ で `scripts/verify.sh` を実行。
 - **状態・進捗・優先度の正典は Linear**（team `Dev` / project **Shift Alarm /
@@ -1262,7 +1262,7 @@ HolidayManager から `VacationPeriod` を作る UI（VAC-I1 / VAC-U9）は未�
   - `Tests/ServicesTests/SleepIntentHelperTests.swift` — App Intents 用 sleep window 取得。
   - `Tests/ServicesTests/SleepSampleWriterTests.swift` — HealthKit 書込み対象 window 抽出。
   - `Tests/DomainTests/SleepWindowResolverTests.swift` — bedtime 計算 / 端境ケース。
-- 現状: Swift Testing で 27 スイート / 181 テスト定義（うち 6 件 snapshot は通常 verify では skip されるため 175 テスト緑）。
+- 現状: Swift Testing で 27 スイート / 183 テスト定義（うち 8 件 snapshot は通常 verify では skip されるため 175 テスト緑）。
 
 ### P3-2. UI / スナップショットテスト（一部着手）
 
@@ -1299,7 +1299,7 @@ HolidayManager から `VacationPeriod` を作る UI（VAC-I1 / VAC-U9）は未�
 - **目的（達成済み）**: XCTest 相当のテストを Apple の Swift Testing（`@Test`）で記述し、
   `#expect` / `#require` ベースの表現力と並列実行を得る。
 - **現状**: `Tests/` 配下 27 ファイル / 27 テストスイート（`struct` + `@Test`） /
-  181 テスト関数。`XCTestCase` サブクラスは 0。`@testable import ShiftAlarm` を維持。
+  183 テスト関数。`XCTestCase` サブクラスは 0。`@testable import ShiftAlarm` を維持。
   `project.yml` のテストターゲット定義は変更不要（Swift Testing はツールチェーン同梱）。
 - **採用済みの対応**:
   - `XCTestCase` サブクラス → `struct` + `@Test` 関数。

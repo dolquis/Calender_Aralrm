@@ -41,15 +41,20 @@ public struct CalendarMonthView: View {
             LazyVGrid(columns: columns, spacing: 4) {
                 ForEach(viewModel.gridDates(), id: \.self) { date in
                     cell(for: date)
-                        .onTapGesture {
-                            editingDate = viewModel.calendar.startOfDay(for: date)
-                        }
                 }
             }
+            CalendarLegendView()
             Spacer()
         }
         .padding()
         .navigationTitle("tab.calendar")
+        .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                Button("calendar.today_button") {
+                    viewModel.goToToday()
+                }
+            }
+        }
         .sheet(
             item: Binding(
                 get: { editingDate.map(IdentifiableDate.init) },
@@ -81,6 +86,8 @@ public struct CalendarMonthView: View {
                 viewModel.step(by: -1)
             } label: {
                 Image(systemName: "chevron.left")
+                    .frame(minWidth: 44, minHeight: 44)
+                    .contentShape(Rectangle())
             }
             .accessibilityLabel(Text("a11y.calendar.previous_month"))
             Spacer()
@@ -92,6 +99,8 @@ public struct CalendarMonthView: View {
                 viewModel.step(by: 1)
             } label: {
                 Image(systemName: "chevron.right")
+                    .frame(minWidth: 44, minHeight: 44)
+                    .contentShape(Rectangle())
             }
             .accessibilityLabel(Text("a11y.calendar.next_month"))
         }
@@ -101,14 +110,22 @@ public struct CalendarMonthView: View {
     private var weekdayHeader: some View {
         let symbols = viewModel.calendar.shortStandaloneWeekdaySymbols
         let firstWeekday = viewModel.calendar.firstWeekday
-        let ordered = (0..<7).map { symbols[(firstWeekday - 1 + $0) % 7] }
         HStack {
-            ForEach(ordered, id: \.self) { s in
-                Text(s)
+            ForEach(0..<7, id: \.self) { offset in
+                let weekdayNumber = ((firstWeekday - 1 + offset) % 7) + 1
+                Text(symbols[(firstWeekday - 1 + offset) % 7])
                     .frame(maxWidth: .infinity)
                     .font(.caption.weight(.semibold))
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(weekdayColor(weekdayNumber))
             }
+        }
+    }
+
+    private func weekdayColor(_ weekdayNumber: Int) -> Color {
+        switch weekdayNumber {
+        case 1: .red
+        case 7: .blue
+        default: .secondary
         }
     }
 
@@ -119,15 +136,22 @@ public struct CalendarMonthView: View {
         let presetID = resolved.presetID
         let preset = presetID.flatMap { resolverInput.presets[$0] }
         let holiday = resolverInput.holidays[normalized]
-        DayCellView(
-            date: normalized,
-            inCurrentMonth: viewModel.isInCurrentMonth(normalized),
-            presetName: preset?.name,
-            presetColorHex: preset?.colorHex,
-            alarmTime: resolved.fireTime,
-            holidayLabel: holiday?.label,
-            hasSwapRecord: !(resolverInput.swapRecords[normalized]?.isEmpty ?? true)
-        )
+        Button {
+            editingDate = normalized
+        } label: {
+            DayCellView(
+                date: normalized,
+                inCurrentMonth: viewModel.isInCurrentMonth(normalized),
+                isToday: viewModel.calendar.isDateInToday(normalized),
+                presetName: preset?.name,
+                presetColorHex: preset?.colorHex,
+                alarmTime: resolved.fireTime,
+                holidayLabel: holiday?.label,
+                hasSwapRecord: !(resolverInput.swapRecords[normalized]?.isEmpty ?? true),
+                calendar: viewModel.calendar
+            )
+        }
+        .buttonStyle(.plain)
     }
 }
 

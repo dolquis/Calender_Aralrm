@@ -19,6 +19,10 @@ public final class CalendarMonthViewModel {
         }
     }
 
+    public func goToToday(now: Date = .now) {
+        anchorMonth = calendar.startOfMonth(for: now)
+    }
+
     public func gridDates() -> [Date] {
         let firstWeekday = calendar.component(.weekday, from: anchorMonth)
         let leadingBlanks = (firstWeekday - calendar.firstWeekday + 7) % 7

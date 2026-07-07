@@ -117,6 +117,7 @@
 		B9724A7942A0C5AC53308C21 /* ModelContainer+Shared.swift in Sources */ = {isa = PBXBuildFile; fileRef = 92E60C55AE72C8545FA85312 /* ModelContainer+Shared.swift */; };
 		BA2FA46E01934413D794D79F /* DayCellView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35D13566B54208E503CFBB27 /* DayCellView.swift */; };
 		BA6498C6496DB7B7CA011551 /* ShiftBundleCodecTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0B5D48CC86C2125679C92B3B /* ShiftBundleCodecTests.swift */; };
+		BB077398902A669844B79DED /* PresetColorDot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3D763C2C0C60AC028A53ADB3 /* PresetColorDot.swift */; };
 		BE702815CD6DA16BE7B89D16 /* ShiftAlarm.store in Resources */ = {isa = PBXBuildFile; fileRef = 673C606ED6BA23FE6B6938A2 /* ShiftAlarm.store */; };
 		BE73A44288EE4870E3462922 /* LiveActivityController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 58CAFC82AB82E58ACD5E06C9 /* LiveActivityController.swift */; };
 		BE831E8C47706C51C5F3A69C /* VacationAwareRotation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6622CB9B29CD88A5C371F319 /* VacationAwareRotation.swift */; };
@@ -144,6 +145,7 @@
 		D4CDC0B8C3557D54B63419A4 /* RotationExpanderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 03B220A2866CA3CF0D63D6C6 /* RotationExpanderTests.swift */; };
 		D71547B9C9327C27C631A9D5 /* HolidayProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB6D613F28CA956AC6E35A0E /* HolidayProvider.swift */; };
 		D793131261F7E5D99218829D /* AlarmDiagnosticsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 31FA28B4364BA6D7897F08EB /* AlarmDiagnosticsView.swift */; };
+		DB897B28B9D8F3BE796160D6 /* CalendarLegendView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F55FF14F5DBC0034596DEA4E /* CalendarLegendView.swift */; };
 		DC67A1FB4F1D481ADE24E75E /* ChangePreviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4834B2D868FD91BC176918A7 /* ChangePreviewView.swift */; };
 		DD14A6E102C165A05EB61E49 /* DeepLinkAction.swift in Sources */ = {isa = PBXBuildFile; fileRef = D214BE2ED9B4C83570153B68 /* DeepLinkAction.swift */; };
 		DDC572A572EFD4828440ADB8 /* SleepSampleWriterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 059A391B8DFBD9D78DF1E522 /* SleepSampleWriterTests.swift */; };
@@ -151,6 +153,7 @@
 		E078CDE43974EDB476FA60C6 /* RotationListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2DC4F0D51E132D85E2AF2883 /* RotationListView.swift */; };
 		E0C1A8067698079AFF3A9759 /* AppRuntimeConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81391A3DDB291E81E864ABD5 /* AppRuntimeConfiguration.swift */; };
 		E29DABF7E26664C729CD83C8 /* Date+Calendar.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4CB96BC64E3325BFFEB1166 /* Date+Calendar.swift */; };
+		E2D38B528001F6757A2724B8 /* StatusPill.swift in Sources */ = {isa = PBXBuildFile; fileRef = 79DD4086DEF6B8835140A276 /* StatusPill.swift */; };
 		E4677219743EEA60364CBB9C /* ShortcutsOnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3CA16E68701A1928B6BD693B /* ShortcutsOnboardingView.swift */; };
 		E56B6C09D299876877330940 /* SleepIntentHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9AD5FF73898458735C20CCB6 /* SleepIntentHelper.swift */; };
 		E5890B71F1AEB32DB9E764CB /* DayResolver.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35017C9D5FB36DA39CD9EC30 /* DayResolver.swift */; };
@@ -238,6 +241,7 @@
 		38A9A64D424E2652211F06CD /* bootstrap.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = bootstrap.sh; sourceTree = "<group>"; };
 		38E6B525BD106DF2E21EFEBF /* SleepScheduleView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SleepScheduleView.swift; sourceTree = "<group>"; };
 		3CA16E68701A1928B6BD693B /* ShortcutsOnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShortcutsOnboardingView.swift; sourceTree = "<group>"; };
+		3D763C2C0C60AC028A53ADB3 /* PresetColorDot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PresetColorDot.swift; sourceTree = "<group>"; };
 		3E0AC7231CD3545E0E4F37BE /* ShiftBundleCodec.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShiftBundleCodec.swift; sourceTree = "<group>"; };
 		3F301404AB2DBCEDB38DC58B /* BGRefreshController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BGRefreshController.swift; sourceTree = "<group>"; };
 		40CFE6FF128FE69B459B29F8 /* SchemaV2Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SchemaV2Models.swift; sourceTree = "<group>"; };
@@ -282,6 +286,7 @@
 		79166C1FB771273ABC4C9109 /* PresetListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PresetListView.swift; sourceTree = "<group>"; };
 		793BB747CA26E40B93C6FE2F /* BGRefreshControllerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BGRefreshControllerTests.swift; sourceTree = "<group>"; };
 		79761B901134C68B19CCC864 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		79DD4086DEF6B8835140A276 /* StatusPill.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusPill.swift; sourceTree = "<group>"; };
 		7B386C1771070A3C7393DAC5 /* ImportPreviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImportPreviewView.swift; sourceTree = "<group>"; };
 		7B8856DC0C008DA75C75C3BC /* PatternSuggestionResolverTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PatternSuggestionResolverTests.swift; sourceTree = "<group>"; };
 		7E1ABFDF04BF0349708FA790 /* HolidayOverride.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HolidayOverride.swift; sourceTree = "<group>"; };
@@ -354,6 +359,7 @@
 		F0FC8D2A94B6B50E7DAE5819 /* DayResolverInputBuilderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DayResolverInputBuilderTests.swift; sourceTree = "<group>"; };
 		F459C419D55D6AA9892B4346 /* DeepLinkRouter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeepLinkRouter.swift; sourceTree = "<group>"; };
 		F4CB96BC64E3325BFFEB1166 /* Date+Calendar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Date+Calendar.swift"; sourceTree = "<group>"; };
+		F55FF14F5DBC0034596DEA4E /* CalendarLegendView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarLegendView.swift; sourceTree = "<group>"; };
 		F57502E93D536FE9914C3DA2 /* ShiftAlarmTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = ShiftAlarmTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		F826880AB3E9631FE7905EA4 /* SleepIntentHelperTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SleepIntentHelperTests.swift; sourceTree = "<group>"; };
 		F9964DCDC9BA28F31B9555CC /* ICSExportView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ICSExportView.swift; sourceTree = "<group>"; };
@@ -622,6 +628,8 @@
 			children = (
 				A779B20409F5454687467D7F /* ChangePreviewRow.swift */,
 				4834B2D868FD91BC176918A7 /* ChangePreviewView.swift */,
+				3D763C2C0C60AC028A53ADB3 /* PresetColorDot.swift */,
+				79DD4086DEF6B8835140A276 /* StatusPill.swift */,
 			);
 			path = Shared;
 			sourceTree = "<group>";
@@ -868,6 +876,7 @@
 		FC1DA8F5B1E3C2BC011EFE1A /* Calendar */ = {
 			isa = PBXGroup;
 			children = (
+				F55FF14F5DBC0034596DEA4E /* CalendarLegendView.swift */,
 				85B243772253502C6C97C193 /* CalendarMonthView.swift */,
 				120336887FAA78783C26767B /* CalendarMonthViewModel.swift */,
 				35D13566B54208E503CFBB27 /* DayCellView.swift */,
@@ -1075,6 +1084,7 @@
 				BED6220DB45DDD71C8689E22 /* AppRuntimeConfiguration.swift in Sources */,
 				0174AAF68B2E3E2A19D663D0 /* AppSettings.swift in Sources */,
 				B2A364AA2698A28545376C46 /* BGRefreshController.swift in Sources */,
+				DB897B28B9D8F3BE796160D6 /* CalendarLegendView.swift in Sources */,
 				A310316722B7A3A7C0569287 /* CalendarMonthView.swift in Sources */,
 				CAC0B300A91642D7424D1DD4 /* CalendarMonthViewModel.swift in Sources */,
 				3D77E06B4465F4CA89C752F8 /* ChangePreview.swift in Sources */,
@@ -1108,6 +1118,7 @@
 				D17565D7E0CDDE016B08DA91 /* PatternSuggestionResolver.swift in Sources */,
 				FED03603887DF55C4CEF2D6B /* PatternSuggestionView.swift in Sources */,
 				EA0816E558BA0EE98B14EE8E /* PermissionStatusView.swift in Sources */,
+				BB077398902A669844B79DED /* PresetColorDot.swift in Sources */,
 				4AF4B70277A466A66A7BB27C /* PresetEditorView.swift in Sources */,
 				A7811C6773FD1BD8B5D574AC /* PresetListView.swift in Sources */,
 				EB4241CB70C1D54AB52D3147 /* PresetListViewModel.swift in Sources */,
@@ -1142,6 +1153,7 @@
 				C6FF50D5C19FF9C4C465DC11 /* SleepWindow.swift in Sources */,
 				DF4E12CE7FD087B0ED8A3CDC /* SleepWindowEntity.swift in Sources */,
 				4D9F5895CD7278737103138F /* SleepWindowResolver.swift in Sources */,
+				E2D38B528001F6757A2724B8 /* StatusPill.swift in Sources */,
 				036007569D939C5CBCA1A7FC /* SwapRecord.swift in Sources */,
 				68FC44DD3A580835F0BA5CEF /* VacationAwareRotation.swift in Sources */,
 				F04E77883D40ED2BA28139F8 /* VacationPeriod.swift in Sources */,

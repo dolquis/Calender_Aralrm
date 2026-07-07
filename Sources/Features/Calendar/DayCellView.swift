@@ -3,37 +3,44 @@ import SwiftUI
 public struct DayCellView: View {
     public let date: Date
     public let inCurrentMonth: Bool
+    public let isToday: Bool
     public let presetName: String?
     public let presetColorHex: String?
     public let alarmTime: DateComponents?
     public let holidayLabel: String?
     public let hasSwapRecord: Bool
+    public let calendar: Calendar
 
-    @ScaledMetric(relativeTo: .callout) private var dotSize: CGFloat = 8
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     public init(
         date: Date,
         inCurrentMonth: Bool,
+        isToday: Bool = false,
         presetName: String?,
         presetColorHex: String?,
         alarmTime: DateComponents?,
         holidayLabel: String?,
-        hasSwapRecord: Bool = false
+        hasSwapRecord: Bool = false,
+        calendar: Calendar = .current
     ) {
         self.date = date
         self.inCurrentMonth = inCurrentMonth
+        self.isToday = isToday
         self.presetName = presetName
         self.presetColorHex = presetColorHex
         self.alarmTime = alarmTime
         self.holidayLabel = holidayLabel
         self.hasSwapRecord = hasSwapRecord
+        self.calendar = calendar
     }
 
     private var dayString: String {
-        let formatter = DateFormatter()
-        formatter.locale = .current
-        formatter.dateFormat = "d"
-        return formatter.string(from: date)
+        "\(calendar.component(.day, from: date))"
+    }
+
+    private var weekday: Int {
+        calendar.component(.weekday, from: date)
     }
 
     private var timeString: String? {
@@ -41,9 +48,25 @@ public struct DayCellView: View {
         return String(format: "%02d:%02d", h, m)
     }
 
+    /// Sunday and holidays are red, Saturday is blue, following the
+    /// Japanese calendar convention. Today wins with the accent tint.
+    private var dayNumberStyle: AnyShapeStyle {
+        guard inCurrentMonth else { return AnyShapeStyle(.secondary) }
+        if isToday { return AnyShapeStyle(.tint) }
+        if holidayLabel != nil || weekday == 1 { return AnyShapeStyle(.red) }
+        if weekday == 7 { return AnyShapeStyle(.blue) }
+        return AnyShapeStyle(.primary)
+    }
+
+    private var showsCompactDetails: Bool {
+        !dynamicTypeSize.isAccessibilitySize
+    }
+
     private var accessibilityDescription: String {
         let datePart = date.formatted(Date.FormatStyle(date: .long, time: .omitted))
-        var parts = [datePart]
+        var parts: [String] = []
+        if isToday { parts.append(String(localized: "a11y.cell.today")) }
+        parts.append(datePart)
         if let presetName { parts.append(presetName) }
         if let t = timeString {
             parts.append(String(localized: "a11y.cell.alarm_at") + " " + t)
@@ -55,23 +78,19 @@ public struct DayCellView: View {
 
     public var body: some View {
         VStack(spacing: 2) {
-            Text(dayString)
-                .font(.callout.monospacedDigit())
-                .foregroundStyle(inCurrentMonth ? .primary : .secondary)
-                .minimumScaleFactor(0.7)
-                .lineLimit(1)
-                .accessibilityHidden(true)
-            if let presetColorHex {
-                Circle()
-                    .fill(Color(hex: presetColorHex))
-                    .frame(width: dotSize, height: dotSize)
+            HStack(spacing: 2) {
+                Text(dayString)
+                    .font(.callout.monospacedDigit().weight(isToday ? .bold : .regular))
+                    .foregroundStyle(dayNumberStyle)
+                    .minimumScaleFactor(0.7)
+                    .lineLimit(1)
                     .accessibilityHidden(true)
-            } else {
-                Circle()
-                    .fill(Color.clear)
-                    .frame(width: dotSize, height: dotSize)
-                    .accessibilityHidden(true)
+                if holidayLabel != nil, showsCompactDetails {
+                    StatusPill("calendar.holiday_short", tint: .red)
+                        .accessibilityHidden(true)
+                }
             }
+            PresetColorDot(colorHex: presetColorHex)
             HStack(spacing: 2) {
                 if hasSwapRecord {
                     Image(systemName: "arrow.left.arrow.right")
@@ -79,16 +98,9 @@ public struct DayCellView: View {
                         .foregroundStyle(.secondary)
                         .accessibilityHidden(true)
                 }
-                if let timeString {
+                if let timeString, showsCompactDetails {
                     Text(timeString)
                         .font(.caption2.monospacedDigit())
-                        .foregroundStyle(.secondary)
-                        .minimumScaleFactor(0.6)
-                        .lineLimit(1)
-                        .accessibilityHidden(true)
-                } else if holidayLabel != nil {
-                    Text("calendar.holiday_short")
-                        .font(.caption2)
                         .foregroundStyle(.secondary)
                         .minimumScaleFactor(0.6)
                         .lineLimit(1)
@@ -106,6 +118,12 @@ public struct DayCellView: View {
             RoundedRectangle(cornerRadius: 8, style: .continuous)
                 .fill(inCurrentMonth ? Color(.secondarySystemBackground) : Color(.systemBackground))
         )
+        .overlay {
+            if isToday {
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .strokeBorder(.tint, lineWidth: 2)
+            }
+        }
         .opacity(inCurrentMonth ? 1.0 : 0.45)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(accessibilityDescription)

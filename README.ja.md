@@ -75,9 +75,9 @@ bash scripts/verify.sh test
 ```
 
 テストは Apple の [Swift Testing](https://developer.apple.com/documentation/testing)
-（`@Test` / `#expect`）で記述しており、現在は 181 件のテスト（27 テストスイート / 27 ファイル）
+（`@Test` / `#expect`）で記述しており、現在は 183 件のテスト（27 テストスイート / 27 ファイル）
 で Domain / Services / App Intents / HealthKit 補助ロジック / Background refresh / Deep link /
-Sharing / Snapshot をカバーしています。snapshot test 6 件は通常 `verify.sh` では
+Sharing / Snapshot をカバーしています。snapshot test 8 件は通常 `verify.sh` では
 skip されるため通常実行は 175 件で、`SNAPSHOT_TESTING_ENABLED=1` 指定時に記録 / 検証されます。
 
 ## コードスタイル

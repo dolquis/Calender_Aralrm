@@ -16,6 +16,9 @@ public struct RotationListView: View {
 
     private var settings: AppSettings? { settingsList.first }
 
+    /// Cap for the slot dot preview so very long cycles stay compact.
+    private let maxVisibleSlots = 14
+
     public var body: some View {
         List {
             if let suggestion, isSuggestionVisible(suggestion.suggestion) {
@@ -24,6 +27,8 @@ public struct RotationListView: View {
                         suggestion: suggestion.suggestion,
                         presets: presetSnapshots,
                         isDriftUpdate: suggestion.isDriftUpdate,
+                        replacingPatternName: suggestion.replacingPatternID
+                            .flatMap { id in patterns.first(where: { $0.id == id })?.name },
                         onAccept: { acceptSuggestion(suggestion) },
                         onReject: { rejectSuggestion(suggestion) }
                     )
@@ -33,11 +38,16 @@ public struct RotationListView: View {
             }
 
             if patterns.isEmpty {
-                ContentUnavailableView(
-                    "rotation.empty_title",
-                    systemImage: "arrow.triangle.2.circlepath",
-                    description: Text("rotation.empty_subtitle")
-                )
+                ContentUnavailableView {
+                    Label("rotation.empty_title", systemImage: "arrow.triangle.2.circlepath")
+                } description: {
+                    Text("rotation.empty_subtitle")
+                } actions: {
+                    Button("rotation.empty_action") {
+                        creating = true
+                    }
+                    .buttonStyle(.borderedProminent)
+                }
             } else {
                 ForEach(patterns) { pattern in
                     Button {
@@ -56,7 +66,7 @@ public struct RotationListView: View {
                 Button {
                     creating = true
                 } label: {
-                    Image(systemName: "plus")
+                    Label("rotation.new", systemImage: "plus")
                 }
             }
         }
@@ -149,31 +159,64 @@ public struct RotationListView: View {
     // MARK: - Row
 
     private func row(for pattern: RotationPattern) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
+        VStack(alignment: .leading, spacing: 6) {
             HStack {
                 Text(pattern.name).font(.headline)
                 if !pattern.isActive {
-                    Text("rotation.inactive")
-                        .font(.caption2)
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 2)
-                        .background(Color.secondary.opacity(0.2))
-                        .clipShape(Capsule())
+                    StatusPill("rotation.inactive")
                         .accessibilityHidden(true)
                 }
                 Spacer()
             }
-            Text(String(localized: "rotation.cycle_label") + ": \(pattern.cycleLength)")
+            slotPreview(for: pattern)
+            Text(detailText(for: pattern))
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
         }
+        .opacity(pattern.isActive ? 1.0 : 0.55)
         .accessibilityElement(children: .combine)
         .accessibilityLabel(rowAccessibilityLabel(for: pattern))
     }
 
+    @ViewBuilder
+    private func slotPreview(for pattern: RotationPattern) -> some View {
+        let slots = pattern.slots
+        if !slots.isEmpty {
+            HStack(spacing: 3) {
+                ForEach(slots.prefix(maxVisibleSlots).enumerated(), id: \.offset) {
+                    _, slot in
+                    PresetColorDot(
+                        colorHex: slot.flatMap { presetSnapshots[$0]?.colorHex },
+                        emptyStyle: .outline
+                    )
+                }
+                if slots.count > maxVisibleSlots {
+                    Text(verbatim: "…")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .accessibilityHidden(true)
+        }
+    }
+
+    private func detailText(for pattern: RotationPattern) -> String {
+        var parts: [String] = []
+        parts.append(String(localized: "rotation.cycle_label") + ": \(pattern.cycleLength)")
+        parts.append(
+            String(localized: "rotation.anchor_label") + ": "
+                + pattern.anchorDate.formatted(.dateTime.month().day()))
+        if pattern.startDate != nil || pattern.endDate != nil {
+            let start = pattern.startDate.map { $0.formatted(.dateTime.month().day()) } ?? ""
+            let end = pattern.endDate.map { $0.formatted(.dateTime.month().day()) } ?? ""
+            parts.append(String(localized: "rotation.range_section") + ": \(start) – \(end)")
+        }
+        return parts.joined(separator: " ・ ")
+    }
+
     private func rowAccessibilityLabel(for pattern: RotationPattern) -> String {
         var label = pattern.name
-        label += ", " + String(localized: "rotation.cycle_label") + ": \(pattern.cycleLength)"
+        label += ", " + detailText(for: pattern)
         if !pattern.isActive {
             label += ", " + String(localized: "rotation.inactive")
         }

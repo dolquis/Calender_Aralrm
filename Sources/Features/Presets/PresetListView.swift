@@ -13,11 +13,16 @@ public struct PresetListView: View {
     public var body: some View {
         List {
             if presets.isEmpty {
-                ContentUnavailableView(
-                    "preset.empty_title",
-                    systemImage: "alarm",
-                    description: Text("preset.empty_subtitle")
-                )
+                ContentUnavailableView {
+                    Label("preset.empty_title", systemImage: "alarm")
+                } description: {
+                    Text("preset.empty_subtitle")
+                } actions: {
+                    Button("preset.empty_action") {
+                        creatingPreset = true
+                    }
+                    .buttonStyle(.borderedProminent)
+                }
             } else {
                 ForEach(presets) { preset in
                     Button {
@@ -36,7 +41,7 @@ public struct PresetListView: View {
                 Button {
                     creatingPreset = true
                 } label: {
-                    Image(systemName: "plus")
+                    Label("preset.new", systemImage: "plus")
                 }
             }
         }
@@ -67,6 +72,17 @@ public struct PresetListView: View {
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                 }
+            }
+            Spacer()
+            if preset.bedtimeLeadMinutes > 0 {
+                Image(systemName: "moon.zzz")
+                    .foregroundStyle(.secondary)
+                    .accessibilityLabel(Text("preset.bedtime_reminder"))
+            }
+            if preset.soundID != AlarmSound.systemDefault.id {
+                Image(systemName: "speaker.wave.2")
+                    .foregroundStyle(.secondary)
+                    .accessibilityLabel(Text("preset.sound"))
             }
         }
     }
