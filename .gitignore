@@ -11,7 +11,12 @@ Config/LocalSigning.xcconfig
 # Swift Package Manager
 .build/
 Packages/
+# Ignore stray resolved files (e.g. from SwiftPM CLI builds), but keep the one
+# xcodebuild reads from the generated project. Committing it pins dependency
+# versions and gives CI a stable SwiftPM cache key. XcodeGen `generate` does
+# not overwrite this path, so it survives scripts/regen.sh.
 Package.resolved
+!ShiftAlarm.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved
 
 # CocoaPods (not used, kept for safety)
 Pods/
