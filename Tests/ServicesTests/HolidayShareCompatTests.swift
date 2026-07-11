@@ -102,4 +102,30 @@ struct HolidayShareCompatTests {
         let rows = try fetchOverrides(container)
         #expect(rows[date(20)]?.alarmBehavior == .silence)
     }
+
+    // HOL-S4 (review): missing-preset severity follows the effective (import-resolved) behavior,
+    // not the raw `skipAlarm`. A ringing override with a missing replacement is an error; a
+    // silenced one is only a warning — even when `skipAlarm` contradicts `alarmBehavior`.
+    @Test
+    func missingPresetSeverityFollowsEffectiveBehavior() {
+        let missing = UUID()
+        // alarmBehavior ring, skipAlarm true (contradiction): effective = ring -> error.
+        let ringBundle = bundle(overrides: [
+            ShiftBundle.OverrideDTO(
+                date: day(20), kind: .publicHoliday, label: "ring", skipAlarm: true,
+                replacementPresetID: missing, alarmBehavior: .ring)
+        ])
+        let ringResult = ShiftBundleValidator.validate(ringBundle)
+        #expect(ringResult.errors.contains { $0.code == .missingPresetReference })
+
+        // alarmBehavior silence, skipAlarm false: effective = silence -> warning only.
+        let silenceBundle = bundle(overrides: [
+            ShiftBundle.OverrideDTO(
+                date: day(21), kind: .publicHoliday, label: "silence", skipAlarm: false,
+                replacementPresetID: missing, alarmBehavior: .silence)
+        ])
+        let silenceResult = ShiftBundleValidator.validate(silenceBundle)
+        #expect(!silenceResult.errors.contains { $0.code == .missingPresetReference })
+        #expect(silenceResult.warnings.contains { $0.code == .missingPresetReference })
+    }
 }

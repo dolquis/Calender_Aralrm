@@ -222,7 +222,11 @@ public enum ShiftBundleValidator {
             guard let presetID = override.replacementPresetID, !presetIDs.contains(presetID)
             else { continue }
             let path = "overrides[\(index)].replacementPresetID"
-            override.skipAlarm
+            // Severity follows the *effective* behavior the importer will apply, not the raw
+            // `skipAlarm`: a `ring` override with a missing preset will actually try to fire and
+            // must be an error, while a `silence` one is only a warning (see
+            // `OverrideDTO.importResolvedBehavior`).
+            override.importResolvedSkipAlarm
                 ? addWarning(.missingPresetReference, path: path)
                 : addError(.missingPresetReference, path: path)
         }

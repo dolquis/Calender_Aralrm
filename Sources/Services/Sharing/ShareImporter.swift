@@ -406,17 +406,9 @@ public enum ShareImporter {
         for o in overrides {
             guard let day = o.date.date(in: calendar) else { continue }
             let replacement = o.replacementPresetID.flatMap { presets[$0] }
-            // Concretize the incoming behavior. The recipient has no access to the sender's
-            // device-local default, so `inherit` (only possible from a third-party or
-            // hand-edited bundle) is coerced to `.silence` to avoid a surprise ring. Legacy
-            // bundles (no `alarmBehavior`) preserve the sender's explicit intent via
-            // `skipAlarm`: `true → silence`, `false → ring`.
-            let behavior: HolidayAlarmBehavior
-            if let declared = o.alarmBehavior {
-                behavior = (declared == .inherit) ? .silence : declared
-            } else {
-                behavior = o.skipAlarm ? .silence : .ring
-            }
+            // Shared with validation severity and the change preview so all three agree on the
+            // effective behavior (see `OverrideDTO.importResolvedBehavior`).
+            let behavior = o.importResolvedBehavior
             if let existing = byDay[day] {
                 existing.kind = o.kind
                 existing.label = o.label
@@ -629,6 +621,10 @@ public enum ShareImporter {
             format: String(localized: "change_preview.override.summary"),
             dateText(override.date, calendar: calendar),
             override.label,
+            // NOTE(P2-ζ part2): correct while the app-wide default is always `.silence`
+            // (concrete rows keep `skipAlarm` in sync; backfilled `inherit` rows carry
+            // `skipAlarm == true`, which matches a silence default). Once the global default can
+            // be `ring`, resolve via `override.effectiveBehavior(globalDefault:)` here.
             overrideActionText(
                 skipAlarm: override.skipAlarm,
                 replacementName: override.replacementPreset?.name
@@ -644,8 +640,11 @@ public enum ShareImporter {
             format: String(localized: "change_preview.override.summary"),
             calendarDayText(override.date),
             override.label,
+            // Preview the *effective* behavior the importer will apply — a hand-edited bundle
+            // (e.g. `alarmBehavior: inherit, skipAlarm: false`) must not preview "rings" and then
+            // be silenced. Mirrors `applyOverrides`.
             overrideActionText(
-                skipAlarm: override.skipAlarm,
+                skipAlarm: override.importResolvedSkipAlarm,
                 replacementName: override.replacementPresetID.flatMap { presetReferences[$0]?.name }
             )
         )
