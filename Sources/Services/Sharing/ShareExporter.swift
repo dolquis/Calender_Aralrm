@@ -30,6 +30,12 @@ public enum ShareExporter {
             (try? context.fetch(FetchDescriptor<DayAssignment>())) ?? []
         let overrides: [HolidayOverride] =
             (try? context.fetch(FetchDescriptor<HolidayOverride>())) ?? []
+        // The app-wide default is device-local and is not exported. We use it here only to
+        // resolve `inherit` rows to a concrete value so the recipient inherits the sender's
+        // effective intent rather than re-resolving against their own default.
+        let holidayDefault =
+            (try? context.fetch(FetchDescriptor<AppSettings>()))?.first?
+            .effectiveHolidayAlarmDefault ?? .silence
 
         let presetDTOs = presets.map { p in
             ShiftBundle.PresetDTO(
@@ -107,12 +113,16 @@ public enum ShareExporter {
                 calendar: calendar,
                 makeCalendarDay: makeCalendarDay
             )
+            // Resolve `inherit` to a concrete value for the bundle; `ring`/`silence` pass
+            // through. `skipAlarm` mirrors the effective value for legacy readers.
+            let effective = o.effectiveBehavior(globalDefault: holidayDefault)
             return ShiftBundle.OverrideDTO(
                 date: day,
                 kind: o.kind,
                 label: o.label,
-                skipAlarm: o.skipAlarm,
-                replacementPresetID: o.replacementPreset?.id
+                skipAlarm: effective == .silence,
+                replacementPresetID: o.replacementPreset?.id,
+                alarmBehavior: effective
             )
         }
         return ShiftBundle(

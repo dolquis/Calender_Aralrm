@@ -144,6 +144,11 @@ public struct ShiftBundle: Codable, Equatable, Sendable {
         public var label: String
         public var skipAlarm: Bool
         public var replacementPresetID: UUID?
+        /// P2-ζ tri-state holiday alarm behavior. Codable default-nil for backward
+        /// compatibility: bundles produced before P2-ζ omit it, and the importer falls back
+        /// to `skipAlarm`. Canonical exporters write a concrete `ring`/`silence` here (never
+        /// `inherit` — the app-wide default is device-local and not shared).
+        public var alarmBehavior: HolidayAlarmBehavior? = nil
     }
 }
 

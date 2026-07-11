@@ -41,6 +41,9 @@ public struct DayResolverInput {
     public let presets: [UUID: ShiftPresetSnapshot]
     public let vacations: [VacationPeriodSnapshot]
     public let swapRecords: [Date: [SwapRecordSnapshot]]
+    /// App-wide holiday alarm default (`ring`/`silence`) that `.inherit` holiday rows
+    /// resolve against. Defaults to `.silence`, matching the pre-P2-ζ behavior.
+    public let holidayAlarmDefault: HolidayAlarmBehavior
     public let calendar: Calendar
 
     public init(
@@ -50,12 +53,14 @@ public struct DayResolverInput {
         presets: [UUID: ShiftPresetSnapshot],
         vacations: [VacationPeriodSnapshot] = [],
         swapRecords: [Date: [SwapRecordSnapshot]] = [:],
+        holidayAlarmDefault: HolidayAlarmBehavior = .silence,
         calendar: Calendar = .current
     ) {
         self.manualAssignments = manualAssignments
         self.holidays = holidays
         self.rotations = rotations
         self.presets = presets
+        self.holidayAlarmDefault = holidayAlarmDefault
         self.calendar = calendar
         self.vacations = VacationAwareRotation.normalizedVacations(vacations, calendar: calendar)
         self.swapRecords = swapRecords.reduce(into: [:]) { acc, element in
@@ -81,12 +86,24 @@ public struct DayAssignmentSnapshot: Sendable, Equatable {
 public struct HolidayOverrideSnapshot: Sendable, Equatable {
     public let label: String
     public let skipAlarm: Bool
+    public let behavior: HolidayAlarmBehavior
     public let replacementPresetID: UUID?
 
-    public init(label: String, skipAlarm: Bool, replacementPresetID: UUID?) {
+    public init(
+        label: String,
+        skipAlarm: Bool,
+        replacementPresetID: UUID?,
+        behavior: HolidayAlarmBehavior? = nil
+    ) {
         self.label = label
         self.skipAlarm = skipAlarm
         self.replacementPresetID = replacementPresetID
+        // Preserve legacy call sites (behavior omitted): a silenced holiday maps to the
+        // concrete `.silence`, a ringing one to `.ring`, so resolution is unchanged for
+        // callers that predate tri-state behavior. `.inherit` is only produced explicitly
+        // (e.g. from `HolidayOverride.alarmBehavior`), and only `.inherit` consults the
+        // app-wide default in `DayResolver`.
+        self.behavior = behavior ?? (skipAlarm ? .silence : .ring)
     }
 }
 
@@ -214,7 +231,9 @@ public enum DayResolver {
         }
 
         if let holiday = input.holidays[day] {
-            if holiday.skipAlarm {
+            // Resolve `.inherit` against the app-wide default; `.ring`/`.silence` pass through.
+            let effective = holiday.behavior.resolved(default: input.holidayAlarmDefault)
+            if effective == .silence {
                 return .holiday(
                     label: holiday.label, replacementPresetID: nil, alarmTime: nil, skip: true)
             }
@@ -226,8 +245,8 @@ public enum DayResolver {
                     skip: false
                 )
             }
-            // skipAlarm == false with no replacement preset: fall through to rotation resolution
-            // so the normal scheduled alarm still fires on this holiday.
+            // `.ring` with no replacement preset: fall through to rotation resolution so the
+            // normal scheduled alarm still fires on this holiday.
         }
 
         let candidates = input.rotations

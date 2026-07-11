@@ -1,7 +1,10 @@
 import Foundation
 import SwiftData
 
-public typealias AppSettings = SchemaV4.AppSettings
+// The live model is SchemaV6 (P2-ζ added `holidayAlarmDefaultRaw`). The SchemaV4
+// definition below is frozen — it is the shape referenced by the V4 and V5 versioned
+// schemas and must not change. New columns live in SchemaV6 (see SchemaV6Models.swift).
+public typealias AppSettings = SchemaV6.AppSettings
 
 extension SchemaV4 {
     @Model

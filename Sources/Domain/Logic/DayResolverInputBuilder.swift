@@ -15,6 +15,7 @@ public enum DayResolverInputBuilder {
         rotations: [RotationPattern],
         vacations: [VacationPeriod] = [],
         swapRecords: [SwapRecord] = [],
+        holidayAlarmDefault: HolidayAlarmBehavior = .silence,
         calendar: Calendar
     ) -> DayResolverInput {
         let presetSnapshots: [UUID: ShiftPresetSnapshot] = presets.reduce(into: [:]) {
@@ -46,7 +47,8 @@ public enum DayResolverInputBuilder {
             acc[calendar.startOfDay(for: holiday.date)] = HolidayOverrideSnapshot(
                 label: holiday.label,
                 skipAlarm: holiday.skipAlarm,
-                replacementPresetID: holiday.replacementPreset?.id
+                replacementPresetID: holiday.replacementPreset?.id,
+                behavior: holiday.alarmBehavior
             )
         }
 
@@ -95,6 +97,7 @@ public enum DayResolverInputBuilder {
             presets: presetSnapshots,
             vacations: vacationSnapshots,
             swapRecords: swapSnapshots,
+            holidayAlarmDefault: holidayAlarmDefault,
             calendar: calendar
         )
     }
@@ -112,6 +115,7 @@ public enum DayResolverInputBuilder {
             (try? context.fetch(FetchDescriptor<VacationPeriod>())) ?? []
         let swapRecords: [SwapRecord] =
             (try? context.fetch(FetchDescriptor<SwapRecord>())) ?? []
+        let settings = (try? context.fetch(FetchDescriptor<AppSettings>()))?.first
         return make(
             presets: presets,
             assignments: assignments,
@@ -119,6 +123,7 @@ public enum DayResolverInputBuilder {
             rotations: rotations,
             vacations: vacations,
             swapRecords: swapRecords,
+            holidayAlarmDefault: settings?.effectiveHolidayAlarmDefault ?? .silence,
             calendar: calendar
         )
     }

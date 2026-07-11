@@ -60,6 +60,9 @@ public enum ShiftBundleValidationCode: String, Sendable {
     case invalidColorHex
     case invalidCrossVacationPolicy
     case invalidDayStartSlotIndex
+    /// A `.shiftalarm` override declares `alarmBehavior: inherit`, which a canonical exporter
+    /// never writes. The importer coerces it to `silence`; surfaced as a warning (P2-ζ).
+    case holidayBehaviorInherit
 }
 
 public struct ShiftBundleValidationError: Error, LocalizedError, Equatable, Sendable {
@@ -211,6 +214,11 @@ public enum ShiftBundleValidator {
         }
 
         for (index, override) in bundle.overrides.enumerated() {
+            // `inherit` should not appear in a canonical bundle (device-local default is not
+            // shared). Warn so the user knows the importer will treat it as `silence`.
+            if override.alarmBehavior == .inherit {
+                addWarning(.holidayBehaviorInherit, path: "overrides[\(index)].alarmBehavior")
+            }
             guard let presetID = override.replacementPresetID, !presetIDs.contains(presetID)
             else { continue }
             let path = "overrides[\(index)].replacementPresetID"
@@ -319,6 +327,8 @@ public enum ShiftBundleValidator {
             format = String(localized: "import.validation.invalid_cross_vacation_policy")
         case .invalidDayStartSlotIndex:
             format = String(localized: "import.validation.invalid_day_start_slot_index")
+        case .holidayBehaviorInherit:
+            format = String(localized: "import.validation.holiday_behavior_inherit")
         }
         return String(format: format, path)
     }

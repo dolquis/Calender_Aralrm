@@ -1,7 +1,11 @@
 import Foundation
 import SwiftData
 
-public typealias HolidayOverride = SchemaV4.HolidayOverride
+// The live model is SchemaV6 (P2-ζ added `alarmBehaviorRaw`). The SchemaV4 definition
+// below is frozen — it is the shape referenced by the V4 and V5 versioned schemas and
+// must not change, or the migration history breaks. New columns live in SchemaV6
+// (see SchemaV6Models.swift).
+public typealias HolidayOverride = SchemaV6.HolidayOverride
 
 extension SchemaV4 {
     @Model
