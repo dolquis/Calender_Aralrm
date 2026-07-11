@@ -8,6 +8,9 @@ public struct DayCellView: View {
     public let presetColorHex: String?
     public let alarmTime: DateComponents?
     public let holidayLabel: String?
+    /// Effective ring/silence policy for a holiday day (P2-ζ). `nil` when the day is not a
+    /// holiday; drives the 🔔/🔕 indicator independently of `alarmTime`.
+    public let holidayRingStatus: HolidayRingStatus?
     public let hasSwapRecord: Bool
     public let calendar: Calendar
 
@@ -19,6 +22,7 @@ public struct DayCellView: View {
         presetColorHex: String?,
         alarmTime: DateComponents?,
         holidayLabel: String?,
+        holidayRingStatus: HolidayRingStatus? = nil,
         hasSwapRecord: Bool = false,
         calendar: Calendar = .current
     ) {
@@ -29,6 +33,7 @@ public struct DayCellView: View {
         self.presetColorHex = presetColorHex
         self.alarmTime = alarmTime
         self.holidayLabel = holidayLabel
+        self.holidayRingStatus = holidayRingStatus
         self.hasSwapRecord = hasSwapRecord
         self.calendar = calendar
     }
@@ -67,8 +72,29 @@ public struct DayCellView: View {
 
     @ViewBuilder private var holidayBadge: some View {
         if holidayLabel != nil {
-            StatusPill("calendar.holiday_short", tint: .red)
+            if holidayRingStatus != nil {
+                HStack(spacing: 2) {
+                    StatusPill("calendar.holiday_short", tint: .red)
+                    holidayRingIndicator
+                }
                 .accessibilityHidden(true)
+            } else {
+                // No effective policy known: render exactly as before (keeps existing snapshots).
+                StatusPill("calendar.holiday_short", tint: .red)
+                    .accessibilityHidden(true)
+            }
+        }
+    }
+
+    /// 🔔 when the holiday's effective policy rings, 🔕 when silenced (P2-ζ §7). Colour is a
+    /// secondary emphasis only — the state is also carried in the VoiceOver label.
+    @ViewBuilder private var holidayRingIndicator: some View {
+        if let holidayRingStatus {
+            Image(systemName: holidayRingStatus == .ring ? "bell.fill" : "bell.slash.fill")
+                .font(.caption2)
+                .foregroundStyle(
+                    holidayRingStatus == .ring
+                        ? AnyShapeStyle(.tint) : AnyShapeStyle(.secondary))
         }
     }
 
@@ -81,7 +107,17 @@ public struct DayCellView: View {
         if let t = timeString {
             parts.append(String(localized: "a11y.cell.alarm_at") + " " + t)
         }
-        if let holidayLabel { parts.append(holidayLabel) }
+        if let holidayLabel {
+            parts.append(holidayLabel)
+            // Announce the effective alarm policy alongside the holiday name (P2-ζ §7): the
+            // 🔔/🔕 glyph must not be the only carrier of this state.
+            if let holidayRingStatus {
+                parts.append(
+                    String(
+                        localized: holidayRingStatus == .ring
+                            ? "a11y.cell.holiday_rings" : "a11y.cell.holiday_silent"))
+            }
+        }
         if hasSwapRecord { parts.append(String(localized: "a11y.cell.swap_recorded")) }
         return parts.joined(separator: ", ")
     }
