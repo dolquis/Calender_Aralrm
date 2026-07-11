@@ -63,7 +63,10 @@ struct SchemaV3ToV4MigrationTests {
         let v4Context = ModelContext(v4Container)
         let presets = try v4Context.fetch(FetchDescriptor<ShiftPreset>())
         let patterns = try v4Context.fetch(FetchDescriptor<RotationPattern>())
-        let overrides = try v4Context.fetch(FetchDescriptor<HolidayOverride>())
+        // Fetch via the explicit V4 class: this container is pinned to SchemaV4, whereas the
+        // live `HolidayOverride` typealias now points at SchemaV6 (P2-ζ). A version-pinned
+        // migration test must assert against the version it opened.
+        let overrides = try v4Context.fetch(FetchDescriptor<SchemaV4.HolidayOverride>())
         let vacations = try v4Context.fetch(FetchDescriptor<VacationPeriod>())
 
         #expect(presets.count == 1)
