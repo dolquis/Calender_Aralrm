@@ -5507,6 +5507,22 @@
           }
         }
       }
+    },
+    "import.validation.holiday_behavior_inherit": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Holiday at %@ uses the app-wide default; it will be imported as silent."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ の祝日は全体既定を参照します。取り込み時は「鳴らさない」として登録されます。"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

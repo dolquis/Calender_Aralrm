@@ -404,7 +404,10 @@ struct AlarmSchedulerTests {
             configurations: [v3Configuration]
         )
         let v3Context = ModelContext(v3Container)
-        let settings = try #require(try v3Context.fetch(FetchDescriptor<AppSettings>()).first)
+        // This container is pinned to SchemaV4; the live `AppSettings` typealias now points at
+        // SchemaV6 (P2-ζ), so fetch via the explicit V4 class it was opened with.
+        let settings = try #require(
+            try v3Context.fetch(FetchDescriptor<SchemaV4.AppSettings>()).first)
 
         #expect(settings.lookaheadDays == 5)
         #expect(settings.lastAlarmSchedulerRunAt == nil)

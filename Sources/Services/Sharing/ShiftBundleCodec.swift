@@ -144,6 +144,35 @@ public struct ShiftBundle: Codable, Equatable, Sendable {
         public var label: String
         public var skipAlarm: Bool
         public var replacementPresetID: UUID?
+        /// P2-ζ tri-state holiday alarm behavior. Codable default-nil for backward
+        /// compatibility: bundles produced before P2-ζ omit it, and the importer falls back
+        /// to `skipAlarm`. Canonical exporters write a concrete `ring`/`silence` here (never
+        /// `inherit` — the app-wide default is device-local and not shared).
+        public var alarmBehavior: HolidayAlarmBehavior? = nil
+    }
+}
+
+extension ShiftBundle.OverrideDTO {
+    /// The holiday alarm behavior this override resolves to **on import**, used consistently by
+    /// apply, validation severity, and the change preview so all three agree.
+    ///
+    /// This is an import-specific resolution, not a universal normalization: `inherit` is coerced
+    /// to `.silence` because the recipient has no access to the sender's device-local app-wide
+    /// default and must not surprise-ring. If we ever decide inbound `inherit` should resolve
+    /// against the *recipient's* default, change it here (and only here).
+    /// - `alarmBehavior` wins when present (`inherit` → `.silence`).
+    /// - Legacy bundles (no `alarmBehavior`) fall back to `skipAlarm`: `true → .silence`,
+    ///   `false → .ring`, preserving the sender's explicit binary intent.
+    public var importResolvedBehavior: HolidayAlarmBehavior {
+        if let declared = alarmBehavior {
+            return declared == .inherit ? .silence : declared
+        }
+        return skipAlarm ? .silence : .ring
+    }
+
+    /// Whether `importResolvedBehavior` silences the alarm (the effective skip flag on import).
+    public var importResolvedSkipAlarm: Bool {
+        importResolvedBehavior == .silence
     }
 }
 
