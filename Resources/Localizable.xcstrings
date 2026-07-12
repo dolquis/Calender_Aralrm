@@ -5523,6 +5523,38 @@
           }
         }
       }
+    },
+    "a11y.cell.holiday_rings": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "alarm rings"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "アラーム鳴る"
+          }
+        }
+      }
+    },
+    "a11y.cell.holiday_silent": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "alarm silenced"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "アラーム鳴らない"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

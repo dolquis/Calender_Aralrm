@@ -24,6 +24,7 @@
 		1B8439D8E8DD04FD234F5F75 /* PatternSuggestionResolverTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7B8856DC0C008DA75C75C3BC /* PatternSuggestionResolverTests.swift */; };
 		1BE23D5E8DB38367593F8938 /* SchemaV2Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = 40CFE6FF128FE69B459B29F8 /* SchemaV2Models.swift */; };
 		1D91354AF5A61F6AB8A2BA34 /* AlarmAuthorization.swift in Sources */ = {isa = PBXBuildFile; fileRef = 86AC780F46CD0EFCA4DF5AEF /* AlarmAuthorization.swift */; };
+		1E5D2C7C581B507CE0182968 /* HolidayRingStatusTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FB628D08728B6C90733A6DD1 /* HolidayRingStatusTests.swift */; };
 		1F2155E5C2B3F8A7BD1AEC75 /* SwapRecordTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA592FA67FE8C4E1FF02DC95 /* SwapRecordTests.swift */; };
 		1FA8627BBE71AEB50CF94BBC /* RotationPattern.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01A6D3137CBF6EC9B8450199 /* RotationPattern.swift */; };
 		271A542E7230393125620C4A /* ChangePreview.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A532F9C6BCE6B4A84D0F7A5 /* ChangePreview.swift */; };
@@ -92,6 +93,7 @@
 		7CA4E54DC6BE47A47B9385E5 /* SleepScheduleView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 38E6B525BD106DF2E21EFEBF /* SleepScheduleView.swift */; };
 		7CD2B27ABC43A0ACE93650EA /* SchemaV3ToV4MigrationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2627AC31545ED01826DFF3FF /* SchemaV3ToV4MigrationTests.swift */; };
 		7D651CDD1B2BA12C40118997 /* AlarmSound.swift in Sources */ = {isa = PBXBuildFile; fileRef = E0CCEBE3E8C96F8D3D39213C /* AlarmSound.swift */; };
+		805CD8DAA77E94BC35CF8E7F /* HolidayRingStatus.swift in Sources */ = {isa = PBXBuildFile; fileRef = 183F2A399A9E4D402BBFFEE6 /* HolidayRingStatus.swift */; };
 		821B4D90E806A2AA9BDAE2C2 /* DeepLinkRouter.swift in Sources */ = {isa = PBXBuildFile; fileRef = F459C419D55D6AA9892B4346 /* DeepLinkRouter.swift */; };
 		85696369DEE9D342F963E410 /* ShiftAlarmApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4DF8BFCE4E014ADD1045BDA2 /* ShiftAlarmApp.swift */; };
 		87333F173A0E4CD698C30452 /* MigrationPlan.swift in Sources */ = {isa = PBXBuildFile; fileRef = BC87BA11FC84BC10F333DC83 /* MigrationPlan.swift */; };
@@ -103,6 +105,7 @@
 		923B64C3808747DDA8899C86 /* DayResolverInputBuilder.swift in Sources */ = {isa = PBXBuildFile; fileRef = E79E459829FCB649F8B069DF /* DayResolverInputBuilder.swift */; };
 		955C7BC851F398B81488E44C /* SchemaV6.swift in Sources */ = {isa = PBXBuildFile; fileRef = 12EA73E65837C5C7D326F368 /* SchemaV6.swift */; };
 		96FADB107DCA56B701DBE0EA /* AlarmScheduler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 952EB97D2A6C459E3BDCFC40 /* AlarmScheduler.swift */; };
+		98E92C8106229D205927168A /* HolidayRingStatus.swift in Sources */ = {isa = PBXBuildFile; fileRef = 183F2A399A9E4D402BBFFEE6 /* HolidayRingStatus.swift */; };
 		9B463F1F79EA44AEC7467BA7 /* ImportView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5D837D13E36B1A14BFC6929F /* ImportView.swift */; };
 		9C130A53E8EF85CB6AD4F4E4 /* DayAssignment.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE4C1B18B14D6A40A95C9A8D /* DayAssignment.swift */; };
 		9F203F39564DAECC9F3AD91E /* DayCellViewSnapshotTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = ABF26790C0D0FD60BB552429 /* DayCellViewSnapshotTests.swift */; };
@@ -238,6 +241,7 @@
 		171EE9996E1C3FE247EF5A26 /* HealthKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = HealthKit.framework; path = System/Library/Frameworks/HealthKit.framework; sourceTree = SDKROOT; };
 		1797D91A1016B3E2CEE78A9C /* EventKitHolidayProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventKitHolidayProvider.swift; sourceTree = "<group>"; };
 		179DF514F84EF41ACB6AA94F /* DayDetailEditorSavePlanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DayDetailEditorSavePlanner.swift; sourceTree = "<group>"; };
+		183F2A399A9E4D402BBFFEE6 /* HolidayRingStatus.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HolidayRingStatus.swift; sourceTree = "<group>"; };
 		18F14DAB503EF5551F43C60A /* ShiftAlarm.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShiftAlarm.swift; sourceTree = "<group>"; };
 		19AB3E4AB0FEE40CF754C939 /* ShiftAlarmShortcutsProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShiftAlarmShortcutsProvider.swift; sourceTree = "<group>"; };
 		1B55FF9A7AD80C1726DABEA2 /* AlarmSchedulingClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlarmSchedulingClient.swift; sourceTree = "<group>"; };
@@ -381,6 +385,7 @@
 		F57502E93D536FE9914C3DA2 /* ShiftAlarmTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = ShiftAlarmTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		F826880AB3E9631FE7905EA4 /* SleepIntentHelperTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SleepIntentHelperTests.swift; sourceTree = "<group>"; };
 		F9964DCDC9BA28F31B9555CC /* ICSExportView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ICSExportView.swift; sourceTree = "<group>"; };
+		FB628D08728B6C90733A6DD1 /* HolidayRingStatusTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HolidayRingStatusTests.swift; sourceTree = "<group>"; };
 		FC95AB597BB57AF7418EF0DF /* SchemaV4.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SchemaV4.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -518,6 +523,7 @@
 				8BE434E979A31ACF1C177CA4 /* DateRange.swift */,
 				35017C9D5FB36DA39CD9EC30 /* DayResolver.swift */,
 				E79E459829FCB649F8B069DF /* DayResolverInputBuilder.swift */,
+				183F2A399A9E4D402BBFFEE6 /* HolidayRingStatus.swift */,
 				6952B27C829FCA67B2B9E118 /* PatternSuggestionResolver.swift */,
 				B0DE13B9D3287B1416F5A8E7 /* RotationExpander.swift */,
 				0BD8459A156DE552C6D27A01 /* ShiftPatternDetector.swift */,
@@ -724,6 +730,7 @@
 				0606D6A04A403EED752A5D77 /* DayResolverTests.swift */,
 				9CEDE8C334C7F0C33574A7C2 /* HolidayAlarmResolveTests.swift */,
 				8FF2CE3F7A46464280038D19 /* HolidayMigrationBackfillTests.swift */,
+				FB628D08728B6C90733A6DD1 /* HolidayRingStatusTests.swift */,
 				7B8856DC0C008DA75C75C3BC /* PatternSuggestionResolverTests.swift */,
 				03B220A2866CA3CF0D63D6C6 /* RotationExpanderTests.swift */,
 				0B5D48CC86C2125679C92B3B /* ShiftBundleCodecTests.swift */,
@@ -1074,6 +1081,7 @@
 				651A752EFBF0A55BA5C9716E /* FakeAlarmSchedulingClient.swift in Sources */,
 				B365CF7C12CD936DAEE9F98D /* HolidayAlarmResolveTests.swift in Sources */,
 				0D305D581FAEBCE77237241E /* HolidayMigrationBackfillTests.swift in Sources */,
+				1E5D2C7C581B507CE0182968 /* HolidayRingStatusTests.swift in Sources */,
 				FBA4F3C377C0A77807393BB8 /* HolidayShareCompatTests.swift in Sources */,
 				67F24FB99340A320B99A1BAE /* ICSExportDateRangeTests.swift in Sources */,
 				4DFF01B7820780E95870D469 /* ICSExporterTests.swift in Sources */,
@@ -1137,6 +1145,7 @@
 				57A1C1A7062992462E0C498C /* HolidayManagerView.swift in Sources */,
 				E6713003BA9DC6C1FE8665F2 /* HolidayOverride.swift in Sources */,
 				D71547B9C9327C27C631A9D5 /* HolidayProvider.swift in Sources */,
+				98E92C8106229D205927168A /* HolidayRingStatus.swift in Sources */,
 				C3E2FEEAD3E24B47592E1188 /* ICSExportView.swift in Sources */,
 				39BD5B1B121ECD026E2C9D08 /* ICSExporter.swift in Sources */,
 				3544A087366A67E8D72C3F9D /* ImportPreviewView.swift in Sources */,
@@ -1210,6 +1219,7 @@
 				0C6C1C855CE5EBF910D1A579 /* HolidayAlarmBehavior.swift in Sources */,
 				E0616BA73CEF8C52F77D1318 /* HolidayBehaviorBackfill.swift in Sources */,
 				C4EA2E7EF8BB1CDB894CF284 /* HolidayOverride.swift in Sources */,
+				805CD8DAA77E94BC35CF8E7F /* HolidayRingStatus.swift in Sources */,
 				BE73A44288EE4870E3462922 /* LiveActivityController.swift in Sources */,
 				D4863C3E8B3FE0A4A97E2011 /* MigrationPlan.swift in Sources */,
 				B9724A7942A0C5AC53308C21 /* ModelContainer+Shared.swift in Sources */,

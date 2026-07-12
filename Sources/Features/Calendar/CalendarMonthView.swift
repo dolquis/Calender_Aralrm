@@ -12,10 +12,17 @@ public struct CalendarMonthView: View {
     private var vacations: [VacationPeriod]
     @Query(sort: [SortDescriptor(\SwapRecord.date)])
     private var swapRecords: [SwapRecord]
+    @Query private var settings: [AppSettings]
     @State private var viewModel = CalendarMonthViewModel()
     @State private var editingDate: Date?
 
     public init() {}
+
+    /// App-wide holiday alarm default (`ring`/`silence`) that `.inherit` holidays resolve to.
+    /// Read-only here (the toggle UI lands in a later P2-ζ PR); defaults to `.silence`.
+    private var holidayAlarmDefault: HolidayAlarmBehavior {
+        settings.first?.effectiveHolidayAlarmDefault ?? .silence
+    }
 
     private var resolverInput: DayResolverInput {
         DayResolverInputBuilder.make(
@@ -25,12 +32,30 @@ public struct CalendarMonthView: View {
             rotations: rotations,
             vacations: vacations,
             swapRecords: swapRecords,
+            holidayAlarmDefault: holidayAlarmDefault,
             calendar: viewModel.calendar
         )
     }
 
+    /// Bundled Japanese public holidays as an always-on display overlay (P2-ζ §6): the calendar
+    /// shows a holiday and its 🔔/🔕 even before a `HolidayOverride` row is materialized. Built
+    /// once per render; `HolidayOverride` rows take precedence for the label.
+    private var bundledHolidayNames: [Date: String] {
+        var map: [Date: String] = [:]
+        for entry in HolidayProvider.loadJapaneseHolidays() {
+            guard let day = HolidayProvider.parseLocalDay(entry.date, calendar: viewModel.calendar)
+            else { continue }
+            map[viewModel.calendar.startOfDay(for: day)] = entry.name
+        }
+        return map
+    }
+
     public var body: some View {
         let columns = Array(repeating: GridItem(.flexible(), spacing: 4), count: 7)
+        // Compute the resolver input and holiday overlay once per render instead of rebuilding
+        // them inside every one of the 42 cells.
+        let input = resolverInput
+        let holidayNames = bundledHolidayNames
 
         VStack(spacing: 12) {
             header
@@ -40,7 +65,7 @@ public struct CalendarMonthView: View {
             weekdayHeader
             LazyVGrid(columns: columns, spacing: 4) {
                 ForEach(viewModel.gridDates(), id: \.self) { date in
-                    cell(for: date)
+                    cell(for: date, input: input, holidayNames: holidayNames)
                 }
             }
             CalendarLegendView()
@@ -130,12 +155,27 @@ public struct CalendarMonthView: View {
     }
 
     @ViewBuilder
-    private func cell(for date: Date) -> some View {
+    private func cell(
+        for date: Date,
+        input: DayResolverInput,
+        holidayNames: [Date: String]
+    ) -> some View {
         let normalized = viewModel.calendar.startOfDay(for: date)
-        let resolved = DayResolver.resolve(date: normalized, input: resolverInput)
-        let presetID = resolved.presetID
-        let preset = presetID.flatMap { resolverInput.presets[$0] }
-        let holiday = resolverInput.holidays[normalized]
+        let resolved = DayResolver.resolve(date: normalized, input: input)
+        let preset = resolved.presetID.flatMap { input.presets[$0] }
+        // Merge the materialized row (if any) with the always-on bundled overlay for the *label*
+        // (§6): a known holiday's name shows even before it is materialized. The 🔔/🔕 status,
+        // however, is derived from the real `DayResolver` outcome and only for a materialized
+        // holiday row that governs the day — so it never contradicts the scheduled alarm (a
+        // manual assignment wins, and a row-less holiday still rings via rotation until
+        // auto-materialize lands). See `HolidayRingStatus.forResolvedDay`.
+        let row = input.holidays[normalized]
+        let bundledName = holidayNames[normalized]
+        let holidayLabel = row?.label ?? bundledName
+        let ringStatus = HolidayRingStatus.forResolvedDay(
+            resolved,
+            hasHolidayRow: row != nil,
+            hasManualAssignment: input.manualAssignments[normalized] != nil)
         Button {
             editingDate = normalized
         } label: {
@@ -146,8 +186,9 @@ public struct CalendarMonthView: View {
                 presetName: preset?.name,
                 presetColorHex: preset?.colorHex,
                 alarmTime: resolved.fireTime,
-                holidayLabel: holiday?.label,
-                hasSwapRecord: !(resolverInput.swapRecords[normalized]?.isEmpty ?? true),
+                holidayLabel: holidayLabel,
+                holidayRingStatus: ringStatus,
+                hasSwapRecord: !(input.swapRecords[normalized]?.isEmpty ?? true),
                 calendar: viewModel.calendar
             )
         }
