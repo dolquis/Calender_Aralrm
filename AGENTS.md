@@ -69,7 +69,7 @@ CI は `.github/workflows/ios.yml` が `macos-26` / Xcode 26+ で実行する。
 `build-test` ジョブが `scripts/lint.sh check`（`swift-format`、設定は
 `.swift-format`）→ `scripts/verify.sh` の順に走らせる（macOS ランナーは 10 倍課金の
 ため lint 専用ジョブは持たない）。`build-test` は `changes` ジョブ
-（`dorny/paths-filter`）が iOS 関連ファイルの変更を検知したときのみ起動し、
+（`gh api` による変更ファイル判定）が iOS 関連ファイルの変更を検知したときのみ起動し、
 docs / `.claude` 等のみの変更ではスキップされる（週次 schedule と
 `workflow_dispatch` では無条件にフル実行）。branch protection の必須チェックは
 `ci-gate` ジョブ（Linux）が集約する。PR では `verify.sh test`（カバレッジ無効）、

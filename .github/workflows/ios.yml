@@ -13,8 +13,8 @@ on:
     - cron: '0 21 * * 5'
   workflow_dispatch:
 
-# Least privilege for the default token; dorny/paths-filter needs
-# pull-requests: read to list changed files on PR events.
+# Least privilege for the default token; the changes job needs
+# pull-requests: read (PR file listing) and contents: read (push compare).
 permissions:
   contents: read
   pull-requests: read
@@ -39,28 +39,55 @@ jobs:
       ios: ${{ steps.filter.outputs.ios || 'true' }}
 
     steps:
-      - name: Check out repository
-        uses: actions/checkout@v4
-
+      # Uses gh api (preinstalled on runners) instead of a third-party
+      # paths-filter action: the repo's Actions policy may not allow it, and
+      # this avoids adding a supply-chain dependency. Any listing failure
+      # falls back to ios=true so CI degrades to "run everything", never to
+      # silently skipping the build.
       - name: Detect iOS-related changes
         id: filter
         if: github.event_name == 'pull_request' || github.event_name == 'push'
-        uses: dorny/paths-filter@v3
-        with:
-          filters: |
-            ios:
-              - 'App/**'
-              - 'Sources/**'
-              - 'Widget/**'
-              - 'Tests/**'
-              - 'Resources/**'
-              - 'Config/**'
-              - 'project.yml'
-              - 'ShiftAlarm.xcodeproj/**'
-              - '.swift-format'
-              - '.swiftlint.yml'
-              - 'scripts/**'
-              - '.github/workflows/ios.yml'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          EVENT_NAME: ${{ github.event_name }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PUSH_BEFORE: ${{ github.event.before }}
+          PUSH_AFTER: ${{ github.event.after }}
+        run: |
+          set -euo pipefail
+          pattern='^(App|Sources|Widget|Tests|Resources|Config|scripts)/|^project\.yml$|^ShiftAlarm\.xcodeproj/|^\.swift-format$|^\.swiftlint\.yml$|^\.github/workflows/ios\.yml$'
+          full_ci() {
+            echo "$1" >&2
+            echo "ios=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          }
+          if [ "$EVENT_NAME" = "pull_request" ]; then
+            files="$(gh api "repos/${REPO}/pulls/${PR_NUMBER}/files" \
+              --paginate --jq '.[].filename')" \
+              || full_ci "Could not list PR files; defaulting to full CI."
+          else
+            if [ "$PUSH_BEFORE" = "0000000000000000000000000000000000000000" ]; then
+              full_ci "New branch push; defaulting to full CI."
+            fi
+            files="$(gh api "repos/${REPO}/compare/${PUSH_BEFORE}...${PUSH_AFTER}" \
+              --jq '.files[].filename')" \
+              || full_ci "Could not compare push range; defaulting to full CI."
+            # The compare API returns at most 300 files; beyond that the list
+            # is truncated, so assume iOS files may be among the missing ones.
+            if [ "$(printf '%s\n' "$files" | wc -l)" -ge 300 ]; then
+              full_ci "Push touches 300+ files; defaulting to full CI."
+            fi
+          fi
+          matched="$(printf '%s\n' "$files" | grep -E "$pattern" || true)"
+          if [ -n "$matched" ]; then
+            echo "iOS-related changes detected:"
+            printf '%s\n' "$matched"
+            echo "ios=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "No iOS-related changes; the macOS build-test job will be skipped."
+            echo "ios=false" >> "$GITHUB_OUTPUT"
+          fi
 
   build-test:
     needs: changes
