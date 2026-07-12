@@ -6,6 +6,18 @@ on:
     branches:
       - main
       - master
+  # Weekly full run as a safety net for path-filter gaps: build-test runs
+  # unconditionally on schedule / workflow_dispatch (see the job's `if`).
+  # Friday 21:00 UTC = Saturday 06:00 JST.
+  schedule:
+    - cron: '0 21 * * 5'
+  workflow_dispatch:
+
+# Least privilege for the default token; the changes job needs
+# pull-requests: read (PR file listing) and contents: read (push compare).
+permissions:
+  contents: read
+  pull-requests: read
 
 # Cancel superseded runs on the same ref so repeated pushes do not pile up
 # concurrent, expensive macOS runners.
@@ -14,8 +26,74 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # Classify changed files on a cheap Linux runner so the expensive macOS
+  # job only starts when iOS-related files actually changed. A plain
+  # `paths-ignore` on the workflow would leave required checks pending, so
+  # the workflow always starts and `ci-gate` aggregates the final verdict.
+  changes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      # Empty when the filter step is skipped (schedule / workflow_dispatch),
+      # which must run the full CI, hence the 'true' fallback.
+      ios: ${{ steps.filter.outputs.ios || 'true' }}
+
+    steps:
+      # Uses gh api (preinstalled on runners) instead of a third-party
+      # paths-filter action: the repo's Actions policy may not allow it, and
+      # this avoids adding a supply-chain dependency. Any listing failure
+      # falls back to ios=true so CI degrades to "run everything", never to
+      # silently skipping the build.
+      - name: Detect iOS-related changes
+        id: filter
+        if: github.event_name == 'pull_request' || github.event_name == 'push'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          EVENT_NAME: ${{ github.event_name }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PUSH_BEFORE: ${{ github.event.before }}
+          PUSH_AFTER: ${{ github.event.after }}
+        run: |
+          set -euo pipefail
+          pattern='^(App|Sources|Widget|Tests|Resources|Config|scripts)/|^project\.yml$|^ShiftAlarm\.xcodeproj/|^\.swift-format$|^\.swiftlint\.yml$|^\.github/workflows/ios\.yml$'
+          full_ci() {
+            echo "$1" >&2
+            echo "ios=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          }
+          if [ "$EVENT_NAME" = "pull_request" ]; then
+            files="$(gh api "repos/${REPO}/pulls/${PR_NUMBER}/files" \
+              --paginate --jq '.[].filename')" \
+              || full_ci "Could not list PR files; defaulting to full CI."
+          else
+            if [ "$PUSH_BEFORE" = "0000000000000000000000000000000000000000" ]; then
+              full_ci "New branch push; defaulting to full CI."
+            fi
+            files="$(gh api "repos/${REPO}/compare/${PUSH_BEFORE}...${PUSH_AFTER}" \
+              --jq '.files[].filename')" \
+              || full_ci "Could not compare push range; defaulting to full CI."
+            # The compare API returns at most 300 files; beyond that the list
+            # is truncated, so assume iOS files may be among the missing ones.
+            if [ "$(printf '%s\n' "$files" | wc -l)" -ge 300 ]; then
+              full_ci "Push touches 300+ files; defaulting to full CI."
+            fi
+          fi
+          matched="$(printf '%s\n' "$files" | grep -E "$pattern" || true)"
+          if [ -n "$matched" ]; then
+            echo "iOS-related changes detected:"
+            printf '%s\n' "$matched"
+            echo "ios=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "No iOS-related changes; the macOS build-test job will be skipped."
+            echo "ios=false" >> "$GITHUB_OUTPUT"
+          fi
+
   build-test:
+    needs: changes
+    if: needs.changes.outputs.ios == 'true'
     runs-on: macos-26
+    timeout-minutes: 30
 
     steps:
       - name: Check out repository
@@ -54,16 +132,22 @@ jobs:
           fi
 
       # Kick off the multi-minute runtime download asynchronously so it overlaps
-      # with the XcodeGen install below. It must start after "Select Xcode" (it
-      # invokes the selected xcodebuild). We block on it at "Wait for iOS
-      # simulator runtime", right before verify.sh needs a simulator. The retry
-      # loop and non-zero exit are preserved, so a failed download still fails
-      # the job at that wait step.
+      # with the lint and XcodeGen install steps below. It must start after
+      # "Select Xcode" (it invokes the selected xcodebuild). We block on it at
+      # "Wait for iOS simulator runtime", right before verify.sh needs a
+      # simulator. When the runner image already ships the iOS 26 runtime the
+      # step exits immediately without downloading. The retry loop and non-zero
+      # exit are preserved, so a failed download still fails the job at that
+      # wait step.
       - name: Install iOS simulator runtime
         id: sim-runtime
         background: true
         run: |
           set -euo pipefail
+          if xcrun simctl list runtimes available | grep -qE 'iOS 26\.[0-9]'; then
+            echo "iOS 26 simulator runtime already installed; skipping download."
+            exit 0
+          fi
           attempt=1
           max_attempts=3
           delay=15
@@ -78,16 +162,30 @@ jobs:
             delay=$((delay * 2))
           done
 
+      # Runs here (not as a separate job) because a dedicated macOS lint job
+      # bills a 1-minute minimum at the 10x macOS rate for ~2 seconds of work.
+      # It needs the selected Xcode toolchain (xcrun swift-format) and overlaps
+      # with the background runtime download above.
+      - name: Lint Swift sources
+        run: bash scripts/lint.sh check
+
       - name: Install XcodeGen
         run: bash scripts/bootstrap.sh
 
       - name: Wait for iOS simulator runtime
         wait: sim-runtime
 
+      # PRs run tests only (xcodebuild test builds the scheme's targets) with
+      # coverage off; main pushes and the weekly full run keep the explicit
+      # build pass and coverage as the safety net for anything a test-only
+      # run might miss.
       - name: Build and test
+        env:
+          VERIFY_ACTION: ${{ github.event_name == 'pull_request' && 'test' || 'all' }}
+          ENABLE_CODE_COVERAGE: ${{ github.event_name == 'pull_request' && 'NO' || 'YES' }}
         run: |
           set -o pipefail
-          bash scripts/verify.sh 2>&1 | tee verify.log
+          bash scripts/verify.sh "$VERIFY_ACTION" 2>&1 | tee verify.log
 
       - name: Upload build logs on failure
         if: failure()
@@ -101,42 +199,11 @@ jobs:
           if-no-files-found: ignore
           retention-days: 7
 
-  lint:
-    runs-on: macos-26
-
-    steps:
-      - name: Check out repository
-        uses: actions/checkout@v4
-
-      - name: Select Xcode
-        run: |
-          set -euo pipefail
-          for app in \
-            /Applications/Xcode_26.5.app \
-            /Applications/Xcode_26.4.app \
-            /Applications/Xcode_26.0.app \
-            /Applications/Xcode.app
-          do
-            if [ -d "$app" ]; then
-              sudo xcode-select -s "$app/Contents/Developer"
-              break
-            fi
-          done
-          version="$(xcodebuild -version | awk 'NR == 1 { print $2 }')"
-          echo "Xcode $version"
-          major="${version%%.*}"
-          if [ "$major" -lt 26 ]; then
-            echo "Xcode 26.0 or newer is required." >&2
-            exit 1
-          fi
-
-      - name: Lint Swift sources
-        run: bash scripts/lint.sh check
-
   quality:
     # Cross-platform checks that do not need Xcode; run on Linux so they
     # mirror what is available in the Claude Code on the web cloud sandbox.
     runs-on: ubuntu-latest
+    timeout-minutes: 10
 
     steps:
       - name: Check out repository
@@ -149,7 +216,6 @@ jobs:
           url="https://github.com/gitleaks/gitleaks/releases/download/v${ver}/gitleaks_${ver}_linux_x64.tar.gz"
           curl -fsSL "$url" -o /tmp/gitleaks.tgz
           sudo tar -xzf /tmp/gitleaks.tgz -C /usr/local/bin gitleaks
-
       - name: Secret scan (gitleaks)
         run: bash scripts/scan-secrets.sh
 
@@ -157,3 +223,33 @@ jobs:
         uses: crate-ci/typos@v1.47.2
         with:
           files: Sources App Widget Tests scripts
+
+  # Single cheap job that branch protection can require: succeeds when the
+  # jobs that ran succeeded, and treats a path-filtered (skipped) build-test
+  # as passing.
+  ci-gate:
+    if: always()
+    needs:
+      - changes
+      - quality
+      - build-test
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Validate required jobs
+        run: |
+          set -euo pipefail
+          echo "changes:    ${{ needs.changes.result }}"
+          echo "quality:    ${{ needs.quality.result }}"
+          echo "build-test: ${{ needs.build-test.result }}"
+          if [ "${{ needs.changes.result }}" != "success" ]; then
+            exit 1
+          fi
+          if [ "${{ needs.quality.result }}" != "success" ]; then
+            exit 1
+          fi
+          case "${{ needs.build-test.result }}" in
+            success|skipped) ;;
+            *) exit 1 ;;
+          esac
