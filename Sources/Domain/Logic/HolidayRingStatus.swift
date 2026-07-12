@@ -1,27 +1,35 @@
 import Foundation
 
-/// Whether a holiday day effectively rings or is silenced, for the calendar 🔔/🔕 indicator.
+/// Whether a holiday day rings or is silenced, for the calendar 🔔/🔕 indicator.
 ///
-/// P2-ζ §7: the indicator must come from the *effective holiday policy*, not the raw
-/// `fireTime`. A display-only (un-materialized) known holiday falls through to rotation
-/// resolution and would show a non-nil `fireTime`, so `fireTime` alone would wrongly render
-/// "rings" for a future/out-of-window holiday under a `silence` default. Resolving the
-/// behavior against the app-wide default matches what the scheduler will actually do once the
-/// day is materialized.
+/// P2-ζ §7 wants this to reflect the effective holiday policy rather than a raw preset time.
+/// Until the look-ahead auto-materialize step ships (PR-4 / DEV-528), the only days whose
+/// policy the scheduler actually honors are those with a materialized `HolidayOverride` row
+/// that also wins day resolution — a manual assignment overrides a holiday, and a row-less
+/// known holiday falls through to rotation and really does ring. So the indicator is derived
+/// from the *actual* `DayResolver` outcome for governing-holiday days only, and suppressed
+/// otherwise, so the glyph and its VoiceOver label never contradict the scheduled alarm.
 public enum HolidayRingStatus: Sendable, Equatable {
     case ring
     case silence
 
-    /// Resolve the effective status for a holiday day.
+    /// The indicator to show for a day, or `nil` to show none.
     /// - Parameters:
-    ///   - rowBehavior: the materialized `HolidayOverride` behavior, or `nil` for a display-only
-    ///     known holiday (bundled/EventKit) with no row yet — which materializes as `.inherit`.
-    ///   - globalDefault: the app-wide default (`ring`/`silence`) that `.inherit` resolves to.
-    public static func resolve(
-        rowBehavior: HolidayAlarmBehavior?,
-        globalDefault: HolidayAlarmBehavior
-    ) -> HolidayRingStatus {
-        let effective = (rowBehavior ?? .inherit).resolved(default: globalDefault)
-        return effective == .silence ? .silence : .ring
+    ///   - resolved: the resolved day from `DayResolver` (already encodes the manual > holiday >
+    ///     rotation precedence).
+    ///   - hasHolidayRow: whether a materialized `HolidayOverride` row exists for the day.
+    ///   - hasManualAssignment: whether a manual assignment exists (which overrides holidays).
+    ///
+    /// Returns `nil` unless a materialized holiday row governs the day (no manual override).
+    /// Row-less display-only holidays get no indicator yet — their label still shows via the
+    /// calendar overlay (§6), but the bell waits until auto-materialize makes policy and
+    /// scheduling agree.
+    public static func forResolvedDay(
+        _ resolved: ResolvedDay,
+        hasHolidayRow: Bool,
+        hasManualAssignment: Bool
+    ) -> HolidayRingStatus? {
+        guard hasHolidayRow, !hasManualAssignment else { return nil }
+        return resolved.fireTime != nil ? .ring : .silence
     }
 }

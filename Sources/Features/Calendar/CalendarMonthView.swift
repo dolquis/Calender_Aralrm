@@ -56,7 +56,6 @@ public struct CalendarMonthView: View {
         // them inside every one of the 42 cells.
         let input = resolverInput
         let holidayNames = bundledHolidayNames
-        let globalDefault = holidayAlarmDefault
 
         VStack(spacing: 12) {
             header
@@ -66,9 +65,7 @@ public struct CalendarMonthView: View {
             weekdayHeader
             LazyVGrid(columns: columns, spacing: 4) {
                 ForEach(viewModel.gridDates(), id: \.self) { date in
-                    cell(
-                        for: date, input: input, holidayNames: holidayNames,
-                        globalDefault: globalDefault)
+                    cell(for: date, input: input, holidayNames: holidayNames)
                 }
             }
             CalendarLegendView()
@@ -161,22 +158,24 @@ public struct CalendarMonthView: View {
     private func cell(
         for date: Date,
         input: DayResolverInput,
-        holidayNames: [Date: String],
-        globalDefault: HolidayAlarmBehavior
+        holidayNames: [Date: String]
     ) -> some View {
         let normalized = viewModel.calendar.startOfDay(for: date)
         let resolved = DayResolver.resolve(date: normalized, input: input)
         let preset = resolved.presetID.flatMap { input.presets[$0] }
-        // Merge the materialized row (if any) with the always-on bundled overlay. A row wins for
-        // the label; the 🔔/🔕 status comes from the effective policy (row behavior or, for a
-        // display-only holiday, `.inherit` resolved against the app-wide default).
+        // Merge the materialized row (if any) with the always-on bundled overlay for the *label*
+        // (§6): a known holiday's name shows even before it is materialized. The 🔔/🔕 status,
+        // however, is derived from the real `DayResolver` outcome and only for a materialized
+        // holiday row that governs the day — so it never contradicts the scheduled alarm (a
+        // manual assignment wins, and a row-less holiday still rings via rotation until
+        // auto-materialize lands). See `HolidayRingStatus.forResolvedDay`.
         let row = input.holidays[normalized]
         let bundledName = holidayNames[normalized]
         let holidayLabel = row?.label ?? bundledName
-        let ringStatus: HolidayRingStatus? =
-            (row != nil || bundledName != nil)
-            ? HolidayRingStatus.resolve(rowBehavior: row?.behavior, globalDefault: globalDefault)
-            : nil
+        let ringStatus = HolidayRingStatus.forResolvedDay(
+            resolved,
+            hasHolidayRow: row != nil,
+            hasManualAssignment: input.manualAssignments[normalized] != nil)
         Button {
             editingDate = normalized
         } label: {
