@@ -12,6 +12,7 @@ public struct HolidayManagerView: View {
     @State private var addingLabel: String = ""
     @State private var isImportingFromCalendar = false
     @State private var calendarAccessDenied = false
+    @State private var saveErrorPresented = false
     @State private var addingBehavior: HolidayAlarmBehavior = .inherit
     @State private var addingReplacementID: UUID?
     @State private var addingKind: HolidayOverride.Kind = .paidLeave
@@ -111,6 +112,11 @@ public struct HolidayManagerView: View {
             }
         } message: {
             Text("holiday.calendar_access_denied_message")
+        }
+        .alert("holiday.save_failed_title", isPresented: $saveErrorPresented) {
+            Button("common.ok", role: .cancel) {}
+        } message: {
+            Text("holiday.save_failed_message")
         }
     }
 
@@ -222,8 +228,13 @@ public struct HolidayManagerView: View {
     private func update(_ override: HolidayOverride, behavior: HolidayAlarmBehavior) {
         override.alarmBehavior = behavior
         override.syncSkipAlarm(globalDefault: holidayAlarmDefault)
-        try? modelContext.save()
-        Task { await refreshAlarmSurfaces() }
+        do {
+            try modelContext.save()
+            Task { await refreshAlarmSurfaces() }
+        } catch {
+            modelContext.rollback()
+            saveErrorPresented = true
+        }
     }
 
     private func refreshAlarmSurfaces() async {

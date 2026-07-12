@@ -404,6 +404,22 @@
         }
       }
     },
+    "common.ok": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "OK"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "OK"
+          }
+        }
+      }
+    },
     "common.save": {
       "localizations": {
         "en": {
@@ -1139,6 +1155,38 @@
           "stringUnit": {
             "state": "translated",
             "value": "アラームは鳴りません。"
+          }
+        }
+      }
+    },
+    "holiday.save_failed_message": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your changes could not be saved. Please try again."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "変更を保存できませんでした。もう一度お試しください。"
+          }
+        }
+      }
+    },
+    "holiday.save_failed_title": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Couldn’t Save Changes"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "変更を保存できませんでした"
           }
         }
       }

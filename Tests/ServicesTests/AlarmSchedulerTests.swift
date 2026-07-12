@@ -336,6 +336,27 @@ struct AlarmSchedulerTests {
     }
 
     @Test
+    func concurrentRefreshesAreSerialized() async {
+        let container = SharedPersistence.makeContainer(inMemory: true)
+        let fake = FakeAlarmSchedulingClient(scheduledIDsDelay: .milliseconds(50))
+        let scheduler = AlarmScheduler(modelContainer: container, alarmClient: fake)
+
+        async let first: Void = scheduler.refreshScheduledAlarms()
+        async let second: Void = scheduler.refreshScheduledAlarms()
+        _ = await (first, second)
+
+        let maximumConcurrentCalls = await fake.maxConcurrentScheduledIDsCalls()
+        #expect(maximumConcurrentCalls == 1)
+        let operations = await fake.recordedOperations()
+        #expect(
+            operations.count { operation in
+                if case .scheduledIDs = operation { return true }
+                return false
+            } == 2
+        )
+    }
+
+    @Test
     func testASM1PreP04V1StoreMigratesAlarmKitIDAndPendingDefaults() throws {
         let alarmKitID = UUID(uuidString: "00000000-0000-0000-0000-00000000A141")!
         let fileManager = FileManager.default

@@ -24,6 +24,7 @@ public struct DayDetailEditorView: View {
     @State private var swapNote = ""
     @State private var preSwapAssignmentDraft: DayAssignmentDraft?
     @State private var holidayAlarmBehavior: HolidayAlarmBehavior = .inherit
+    @State private var saveErrorPresented = false
 
     public init(date: Date) {
         self.date = date
@@ -152,6 +153,11 @@ public struct DayDetailEditorView: View {
                         .disabled(!canSave)
                 }
             }
+            .alert("holiday.save_failed_title", isPresented: $saveErrorPresented) {
+                Button("common.ok", role: .cancel) {}
+            } message: {
+                Text("holiday.save_failed_message")
+            }
             .onAppear(perform: load)
             .onChange(of: swapEnabled) { _, enabled in
                 if enabled {
@@ -219,12 +225,17 @@ public struct DayDetailEditorView: View {
             holidayOverride.alarmBehavior = holidayAlarmBehavior
             holidayOverride.syncSkipAlarm(globalDefault: holidayAlarmDefault)
         }
-        try? modelContext.save()
-        Task {
-            await dependencies.alarmScheduler.refreshScheduledAlarms()
-            await dependencies.liveActivityController.evaluate()
+        do {
+            try modelContext.save()
+            Task {
+                await dependencies.alarmScheduler.refreshScheduledAlarms()
+                await dependencies.liveActivityController.evaluate()
+            }
+            dismiss()
+        } catch {
+            modelContext.rollback()
+            saveErrorPresented = true
         }
-        dismiss()
     }
 
     private var inheritBehaviorLabel: LocalizedStringKey {
