@@ -7,6 +7,12 @@ on:
       - main
       - master
 
+# Cancel superseded runs on the same ref so repeated pushes do not pile up
+# concurrent, expensive macOS runners.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build-test:
     runs-on: macos-26
@@ -47,10 +53,15 @@ jobs:
             exit 1
           fi
 
-      - name: Install XcodeGen
-        run: bash scripts/bootstrap.sh
-
+      # Kick off the multi-minute runtime download asynchronously so it overlaps
+      # with the XcodeGen install below. It must start after "Select Xcode" (it
+      # invokes the selected xcodebuild). We block on it at "Wait for iOS
+      # simulator runtime", right before verify.sh needs a simulator. The retry
+      # loop and non-zero exit are preserved, so a failed download still fails
+      # the job at that wait step.
       - name: Install iOS simulator runtime
+        id: sim-runtime
+        background: true
         run: |
           set -euo pipefail
           attempt=1
@@ -66,6 +77,12 @@ jobs:
             attempt=$((attempt + 1))
             delay=$((delay * 2))
           done
+
+      - name: Install XcodeGen
+        run: bash scripts/bootstrap.sh
+
+      - name: Wait for iOS simulator runtime
+        wait: sim-runtime
 
       - name: Build and test
         run: |
