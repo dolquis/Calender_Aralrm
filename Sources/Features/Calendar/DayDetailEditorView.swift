@@ -8,6 +8,8 @@ public struct DayDetailEditorView: View {
     @Query private var presets: [ShiftPreset]
     @Query private var assignments: [DayAssignment]
     @Query private var swapRecords: [SwapRecord]
+    @Query private var holidayOverrides: [HolidayOverride]
+    @Query private var settingsList: [AppSettings]
 
     public let date: Date
 
@@ -21,6 +23,8 @@ public struct DayDetailEditorView: View {
     @State private var swapCounterpartyLabel = ""
     @State private var swapNote = ""
     @State private var preSwapAssignmentDraft: DayAssignmentDraft?
+    @State private var holidayAlarmBehavior: HolidayAlarmBehavior = .inherit
+    @State private var saveErrorPresented = false
 
     public init(date: Date) {
         self.date = date
@@ -38,6 +42,15 @@ public struct DayDetailEditorView: View {
 
     private var existingSwapRecord: SwapRecord? {
         existingSwapRecords.first
+    }
+
+    private var existingHolidayOverride: HolidayOverride? {
+        let day = Calendar.current.startOfDay(for: date)
+        return holidayOverrides.first { Calendar.current.isDate($0.date, inSameDayAs: day) }
+    }
+
+    private var holidayAlarmDefault: HolidayAlarmBehavior {
+        settingsList.first?.effectiveHolidayAlarmDefault ?? .silence
     }
 
     private var trimmedSwapCounterpartyLabel: String {
@@ -92,6 +105,20 @@ public struct DayDetailEditorView: View {
                     Toggle("day.skip_alarm", isOn: $skipAlarm)
                 }
 
+                if existingHolidayOverride != nil {
+                    Section("holiday.alarm_behavior_section") {
+                        Picker(
+                            "holiday.alarm_behavior_question",
+                            selection: $holidayAlarmBehavior
+                        ) {
+                            Text(inheritBehaviorLabel).tag(HolidayAlarmBehavior.inherit)
+                            Text("holiday.behavior_ring").tag(HolidayAlarmBehavior.ring)
+                            Text("holiday.behavior_silence").tag(HolidayAlarmBehavior.silence)
+                        }
+                        .pickerStyle(.segmented)
+                    }
+                }
+
                 Section("day.note") {
                     TextField("day.note_placeholder", text: $note, axis: .vertical)
                         .lineLimit(2...4)
@@ -125,6 +152,11 @@ public struct DayDetailEditorView: View {
                     Button("common.save", action: save)
                         .disabled(!canSave)
                 }
+            }
+            .alert("holiday.save_failed_title", isPresented: $saveErrorPresented) {
+                Button("common.ok", role: .cancel) {}
+            } message: {
+                Text("holiday.save_failed_message")
             }
             .onAppear(perform: load)
             .onChange(of: swapEnabled) { _, enabled in
@@ -163,6 +195,10 @@ public struct DayDetailEditorView: View {
             }
         }
 
+        if let holidayOverride = existingHolidayOverride {
+            holidayAlarmBehavior = holidayOverride.alarmBehavior
+        }
+
         if let swap = existingSwapRecord {
             swapEnabled = true
             swapKind = swap.kind
@@ -185,12 +221,26 @@ public struct DayDetailEditorView: View {
             day: day
         )
         saveSwapRecord(for: day)
-        try? modelContext.save()
-        Task {
-            await dependencies.alarmScheduler.refreshScheduledAlarms()
-            await dependencies.liveActivityController.evaluate()
+        if let holidayOverride = existingHolidayOverride {
+            holidayOverride.alarmBehavior = holidayAlarmBehavior
+            holidayOverride.syncSkipAlarm(globalDefault: holidayAlarmDefault)
         }
-        dismiss()
+        do {
+            try modelContext.save()
+            Task {
+                await dependencies.alarmScheduler.refreshScheduledAlarms()
+                await dependencies.liveActivityController.evaluate()
+            }
+            dismiss()
+        } catch {
+            modelContext.rollback()
+            saveErrorPresented = true
+        }
+    }
+
+    private var inheritBehaviorLabel: LocalizedStringKey {
+        holidayAlarmDefault == .ring
+            ? "holiday.behavior_inherit_ring" : "holiday.behavior_inherit_silence"
     }
 
     private func applyAssignmentAction(_ action: DayAssignmentPersistenceAction, day: Date) {

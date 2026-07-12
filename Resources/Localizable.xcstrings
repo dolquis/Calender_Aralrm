@@ -404,6 +404,22 @@
         }
       }
     },
+    "common.ok": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "OK"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "OK"
+          }
+        }
+      }
+    },
     "common.save": {
       "localizations": {
         "en": {
@@ -772,6 +788,38 @@
         }
       }
     },
+    "holiday.alarm_behavior_question": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Should the alarm ring on this holiday?"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "この祝日にアラームを鳴らす？"
+          }
+        }
+      }
+    },
+    "holiday.alarm_behavior_section": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Holiday alarm"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "祝日のアラーム"
+          }
+        }
+      }
+    },
     "holiday.add_section": {
       "localizations": {
         "en": {
@@ -784,6 +832,70 @@
           "stringUnit": {
             "state": "translated",
             "value": "日付を追加"
+          }
+        }
+      }
+    },
+    "holiday.behavior_inherit_ring": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Default: Rings"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "既定：鳴る"
+          }
+        }
+      }
+    },
+    "holiday.behavior_inherit_silence": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Default: Silent"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "既定：鳴らない"
+          }
+        }
+      }
+    },
+    "holiday.behavior_ring": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ring"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "鳴らす"
+          }
+        }
+      }
+    },
+    "holiday.behavior_silence": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Silent"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "消音"
           }
         }
       }
@@ -1043,6 +1155,38 @@
           "stringUnit": {
             "state": "translated",
             "value": "アラームは鳴りません。"
+          }
+        }
+      }
+    },
+    "holiday.save_failed_message": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your changes could not be saved. Please try again."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "変更を保存できませんでした。もう一度お試しください。"
+          }
+        }
+      }
+    },
+    "holiday.save_failed_title": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Couldn’t Save Changes"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "変更を保存できませんでした"
           }
         }
       }

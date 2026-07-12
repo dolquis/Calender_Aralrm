@@ -7,11 +7,13 @@ public struct HolidayManagerView: View {
     @Environment(AppDependencies.self) private var dependencies
     @Query(sort: [SortDescriptor(\HolidayOverride.date)]) private var overrides: [HolidayOverride]
     @Query private var presets: [ShiftPreset]
+    @Query private var settingsList: [AppSettings]
     @State private var addingDate: Date = .now
     @State private var addingLabel: String = ""
     @State private var isImportingFromCalendar = false
     @State private var calendarAccessDenied = false
-    @State private var addingSkip: Bool = true
+    @State private var saveErrorPresented = false
+    @State private var addingBehavior: HolidayAlarmBehavior = .inherit
     @State private var addingReplacementID: UUID?
     @State private var addingKind: HolidayOverride.Kind = .paidLeave
 
@@ -43,8 +45,8 @@ public struct HolidayManagerView: View {
                     Text("holiday.kind_paid").tag(HolidayOverride.Kind.paidLeave)
                     Text("holiday.kind_custom").tag(HolidayOverride.Kind.custom)
                 }
-                Toggle("holiday.skip_alarm", isOn: $addingSkip)
-                if !addingSkip {
+                behaviorPicker(selection: $addingBehavior)
+                if addingBehavior != .silence {
                     Picker("holiday.replacement", selection: $addingReplacementID) {
                         Text("day.no_preset").tag(UUID?.none)
                         ForEach(presets) { preset in
@@ -75,11 +77,15 @@ public struct HolidayManagerView: View {
                                     .font(.caption2)
                                     .foregroundStyle(.secondary)
                             }
-                            if override.skipAlarm {
-                                Text("holiday.row_skip")
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                            } else if let replacement = override.replacementPreset {
+                            behaviorPicker(
+                                selection: Binding(
+                                    get: { override.alarmBehavior },
+                                    set: { update(override, behavior: $0) }
+                                )
+                            )
+                            if override.alarmBehavior != .silence,
+                                let replacement = override.replacementPreset
+                            {
                                 Text(
                                     String(localized: "holiday.row_replacement")
                                         + ": \(replacement.name)"
@@ -106,6 +112,11 @@ public struct HolidayManagerView: View {
             }
         } message: {
             Text("holiday.calendar_access_denied_message")
+        }
+        .alert("holiday.save_failed_title", isPresented: $saveErrorPresented) {
+            Button("common.ok", role: .cancel) {}
+        } message: {
+            Text("holiday.save_failed_message")
         }
     }
 
@@ -139,7 +150,7 @@ public struct HolidayManagerView: View {
                     ))
             }
             try? modelContext.save()
-            await dependencies.alarmScheduler.refreshScheduledAlarms()
+            await refreshAlarmSurfaces()
         }
     }
 
@@ -164,23 +175,27 @@ public struct HolidayManagerView: View {
             modelContext.insert(override)
         }
         try? modelContext.save()
-        Task { await dependencies.alarmScheduler.refreshScheduledAlarms() }
+        Task { await refreshAlarmSurfaces() }
     }
 
     private func addEntry() {
-        let replacement = addingReplacementID.flatMap { id in presets.first { $0.id == id } }
+        let replacement =
+            addingBehavior == .silence
+            ? nil : addingReplacementID.flatMap { id in presets.first { $0.id == id } }
         let entry = HolidayOverride(
             date: Calendar.current.startOfDay(for: addingDate),
             kind: addingKind,
             label: addingLabel,
-            skipAlarm: addingSkip,
             replacementPreset: replacement
         )
+        entry.alarmBehavior = addingBehavior
+        entry.syncSkipAlarm(globalDefault: holidayAlarmDefault)
         modelContext.insert(entry)
         try? modelContext.save()
         addingLabel = ""
         addingReplacementID = nil
-        Task { await dependencies.alarmScheduler.refreshScheduledAlarms() }
+        addingBehavior = .inherit
+        Task { await refreshAlarmSurfaces() }
     }
 
     private func delete(at offsets: IndexSet) {
@@ -188,7 +203,43 @@ public struct HolidayManagerView: View {
             modelContext.delete(overrides[i])
         }
         try? modelContext.save()
-        Task { await dependencies.alarmScheduler.refreshScheduledAlarms() }
+        Task { await refreshAlarmSurfaces() }
+    }
+
+    private var holidayAlarmDefault: HolidayAlarmBehavior {
+        settingsList.first?.effectiveHolidayAlarmDefault ?? .silence
+    }
+
+    @ViewBuilder
+    private func behaviorPicker(selection: Binding<HolidayAlarmBehavior>) -> some View {
+        Picker("holiday.alarm_behavior_question", selection: selection) {
+            Text(inheritBehaviorLabel).tag(HolidayAlarmBehavior.inherit)
+            Text("holiday.behavior_ring").tag(HolidayAlarmBehavior.ring)
+            Text("holiday.behavior_silence").tag(HolidayAlarmBehavior.silence)
+        }
+        .pickerStyle(.segmented)
+    }
+
+    private var inheritBehaviorLabel: LocalizedStringKey {
+        holidayAlarmDefault == .ring
+            ? "holiday.behavior_inherit_ring" : "holiday.behavior_inherit_silence"
+    }
+
+    private func update(_ override: HolidayOverride, behavior: HolidayAlarmBehavior) {
+        override.alarmBehavior = behavior
+        override.syncSkipAlarm(globalDefault: holidayAlarmDefault)
+        do {
+            try modelContext.save()
+            Task { await refreshAlarmSurfaces() }
+        } catch {
+            modelContext.rollback()
+            saveErrorPresented = true
+        }
+    }
+
+    private func refreshAlarmSurfaces() async {
+        await dependencies.alarmScheduler.refreshScheduledAlarms()
+        await dependencies.liveActivityController.evaluate()
     }
 
     private func dateString(_ date: Date) -> String {

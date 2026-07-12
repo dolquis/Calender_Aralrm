@@ -28,19 +28,24 @@ actor FakeAlarmSchedulingClient: AlarmSchedulingClient {
     private var shouldFailCancel: Bool
     private var cancelFailures: Set<UUID>
     private var state: AlarmAuthorizationState
+    private var scheduledIDsDelay: Duration?
+    private var activeScheduledIDsCalls = 0
+    private var maximumConcurrentScheduledIDsCalls = 0
 
     init(
         scheduledIDs: Set<UUID> = [],
         shouldFailSchedule: Bool = false,
         shouldFailCancel: Bool = false,
         cancelFailures: Set<UUID> = [],
-        authorizationState: AlarmAuthorizationState = .authorized
+        authorizationState: AlarmAuthorizationState = .authorized,
+        scheduledIDsDelay: Duration? = nil
     ) {
         self.liveIDs = scheduledIDs
         self.shouldFailSchedule = shouldFailSchedule
         self.shouldFailCancel = shouldFailCancel
         self.cancelFailures = cancelFailures
         self.state = authorizationState
+        self.scheduledIDsDelay = scheduledIDsDelay
     }
 
     @discardableResult
@@ -72,6 +77,15 @@ actor FakeAlarmSchedulingClient: AlarmSchedulingClient {
 
     func scheduledIDs() async throws -> Set<UUID> {
         operations.append(.scheduledIDs)
+        activeScheduledIDsCalls += 1
+        maximumConcurrentScheduledIDsCalls = max(
+            maximumConcurrentScheduledIDsCalls,
+            activeScheduledIDsCalls
+        )
+        defer { activeScheduledIDsCalls -= 1 }
+        if let scheduledIDsDelay {
+            try await Task.sleep(for: scheduledIDsDelay)
+        }
         return liveIDs
     }
 
@@ -85,6 +99,10 @@ actor FakeAlarmSchedulingClient: AlarmSchedulingClient {
 
     func scheduledIDSet() -> Set<UUID> {
         liveIDs
+    }
+
+    func maxConcurrentScheduledIDsCalls() -> Int {
+        maximumConcurrentScheduledIDsCalls
     }
 
     func setCancelFailures(_ failures: Set<UUID>) {

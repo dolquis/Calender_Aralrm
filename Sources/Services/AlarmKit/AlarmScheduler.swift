@@ -11,6 +11,8 @@ public final class AlarmScheduler {
     private let alarmClient: any AlarmSchedulingClient
     private let saveContext: @MainActor (ModelContext) throws -> Void
     private let fetchExistingAlarms: @MainActor (ModelContext) throws -> [ShiftAlarm]
+    private var refreshTail: Task<Void, Never>?
+    private var refreshGeneration = 0
 
     private enum RefreshResult: String {
         case completed
@@ -55,6 +57,24 @@ public final class AlarmScheduler {
 
     /// Recompute the expected set of alarms for the lookahead window and reconcile with AlarmKit.
     public func refreshScheduledAlarms() async {
+        let previousRefresh = refreshTail
+        refreshGeneration &+= 1
+        let generation = refreshGeneration
+        let refresh = Task { @MainActor [weak self] in
+            await previousRefresh?.value
+            guard let self else { return }
+            await performRefresh()
+        }
+        refreshTail = refresh
+        await refresh.value
+        if refreshGeneration == generation {
+            refreshTail = nil
+        }
+    }
+
+    /// Execute one diff-sync pass. Public callers are queued by `refreshScheduledAlarms()` so
+    /// separate model snapshots never reconcile against AlarmKit concurrently.
+    private func performRefresh() async {
         let context = ModelContext(modelContainer)
         let calendar = Calendar.current
         let settings = loadSettings(context: context)
