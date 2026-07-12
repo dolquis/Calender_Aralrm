@@ -60,14 +60,20 @@ bash scripts/verify.sh
 # 固定 destination で実行したい場合
 DESTINATION='platform=iOS Simulator,name=iPhone 17 Pro,OS=26.5' bash scripts/verify.sh
 
-# Swift コードスタイル検査 / 自動整形（CI の lint ジョブと同じ）
+# Swift コードスタイル検査 / 自動整形（CI の build-test ジョブ内 lint ステップと同じ）
 bash scripts/lint.sh check   # 違反があれば非ゼロ終了
 bash scripts/lint.sh fix     # その場で整形
 ```
 
 CI は `.github/workflows/ios.yml` が `macos-26` / Xcode 26+ で実行する。
-`build-test` ジョブが `scripts/verify.sh`、`lint` ジョブが `scripts/lint.sh check`
-（`swift-format`、設定は `.swift-format`）を並列に走らせる。
+`build-test` ジョブが `scripts/lint.sh check`（`swift-format`、設定は
+`.swift-format`）→ `scripts/verify.sh` の順に走らせる（macOS ランナーは 10 倍課金の
+ため lint 専用ジョブは持たない）。`build-test` は `changes` ジョブ
+（`dorny/paths-filter`）が iOS 関連ファイルの変更を検知したときのみ起動し、
+docs / `.claude` 等のみの変更ではスキップされる（週次 schedule と
+`workflow_dispatch` では無条件にフル実行）。branch protection の必須チェックは
+`ci-gate` ジョブ（Linux）が集約する。PR では `verify.sh test`（カバレッジ無効）、
+main push / 週次 / 手動ではフルの `verify.sh all`（カバレッジ有効）を実行する。
 **CI 緑 = ローカルで `verify.sh` と `lint.sh check` がともに緑** が前提。
 テストは Apple の Swift Testing（`@Test` / `#expect`）で記述。現状は 183 件のテスト
 （27 テストスイート / 27 ファイル、うち snapshot 8 件は通常 verify で skip されるため、

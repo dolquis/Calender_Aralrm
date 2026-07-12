@@ -1472,6 +1472,7 @@ HolidayManager から `VacationPeriod` を作る UI（VAC-I1 / VAC-U9）は未�
   App Review 説明コスト削減。実装時にコードベース全体を再 grep して確認。
 - **b) `workflow_dispatch` 追加**: `.github/workflows/ios.yml` の `on:` に
   `workflow_dispatch` を足し、手動 CI 再実行を可能に。
+  **対応済み**（CI コスト削減 PR / Linear DEV-539: 週次 `schedule` とあわせて追加）。
 - **c) `.xcode-version` 追記**: 期待 Xcode 26.x を明文化（CI 探索順 26.5 →
   26.4 → 26.0 と AGENTS.md の既存記述に整合）。`mise.toml` は導入しない。
 - **d) Debug / Release xcconfig 分割**: 当面保留。現行 `SigningDefaults.xcconfig`

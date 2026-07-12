@@ -8,16 +8,18 @@ ACTION="${1:-all}"
 PROJECT="${PROJECT:-ShiftAlarm.xcodeproj}"
 SCHEME="${SCHEME:-ShiftAlarm}"
 DERIVED_DATA_PATH="${DERIVED_DATA_PATH:-$PWD/DerivedData}"
+ENABLE_CODE_COVERAGE="${ENABLE_CODE_COVERAGE:-YES}"
 
 usage() {
   cat >&2 <<'USAGE'
 Usage: bash scripts/verify.sh [all|build|test]
 
 Environment overrides:
-  DESTINATION        xcodebuild destination string
-  PROJECT            Xcode project path (default: ShiftAlarm.xcodeproj)
-  SCHEME             Xcode scheme (default: ShiftAlarm)
-  DERIVED_DATA_PATH  DerivedData path (default: ./DerivedData)
+  DESTINATION           xcodebuild destination string
+  PROJECT               Xcode project path (default: ShiftAlarm.xcodeproj)
+  SCHEME                Xcode scheme (default: ShiftAlarm)
+  DERIVED_DATA_PATH     DerivedData path (default: ./DerivedData)
+  ENABLE_CODE_COVERAGE  YES/NO passed to -enableCodeCoverage (default: YES)
 USAGE
 }
 
@@ -113,7 +115,7 @@ run_test() {
     -scheme "$SCHEME" \
     -destination "$DESTINATION_VALUE" \
     -derivedDataPath "$DERIVED_DATA_PATH" \
-    -enableCodeCoverage YES | "${BEAUTIFY[@]}"
+    -enableCodeCoverage "$ENABLE_CODE_COVERAGE" | "${BEAUTIFY[@]}"
 }
 
 report_coverage() {
