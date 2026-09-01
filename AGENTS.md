@@ -234,7 +234,7 @@ PR マージで Merged へ（自動 Done にしない。Merged 状態が未整�
 Done は検証メモ記載後に明示遷移する（`docs/linear-conventions.md` §7.1.3）。人間ゲート課題は
 In Review / Merged に置かず Todo で待機、`type:tracking` は子完了まで In Progress（同 §3.1）。
 
-**記録の鮮度**: Done / Canceled へ遷移させたセッションは、同じセッションで親 tracking と Project の `## Next AI Tasks` も更新する。description には Linear の状態から導出できる記述（状態名・残件数・「〜待ち」）を書かず、現在は Linear の生データに語らせる（`docs/linear-conventions.md` §7.2）。
+**記録の鮮度**: description には Linear の状態から導出できる記述（状態名・残件数・「〜待ち」）を書かず、現在は Linear の生データに語らせる。状態依存の記録（Current focus / Next AI Tasks / Next checkpoint）は日付つきの器へ置く。Project は **Project Status Update**（14 日に 1 本以上、3 節そろえる）に置く。tracking Issue は `Status snapshot YYYY-MM-DD` 見出しのコメントに置く（`docs/linear-conventions.md` §7.2 / §12）。
 
 **ブランチ命名**: Linear issue が自動生成する `dolquis/dev-xx-*` を基本とする。
 
