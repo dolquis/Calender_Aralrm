@@ -230,7 +230,7 @@ Linear に起票**してハンドオフする（必要なら GitHub Issue にミ
 
 **状態ライフサイクル**: Backlog → Todo → In Progress → In Review → Merged → Done
 （中止は Canceled、重複は Duplicate）。ブランチ作成・PR で In Progress / In Review へ、
-PR マージで Merged へ（自動 Done にしない。Merged 状態が未整備の間は In Review で代用）、
+PR マージで Merged へ（自動 Done にしない）、
 Done は検証メモ記載後に明示遷移する（`docs/linear-conventions.md` §7.1.3）。人間ゲート課題は
 In Review / Merged に置かず Todo で待機、`type:tracking` は子完了まで In Progress（同 §3.1）。
 
