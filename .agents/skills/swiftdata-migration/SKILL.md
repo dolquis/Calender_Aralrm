@@ -38,7 +38,8 @@ description: Sources/Domain/ の SwiftData @Model を追加・変更・削除す
 
 ## 補助ツール（マーケット品を活用）
 
-- API 仕様確認：context7 経由で <https://developer.apple.com/documentation/swiftdata/schemamigrationplan> を fetch
+- API 仕様確認：Context7 MCP 経由で <https://developer.apple.com/documentation/swiftdata/schemamigrationplan> を fetch
+- コード補完：エディタの Swift LSP（Claude Code では `swift-lsp` プラグイン）
 
 ## やってはいけない
 
