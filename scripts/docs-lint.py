@@ -310,18 +310,26 @@ class Linter:
         # (file, line0, category) actually suppressed by an allow comment.
         self._allow_used: set = set()
         self._allow_seen: set = set()
-        # `git ls-files --cached` still lists a tracked file that has been
-        # deleted from the worktree but whose deletion is not staged yet — a
-        # normal state midway through removing a document. Reading it would
-        # abort the whole run, so the list is filtered once, here, rather than
-        # guarded at each of the half-dozen places that open a file.
-        self.md_files = [
+        # Two things `git ls-files` does that would otherwise corrupt the run:
+        #
+        # `--cached` still lists a tracked file deleted from the worktree whose
+        # deletion is not staged yet — a normal state midway through removing a
+        # document. Reading it would abort the whole run.
+        #
+        # During an unresolved merge it lists a conflicted file once per stage,
+        # so every finding in that file would be counted two or three times and
+        # `--baseline` would report growth that does not exist.
+        #
+        # Both are handled once, here, rather than guarded at each of the
+        # half-dozen places that open a file. `dict.fromkeys` keeps the order.
+        self.md_files = list(dict.fromkeys(
             f for f in (git_markdown_files(cfg.root)
                         or walk_markdown_files(cfg.root, cfg.fallback_exclude))
-            if os.path.exists(os.path.join(cfg.root, f))]
+            if os.path.exists(os.path.join(cfg.root, f))))
         self.prose_files = [f for f in self.md_files if self.is_prose(f)]
-        self.prose_files += [f for f in cfg.extra_text_files
-                             if os.path.exists(os.path.join(cfg.root, f))]
+        self.prose_files += [f for f in dict.fromkeys(cfg.extra_text_files)
+                             if os.path.exists(os.path.join(cfg.root, f))
+                             and f not in self.md_files]
 
     # -- infrastructure -------------------------------------------------------
 
