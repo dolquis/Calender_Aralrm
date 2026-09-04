@@ -12,7 +12,7 @@
 祝日に関係なく働くワーカーがいるため。さらにカレンダー画面で **祝日と、その日に鳴るかどうか**を
 一目で確認できるようにする。
 
-## 2. 現状（出発点）
+## 2. 出発点（着手時点の既存実装）
 
 - [HolidayOverride.swift](../Sources/Domain/Models/HolidayOverride.swift)（`SchemaV2.HolidayOverride`）は
   `skipAlarm: Bool`（既定 true）＋ `replacementPreset?` を持つ。**個別の二値制御は実質存在**するが、

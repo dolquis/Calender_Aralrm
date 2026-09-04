@@ -32,8 +32,9 @@ description: AlarmScheduler、DayResolver、AlarmKit 経由のアラーム登録
 
 ## 補助ツール（マーケット品を活用）
 
-- API 仕様確認：context7 MCP 経由で <https://developer.apple.com/documentation/alarmkit> を fetch
-- テスト実行：`bash scripts/verify.sh test`（or xcodebuild MCP）
+- API 仕様確認：Context7 MCP 経由で <https://developer.apple.com/documentation/alarmkit> を fetch
+- コード補完・型エラー：エディタの Swift LSP（Claude Code では `swift-lsp` プラグイン）
+- テスト実行：`bash scripts/verify.sh test`（XcodeBuild MCP を入れていればそちらでもよい）
 
 ## 変更後に必ず確認すること
 

@@ -224,6 +224,13 @@ jobs:
         with:
           files: Sources App Widget Tests scripts
 
+      # docs-lint（dolquis/agent-ops origin のベンダリングコピー）。導入直後は
+      # warning-only にせず、決定的カテゴリだけをベースラインと比較する:
+      # 既存 repo には最初から相当量の findings があり、ゼロを要求すると検査ごと
+      # 切られるため、今日の件数を凍結して増加だけを止める。
+      - name: Docs lint (baseline ratchet)
+        run: python3 scripts/docs-lint.py --baseline .docs-lint-baseline.json
+
   # Single cheap job that branch protection can require: succeeds when the
   # jobs that ran succeeded, and treats a path-filtered (skipped) build-test
   # as passing.

@@ -4,97 +4,28 @@
 **開発仕様兼ロードマップ**です。タスクは優先度（P0 → P3）順、各項目に
 **目的 / 対象ファイル / 完了条件 (DoD)** を明記しています。
 
-最終更新: 2026-06-09
 対象ブランチ運用: Linear issue から生成されるブランチ名 `dolquis/dev-xx-*` を基本とし、
 main へ PR（Linear issue が無い緊急時のみ `feature/<topic>`）。
 
 ---
 
-## 0. 現状サマリ（2026-06-09 時点）
+## 0. このロードマップの読み方
 
-- iOS 26+ / Swift 6 / SwiftUI + SwiftData / AlarmKit ベースのシフト勤務向けアラームアプリ。
-- 主要レイヤー（Domain / Services / Features / Widget / Live Activity / Sharing / Deep link / ja-en ローカライズ）は実装済み。
-- **P1 群（オンボーディング / a11y / 空状態 UX / Widget タイムライン）と P2-2（Bedtime reminder, Sleep schedule, HealthKit, App Intents）まで完了**。
-- **P2-α（ShiftPatternDetector + RotationListView 提案カード）および P2-η（ICSExporter + ICSExportView）を実装済み（PR #19）**。
-- **P0-5（`.shiftalarm` セマンティックバリデーション層）を実装済み**。decode 後 / preview
-  前 / apply 前に `ShiftBundleValidator` を通し、重大 error は apply 不可、warning は preview
-  に表示する。
-- P0-1 は Xcode 26.5 / iOS 26.5 SDK でコードレベル検証に着手済み。
-  `AlarmPresentation.Alert.stopButton` の iOS 26.1 deprecation を回避し、
-  `AlarmManager.AlarmConfiguration.alarm(...)` に寄せた。実機確認は未完了。
-- テストは Apple の Swift Testing（`@Test` / `#expect`）で記述。183 件 (27 スイート /
-  27 ファイル) を定義し、通常の `scripts/verify.sh` では 8 件の snapshot test が
-  `SNAPSHOT_TESTING_ENABLED=1` 未指定のため skip され、175 件が緑。
-  CI は `macos-26` / Xcode 26+ で `scripts/verify.sh` を実行。
-- **状態・進捗・優先度の正典は Linear**（team `Dev` / project **Shift Alarm /
-  Calender_Aralrm**）。各項目の**詳細仕様・DoD は本 `ROADMAP.md` §P0-x が正典**で、
-  Linear issue は要約＋本 doc へのリンクに留める。GitHub Issue はミラー（`Migrated`
-  ラベル＋相互リンク）。運用ルールは `AGENTS.md` §6.1.1 / §6.1.2「Linear 運用（管制塔）」が
-  唯一の正。
-  現時点で登録済みの主な Linear issue（GitHub ミラー）:
-  - **DEV-17**（GH #28）`.shiftalarm` セマンティックバリデーション層（P0-5 / 参照切れ
-    preset によるアラーム沈黙バグ、実装済み）→ §P0-5
-  - **DEV-18**（GH #29）AlarmKit/ActivityKit 実機検証 & Xcode 更新時 API 再確認（P0-1）→ §P0-1
-  - **DEV-19**（GH #30）実 signing / entitlement 値の設定（P0-2）→ §P0-2
-  - **DEV-20**（GH #31）ゴールデンパス手動検証（P0-3）→ §P0-3
-  - **DEV-21**（GH #32）開発環境ハードニング backlog（P3-6〜P3-14 追跡）→ §5
-  - **DEV-34** AlarmScheduler protocol / fake 化（P0-4）→ §P0-4
-  - umbrella: **DEV-22**（P0 release readiness）/ 週次監査: **DEV-23**
-- マージ済み主要 PR:
-  - #1 初期スキャフォールド（救出は #5）/ #2 EventKit 祝日 / #3 DayEditor 状態漏れ修正
-  - #5 PR #1 残差救出 / #6 Swift 6・CI 安定化
-  - **#7 P1-1 オンボーディング + P1-3 空状態 UX + P3-1 テスト追加**
-  - **#8 / #9 P1-2 アクセシビリティ監査**
-  - **#10 P1-4 Widget マルチエントリ・タイムライン + Sleep schedule 初版（P2-2）**
-  - **#11 Sleep / HealthKit / App Intents の P1/P2 レビュー反映**
-  - **#12 ROADMAP / README の P1/P2-2 進捗反映**
-  - **#13 DayResolverInputBuilder 抽出、DI seam、CI / テスト拡充**
-  - **#14 P0-2 signing readiness ワークフロー (`scripts/p0-readiness.sh` / `scripts/p0-device-build.sh`)**
-  - **#18 P2-α アルゴリズム仕様・テスト計画 + P2-δ / P2-η 提案書**
-  - **#19 P2-α `ShiftPatternDetector` + `PatternSuggestionView` + `RotationListView`
-    提案カード / P2-η `ICSExporter` + `ICSExportView` + `SettingsView` 導線**
-  - **#20 プッシュ / PR 作成前のセルフレビュー方針を文書化**
-  - **#21 ドキュメント整理（CLAUDE.md / AGENTS.md / ROADMAP / README の重複削除と SSoT 整理）**
-  - **#22 swift-format 導入 + `scripts/lint.sh` + CI lint job**
+本書はタスクの**定義**を持つ。各項目の目的・対象ファイル・完了条件（DoD）・
+依存関係が正典で、達成状態は持たない。
 
-未確定 / 既知の不安要素:
+- **状態・進捗・優先度・担当の正典は Linear**（team `Dev` / project
+  **Shift Alarm / Calender_Aralrm**）。運用ルールは `AGENTS.md` §6.1.2 が唯一の正。
+- 各項目の**詳細仕様と DoD は本 `ROADMAP.md` の該当節が正典**で、Linear issue は
+  要約と本書へのリンクに留める。GitHub Issue はミラー。
+- ビルド・テスト手順は `README.md`、アルゴリズムの詳細は `docs/` が正典。
 
-- AlarmKit / ActivityKit は Xcode 26.5 SDK では build / test 緑。今後の Xcode 26.x
-  更新時は `Sources/Services/AlarmKit/AlarmConfigurationBuilder.swift` と
-  `Sources/Services/LiveActivity/LiveActivityController.swift` を再確認する。
-- AlarmKit エンタイトルメントは Apple Developer 申請が必要。ローカルには entitlement
-  key、`NSAlarmKitUsageDescription`、`Config/LocalSigning.xcconfig` による実機向け
-  signing override 導線は入っている。実 Team ID / bundle id / App Group の値は未設定。
-- 実機 / 実 iOS 26 シミュレータでのゴールデンパス通し検証は未実施。
-- P2 拡張案 A2 / A3 / A4 + P2-γ / P2-δ は未着手。P2-β は DEV-257 で実装中
-  （SchemaV4 / `VacationAwareRotation` / `.shiftalarm` policy round-trip /
-  migration・domain tests まで実装済み。HolidayManager からの連休登録 UI は未実装）。
-- P2-ε（一括適用→パターン検出）/ P2-ζ（祝日アラーム制御）は **設計確定（2026-06-14）・実装未着手**
-  （仕様: `docs/p2-bulk-preset-apply.md` / `docs/p2-holiday-alarm-control.md`）。
-- A1 ドリフト検出アルゴリズム (`ShiftPatternDetector.detectDrift`) は実装済み。
-  **UI 統合も `RotationListView` に実装済み**（`detectDriftOrPattern` で drift を検出し
-  `PatternSuggestionView` の提案カードとして表示、snooze 判定 `isSuggestionVisible` 込み。
-  2026-05-29 監査で確認）。専用の `PatternDriftSuggestionView.swift` は作らず既存カードに
-  統合する形を採用。実機 / ビルドでの最終 UI 検証は Mac で要実施（§P1（追補）参照）。
-- 第三者レビュー(2026-05-22)で挙がった開発環境ハードニング項目（依存固定 /
-  AlarmScheduler テスト容易性 / `.shiftalarm` import バリデーション / 構造化
-  ログ / CI ガードレール 等）は **§5 P3 配下 (P3-6 〜 P3-14) で追跡**する。
+スコープ外（不採用）: iCloud 同期、Apple Watch。
 
-2026-05-27 仕様提案書取り込み（評価結果は本 ROADMAP / `docs/p2-algorithms.md`
-に直接インライン化。元提案書は PR #27 のレビューで合意済みのものをドキュメント
-側に集約しており、リポジトリ内に別ファイルとしては配置しない）:
-
-- **P3-7 を §2 P0-4 へ昇格**: AlarmScheduler の protocol / fake 化を P0 に格上げ。
-- **P3-9 を §2 P0-5 へ昇格**: `.shiftalarm` バリデーション層を P0 に格上げ。
-- **§3 に P1-5 / P1-6 を新規追加**: アラーム診断画面 / ChangePreview 共通化。
-- **§4 P2-α A1（ドリフト UI 統合）を P1 相当に昇格**: §3 P1 から前方参照。
-- **§4 P2-α A2 / P2-β / P2-γ** に「実装精緻化（2026-05-27 追加）」サブ見出しを設け、
-  データモデル形式・テスト ID・Phase 順序などの確定情報を追記。
-- 取り込みアルゴリズム / 横断モデル詳細は `docs/p2-algorithms.md` に集約。
-- 提案書 §6（近日アラーム）/ §11（仮眠）/ §12（統計）/ §13（家族共有 privacy）
-  は 2026-05-27 時点で不採用。
-
----
+2026-09-04 以前は本節が日付つきの現状サマリを持ち、各見出しが完了マーカーを
+持っていた。当時の記録は
+[`docs/archive/roadmap-status-snapshot-2026-09-04.md`](docs/archive/roadmap-status-snapshot-2026-09-04.md)
+にある。
 
 ## 1. フェーズ全体像
 
@@ -111,7 +42,7 @@ main へ PR（Linear issue が無い緊急時のみ `feature/<topic>`）。
 
 > ステータス: **P0-1 はコードレベル着手済み、P0-2 は設定導線実装済み / 実 Developer Portal 値待ち、P0-3 は実機待ち**。
 
-### P0-1. AlarmKit / ActivityKit シグネチャ再確認（着手中: SDK 26.5 コード対応済み / 実機確認待ち）
+### P0-1. AlarmKit / ActivityKit シグネチャ再確認
 
 > 追跡: Linear DEV-18（GitHub #29 ミラー）
 
@@ -148,7 +79,7 @@ main へ PR（Linear issue が無い緊急時のみ `feature/<topic>`）。
   - AlarmKit 認可ダイアログが実機で表示される。
   - Live Activity が Dynamic Island に表示される。
 
-### P0-2. AlarmKit エンタイトルメント取得 & プロビジョニング（着手中: ローカル設定導線追加済み）
+### P0-2. AlarmKit エンタイトルメント取得 & プロビジョニング
 
 > 追跡: Linear DEV-19（GitHub #30 ミラー）
 
@@ -181,7 +112,7 @@ main へ PR（Linear issue が無い緊急時のみ `feature/<topic>`）。
   - 実 Apple ID / Developer Team で署名済みビルドが実機にインストールできる。
   - 実 App Group が App と Widget の両方で共有されている。
 
-### P0-3. ゴールデンパス手動検証（未着手: ローカル build/test のみ緑）
+### P0-3. ゴールデンパス手動検証
 
 > 追跡: Linear DEV-20（GitHub #31 ミラー）
 
@@ -195,7 +126,7 @@ main へ PR（Linear issue が無い緊急時のみ `feature/<topic>`）。
   （レビュー#2 §3.1）。当面は本セクションを実機検証時に Issue に貼る運用を継続。
 - **DoD**: 上記すべて OK のチェックリストを Issue に貼り closed。
 
-### P0-4. AlarmScheduler を protocol / fake 注入可能にする（実装中: DEV-34）
+### P0-4. AlarmScheduler を protocol / fake 注入可能にする
 
 > 2026-05-27 提案書取り込みにより **§P3-7 から昇格**。本文は当セクションを正とし、
 > §P3-7 はアンカー兼履歴として最小化する。アルゴリズム / モデル詳細は
@@ -374,7 +305,7 @@ main へ PR（Linear issue が無い緊急時のみ `feature/<topic>`）。
   `Sendable` 制約、`@MainActor` な `AlarmScheduler` と fake client の相性。
 - **DoD**:
   - **AS-U1 / AS-U2 / AS-U3 / AS-U4 / AS-U5 / AS-U6 / AS-U7 / AS-U8 / AS-U9 /
-    AS-U10 / AS-I1 / AS-M1 の全 13 件**（AS-U9 は rollback 成功 / rollback cancel 失敗の
+    AS-U10 / AS-I1 / AS-M1**（AS-U9 は rollback 成功 / rollback cancel 失敗の
     2 ケース、AS-M1 は SwiftData migration）が `scripts/verify.sh` で緑。
     特に AS-I1 は `refreshScheduledAlarms` の操作列を fake で検証する
     integration テストで、unit のみ緑でも DoD は満たさない（unit と
@@ -382,7 +313,7 @@ main へ PR（Linear issue が無い緊急時のみ `feature/<topic>`）。
   - 既存 `AlarmService` 公開 API 非破壊。
   - Swift 6 strict concurrency 下で `Sendable` 警告が増えない。
 
-### P0-5. `.shiftalarm` バリデーション層 ✅ 実装済み (DEV-17)
+### P0-5. `.shiftalarm` バリデーション層
 
 > 追跡: Linear DEV-17（GitHub #28 ミラー）。参照切れ preset によるアラーム沈黙バグを含む。
 > 2026-06-09 実装: `ShiftBundleValidator` を追加し、`ShareImporter.preview` / `apply` 前段で
@@ -508,7 +439,7 @@ main へ PR（Linear issue が無い緊急時のみ `feature/<topic>`）。
 > **P1-5 アラーム診断画面は DEV-35 で実装済み**。P1-6 ChangePreview 共通化は
 > 未着手。P1（追補）A1 ドリフト UI 統合は `RotationListView` へ実装済み。
 
-### P1-1. オンボーディング ✅ 完了 (PR #7)
+### P1-1. オンボーディング
 
 - **目的**: 初回起動で AlarmKit 認可 → サンプルプリセット作成 → ローテ作成までの導線。
 - **対象**:
@@ -519,7 +450,7 @@ main へ PR（Linear issue が無い緊急時のみ `feature/<topic>`）。
   - 新規インストールから 3 タップ以内に最初のアラームを鳴らせる。
   - 2 回目以降は表示されない。
 
-### P1-2. アクセシビリティ監査 ✅ 完了 (PR #8 / #9)
+### P1-2. アクセシビリティ監査
 
 - **目的**: VoiceOver / Dynamic Type / コントラスト対応。
 - **対象**: 全 `Sources/Features/**/*.swift`、特に
@@ -531,7 +462,7 @@ main へ PR（Linear issue が無い緊急時のみ `feature/<topic>`）。
   - Dynamic Type の XXL でレイアウトが崩れない。
   - プリセット色は WCAG AA 相当のコントラストガードを実装（`Color+Hex` に拡張）。
 
-### P1-3. 空状態 / 認可拒否 UX を全画面で揃える ✅ 完了 (PR #7)
+### P1-3. 空状態 / 認可拒否 UX を全画面で揃える
 
 - **現状**: 祝日（EventKit）は拒否時に Settings 誘導済み（PR #2）。
 - **未対応**: AlarmKit 認可拒否時 / カレンダー初期空状態 / ローテゼロ件 / プリセットゼロ件。
@@ -544,7 +475,7 @@ main へ PR（Linear issue が無い緊急時のみ `feature/<topic>`）。
   - 拒否状態でも crash せず、「設定を開く」CTA がある。
   - 空状態は意味のあるイラスト or 説明 + 最初のアクションへの導線がある。
 
-### P1-4. Live Activity / Widget タイムライン微調整 ✅ 完了 (PR #10)
+### P1-4. Live Activity / Widget タイムライン微調整
 
 実装ノート:
 - `Widget/NextAlarmTimelineProvider.swift` は最大 8 件の今後のアラームを多段
@@ -561,7 +492,7 @@ main へ PR（Linear issue が無い緊急時のみ `feature/<topic>`）。
   - Settings から Live Activity 表示開始時間を変更でき、即時反映。
   - Widget のタイムラインが次のアラームに近づくにつれて自然に更新される。
 
-### P1-5. アラーム診断画面（実装済み / DEV-35）
+### P1-5. アラーム診断画面
 
 > 詳細モデル / アルゴリズムは
 > [docs/p2-algorithms.md §7](docs/p2-algorithms.md#7-横断-changepreview-抽象--アラーム診断--shiftalarm-validator) に集約。
@@ -626,7 +557,7 @@ main へ PR（Linear issue が無い緊急時のみ `feature/<topic>`）。
     追記）。
   - 単体テストで状態判定 5 ケース + DIAG-U6 を網羅する。
 
-### P1-6. ChangePreview 共通化（実装中 / DEV-256 / 2026-06-19 更新）
+### P1-6. ChangePreview 共通化
 
 > 詳細モデルは
 > [docs/p2-algorithms.md §7](docs/p2-algorithms.md#7-横断-changepreview-抽象--アラーム診断--shiftalarm-validator) に集約。
@@ -698,7 +629,7 @@ main へ PR（Linear issue が無い緊急時のみ `feature/<topic>`）。
 > **スコープ外（不採用）**: iCloud 同期 (CloudKit) / Apple Watch コンパニオン。
 > 過去 ROADMAP の旧 P2-1 / P2-3 は方針として削除した。
 
-### P2-2. Bedtime reminder（T-N 分前のプレアラーム）✅ 完了 (PR #10 / #11)
+### P2-2. Bedtime reminder（T-N 分前のプレアラーム）
 
 **当初想定スコープを超え、Sleep schedule / HealthKit / App Intents まで実装済み**。
 
@@ -715,7 +646,7 @@ main へ PR（Linear issue が無い緊急時のみ `feature/<topic>`）。
   - `Sources/Services/AppIntents/` — `GetSleepWindowIntent` ほか Shortcuts 公開。
 - テスト: `Tests/DomainTests/SleepWindowResolverTests.swift`。
 
-### P2-α. シフトパターン自動検出 → プリセット / ローテ提案 ✅ コア実装済み (PR #19)
+### P2-α. シフトパターン自動検出 → プリセット / ローテ提案
 
 > アルゴリズム詳細: [docs/p2-algorithms.md §1](docs/p2-algorithms.md#1-p2-α--シフトパターン自動検出)
 
@@ -866,7 +797,7 @@ main へ PR（Linear issue が無い緊急時のみ `feature/<topic>`）。
     - Settings から現在値を閲覧でき、ワンタップでリセットできる。
     - リセット操作は `lastResetAt` を更新する。
 
-### P2-β. 長期連休を挟んだ昼夜シフト切替（実装中 / DEV-257）
+### P2-β. 長期連休を挟んだ昼夜シフト切替
 
 > アルゴリズム詳細: [docs/p2-algorithms.md §2](docs/p2-algorithms.md#2-p2-β--連休越境ローテーション)
 
@@ -995,7 +926,7 @@ HolidayManager から `VacationPeriod` を作る UI（VAC-I1 / VAC-U9）は未�
     - 候補から個別に除外できる。
     - フラグ `true` 後は β 画面再オープンで再表示しない。
 
-### P2-γ. シフト表画像の AI 解析 → カレンダー自動適用（未着手）
+### P2-γ. シフト表画像の AI 解析 → カレンダー自動適用
 
 > アルゴリズム詳細: [docs/p2-algorithms.md §3](docs/p2-algorithms.md#3-p2-γ--シフト表画像インポート)
 
@@ -1137,7 +1068,7 @@ HolidayManager から `VacationPeriod` を作る UI（VAC-I1 / VAC-U9）は未�
 
 ---
 
-### P2-δ. シフトスワップ — 代行 / 被代行のアラーム正当性 ✅ 実装済み (DEV-305)
+### P2-δ. シフトスワップ — 代行 / 被代行のアラーム正当性
 
 > アルゴリズム詳細: [docs/p2-algorithms.md §5](docs/p2-algorithms.md#5-p2-δ--シフトスワップ)
 >
@@ -1185,7 +1116,7 @@ HolidayManager から `VacationPeriod` を作る UI（VAC-I1 / VAC-U9）は未�
 
 ---
 
-### P2-η. 家族共有用 .ics エクスポート ✅ 実装済み (PR #19)
+### P2-η. 家族共有用 .ics エクスポート
 
 > アルゴリズム詳細: [docs/p2-algorithms.md §6](docs/p2-algorithms.md#6-p2-η--ics-エクスポート)
 
@@ -1214,7 +1145,7 @@ HolidayManager から `VacationPeriod` を作る UI（VAC-I1 / VAC-U9）は未�
   - 終日イベント (`DTSTART;VALUE=DATE`) でなく 30 分イベントとして書く判断は要レビュー。
     家族側で「6 時から夜勤?」と誤読しない文面 / X-プロパティを実装時に詰める。
 
-### P2-ε. 日付一括選択 → プリセット一括適用 → パターン検出（未着手 / 設計確定 2026-06-14）
+### P2-ε. 日付一括選択 → プリセット一括適用 → パターン検出（設計確定 2026-06-14）
 
 > 詳細仕様・DoD・テスト ID は [docs/p2-bulk-preset-apply.md](docs/p2-bulk-preset-apply.md) が正典。
 > 追跡: Linear [DEV-200](https://linear.app/dolquis/issue/DEV-200)（team Dev / project Shift Alarm / Backlog / P2）。
@@ -1227,7 +1158,7 @@ HolidayManager から `VacationPeriod` を作る UI（VAC-I1 / VAC-U9）は未�
 - **前提**: §P1-6 `ChangePreview` 共通化（一括適用は Apply 前に必ず経由）。未完時は暫定確認シートで代替。
 - **対象ファイル / 段階 / テスト ID / DoD**: docs を参照（Phase 1 一括適用 → Phase 2 検出提案 → Phase 3 選択補助）。
 
-### P2-ζ. 祝日のアラーム制御（全体／個別）＋カレンダー可視化（未着手 / 設計確定 2026-06-14）
+### P2-ζ. 祝日のアラーム制御（全体／個別）＋カレンダー可視化（設計確定 2026-06-14）
 
 > 詳細仕様・DoD・テスト ID・マイグレーションは [docs/p2-holiday-alarm-control.md](docs/p2-holiday-alarm-control.md) が正典。
 > 追跡: Linear [DEV-201](https://linear.app/dolquis/issue/DEV-201)（team Dev / project Shift Alarm / Backlog / P2）。
@@ -1252,7 +1183,7 @@ HolidayManager から `VacationPeriod` を作る UI（VAC-I1 / VAC-U9）は未�
 > 開発環境ハードニング backlog（P3-6〜P3-14）の進捗追跡は Linear DEV-21（GitHub #32 ミラー）に集約。
 > 各タスクの詳細仕様は以下の各節が引き続き唯一の正。
 
-### P3-1. テスト拡充 ✅ 完了 (PR #7 / #10 / #11)
+### P3-1. テスト拡充
 
 - 追加済み:
   - `Tests/DomainTests/DayResolverInputBuilderTests.swift` — SwiftData から resolver input への変換。
@@ -1264,7 +1195,7 @@ HolidayManager から `VacationPeriod` を作る UI（VAC-I1 / VAC-U9）は未�
   - `Tests/DomainTests/SleepWindowResolverTests.swift` — bedtime 計算 / 端境ケース。
 - 現状: Swift Testing で 27 スイート / 183 テスト定義（うち 8 件 snapshot は通常 verify では skip されるため 175 テスト緑）。
 
-### P3-2. UI / スナップショットテスト（一部着手）
+### P3-2. UI / スナップショットテスト
 
 > 追跡: Linear DEV-282（team Dev / project Shift Alarm / Backlog / P3）。
 
@@ -1275,7 +1206,7 @@ HolidayManager から `VacationPeriod` を作る UI（VAC-I1 / VAC-U9）は未�
   `SNAPSHOT_TESTING_ENABLED=1` で記録 / 検証する。
 - **DoD**: スナップショット差分が CI で検出される。
 
-### P3-3. TestFlight 自動配布（未着手）
+### P3-3. TestFlight 自動配布
 
 > 追跡: Linear DEV-283（team Dev / project Shift Alarm / Backlog / P3。`gate:human-required`、DEV-19 ブロック）。
 
@@ -1283,14 +1214,14 @@ HolidayManager から `VacationPeriod` を作る UI（VAC-I1 / VAC-U9）は未�
 - タグ `v*` プッシュで Archive → App Store Connect API → TestFlight。
 - **DoD**: タグ 1 個で TestFlight に届く。
 
-### P3-4. クラッシュ / ログ収集（未着手）
+### P3-4. クラッシュ / ログ収集
 
 > 追跡: Linear DEV-284（team Dev / project Shift Alarm / Backlog / P3。P3-8 構造化ログと整合）。
 
 - 軽量に: `os.Logger` のサブシステム整理 + MetricKit 取り込み。
 - 外部 SDK は避ける（プライバシー / AlarmKit のバックグラウンド要件のため）。
 
-### P3-5. Swift Testing 移行（✅ 完了 — 既に Swift Testing 採用済み）
+### P3-5. Swift Testing 移行
 
 > 2026-05-29 監査で判明: `Tests/` 配下は **既に全件 Apple Swift Testing
 > （`import Testing` / `@Test` / `#expect`）で記述済み**であり、XCTest は使用していない。
@@ -1308,7 +1239,7 @@ HolidayManager から `VacationPeriod` を作る UI（VAC-I1 / VAC-U9）は未�
     の 5 テスト）。`@MainActor` / `async` テストもそのまま動作。
 - **残作業**: なし（新規テストも Swift Testing で書くこと）。
 
-### P3-6. 依存バージョン固定（`Package.resolved` 追跡）（未着手）
+### P3-6. 依存バージョン固定（`Package.resolved` 追跡）
 
 > 根拠: 第三者レビュー#1 §4.1
 
@@ -1357,7 +1288,7 @@ HolidayManager から `VacationPeriod` を作る UI（VAC-I1 / VAC-U9）は未�
 - **DoD**: 上記 5 系統が `scripts/verify.sh test` で緑、`AlarmService` の既存
   公開 API は破壊しない。
 
-### P3-8. AlarmScheduler 構造化ログ（未着手）
+### P3-8. AlarmScheduler 構造化ログ
 
 > 根拠: 第三者レビュー#2 §3.2
 
@@ -1406,7 +1337,7 @@ HolidayManager から `VacationPeriod` を作る UI（VAC-I1 / VAC-U9）は未�
 - **DoD**: 上記検査がテストで網羅され、既存の正常系 `ShareImporterTests` が
   壊れない。
 
-### P3-10. `.shiftalarm` / `.ics` ラウンドトリップ & 境界プロパティテスト（未着手）
+### P3-10. `.shiftalarm` / `.ics` ラウンドトリップ & 境界プロパティテスト
 
 > 根拠: 第三者レビュー#2 §3.3
 
@@ -1424,7 +1355,7 @@ HolidayManager から `VacationPeriod` を作る UI（VAC-I1 / VAC-U9）は未�
     helper）
 - **DoD**: 上記境界ケースで日付が 1 日ズレないことが確認できる。
 
-### P3-11. SwiftData スキーマ変更ガード（CI 軽量チェック）（未着手）
+### P3-11. SwiftData スキーマ変更ガード（CI 軽量チェック）
 
 > 根拠: 第三者レビュー#2 §4.1
 
@@ -1435,7 +1366,7 @@ HolidayManager から `VacationPeriod` を作る UI（VAC-I1 / VAC-U9）は未�
   - 既存 `.github/workflows/ios.yml` の verify job 後段に組み込み
 - **DoD**: 意図しない破壊的変更を含む PR で CI が警告 / fail する。
 
-### P3-12. Localizable.xcstrings ja / en 整合チェック（未着手）
+### P3-12. Localizable.xcstrings ja / en 整合チェック
 
 > 根拠: 第三者レビュー#2 §4.2
 
@@ -1446,7 +1377,7 @@ HolidayManager から `VacationPeriod` を作る UI（VAC-I1 / VAC-U9）は未�
   - `scripts/verify.sh` から `VERIFY_L10N=1` 指定時のみ走らせる任意フック
 - **DoD**: ja 側のみ更新した PR で CI が片落ち key を列挙する。
 
-### P3-13. Release ビルドでの設定 fallback 厳格化（未着手）
+### P3-13. Release ビルドでの設定 fallback 厳格化
 
 > 根拠: 第三者レビュー#1 §4.7
 
@@ -1463,7 +1394,7 @@ HolidayManager から `VacationPeriod` を作る UI（VAC-I1 / VAC-U9）は未�
 - **DoD**: Release ビルドでプレースホルダが残った場合に Console.app の重大
   ログから確認できる。
 
-### P3-14. CI / 開発環境衛生（未着手 / サブ項目あり）
+### P3-14. CI / 開発環境衛生（サブ項目あり）
 
 > 根拠: 第三者レビュー#1 §4.6 / §4.8 / §4.9 / §4.10、第三者レビュー#2 §5
 
@@ -1486,7 +1417,7 @@ HolidayManager から `VacationPeriod` を作る UI（VAC-I1 / VAC-U9）は未�
 - **g) Widget / Live Activity の snapshot 拡張**: P3-2 の追補として
   `NextAlarmWidgetView` / `DynamicIslandViews` のケースを追加。
 
-### P3-15. DOW ルール用 `RuleExpandedOverride` 専用テーブル（未着手 / 2026-05-27 追加）
+### P3-15. DOW ルール用 `RuleExpandedOverride` 専用テーブル（2026-05-27 追加）
 
 > 根拠: 仕様提案書取り込み（§9 DOW）評価時の指摘
 >
@@ -1558,45 +1489,23 @@ HolidayManager から `VacationPeriod` を作る UI（VAC-I1 / VAC-U9）は未�
 
 ---
 
-## 8. 「次の 1 手」
+## 8. 着手順序と依存関係
 
-**P2-α / P2-η は PR #19 でマージ済み。** 2026-05-27 仕様提案書取り込み後の優先順位:
+着手順そのものと優先度は Linear が持つ。ここには Linear の依存リレーションで
+表しきれない、節をまたぐ前後関係だけを置く。
 
-1. **P0-3 実機ゴールデンパス**: `Config/LocalSigning.xcconfig` に実 Developer Team /
-   bundle id / App Group を入れ、`bash scripts/p0-readiness.sh` を緑にしてから
-   AlarmKit 認可ダイアログ・アラーム発火・Live Activity / Widget の通し確認。
-
-2. **P0-4 AlarmScheduler protocol / fake 化**: `AlarmSchedulingClient` 導入、
-   `AlarmService` を準拠、`AlarmScheduler` を protocol ベースに変更。
-   `FakeAlarmSchedulingClient` で AS-U1〜U9 / AS-I1 を緑にする。
-
-3. **P0-5 `.shiftalarm` バリデーション**: DEV-17 で実装済み。`ShiftBundleValidator`、
-   `ShareImporter` の preview / apply 前段再検証、SBV-U1〜U14 / SBV-I1〜I2、
-   ja / en メッセージ整備まで完了。
-
-4. **A1 ドリフト検出 UI 統合（P1 相当）**: `ShiftPatternDetector.detectDrift()` は
-   実装済みのため、`RotationListView` にドリフト検出カードを追加し、受入で旧
-   pattern を `isActive = false` にする。`patternDriftSnoozedFingerprint` は
-   `"v1:..."` プレフィックス付き。
-
-5. **P1-5 アラーム診断画面**: DEV-35 で実装済み。`AlarmDiagnosticsService`、
-   `AlarmDiagnosticsView`、`SettingsView` 導線、DIAG-U1〜U6 を追加。
-
-6. **P1-6 ChangePreview 共通化**: Step 1（`ImportPreviewView` 抽出）→ Step 2
-   （`ChangePreview` 抽象モデル導入）→ Step 3（画像 / ドリフト / DOW へ展開）。
-   Step 1 は P0-5 と並走可能。
-
-7. **P2-β 連休越境ローテーション**: `RotationExpander` の vacation-aware 拡張、
-   `VacationPeriod` 独立 @Model 追加、SchemaV3→V4 lightweight マイグレーション
-   （現行 active は SchemaV3）。Widget container 整合性確認。
-
-8. **P2-γ 画像インポート Phase 1**: 手動グリッド + 記号マッピング UI を OCR 抜きで
-   先行リリース。差分プレビューは P1-6 を経由。
-
-**直近の開発環境ハードニング（P3 配下 / 機能追加と並行で進める想定）**:
-P3-6 (`Package.resolved` 固定) → P3-8 (`AlarmScheduler` 構造化ログ、P0-4 完了後) →
-P3-14a (`UIBackgroundModes` 整理) → P3-14b (`workflow_dispatch`) の順で、
-小さな PR を継続的に出す。
+- P0-3 の実機ゴールデンパスは、`Config/LocalSigning.xcconfig` に実 Developer Team /
+  bundle id / App Group を入れ、`bash scripts/p0-readiness.sh` が緑になることを前提とする。
+- P1-6 ChangePreview 共通化は Step 1（`ImportPreviewView` 抽出）→ Step 2
+  （`ChangePreview` 抽象モデル導入）→ Step 3（画像 / ドリフト / DOW へ展開）の順に進む。
+  Step 1 は P0-5 と並走できる。
+- P2-γ 画像インポート Phase 1 の差分プレビューは P1-6 を経由する。
+- P2-β 連休越境ローテーションは `VacationPeriod` の @Model 追加を伴うため、
+  SwiftData の lightweight マイグレーションを同時に設計する。
+- 開発環境ハードニング（P3 配下）は P3-6（`Package.resolved` 固定）→
+  P3-8（`AlarmScheduler` 構造化ログ。P0-4 の完了を前提とする）→
+  P3-14a（`UIBackgroundModes` 整理）→ P3-14b（`workflow_dispatch`）の順で、
+  小さな PR を継続的に出す。
 
 ---
 

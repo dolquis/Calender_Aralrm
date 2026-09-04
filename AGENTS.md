@@ -22,16 +22,12 @@
 ## 2. 開発状況
 
 **状態・進捗・優先度の正典は Linear**（team `Dev` / project **Shift Alarm /
-Calender_Aralrm**。管制塔モデルの全体像は §6.1.2）。開発フェーズ・完了済み PR・
-仕様サマリ・既知の不安要素は `ROADMAP.md` §0「現状サマリ」を参照する（重複を避けるため
-本ファイルに PR 一覧は再掲しない）。状態と仕様の正典分担は §6.1.2 の正典マトリクスが唯一の正。
+Calender_Aralrm**。管制塔モデルの全体像は §6.1.2）。本ファイルにも `ROADMAP.md` にも
+進捗を書かない。
 
-概況（2026-05-21 時点）: P1 群（P1-1〜P1-4）と P2-2（Sleep / Bedtime / HealthKit /
-App Intents）完了。P2-α（シフトパターン自動検出）と P2-η（`.ics` エクスポート）も
-実装済み。次の焦点は `Config/LocalSigning.xcconfig` に実 Developer Portal 値を入れて
-`scripts/p0-readiness.sh` を緑にし、P0-3 の実機ゴールデンパス検証を行うこと。
-残る新機能ロードマップは P2-β（長期連休越境）/ P2-γ（シフト表画像 AI 解析） —
-`ROADMAP.md` §4 を参照。iCloud 同期と Apple Watch は **スコープ外（不採用）**。
+タスクの定義・DoD・依存関係は `ROADMAP.md`、アルゴリズムの詳細は `docs/`、
+ビルド / テスト手順は `README.md` が正典。iCloud 同期と Apple Watch は
+**スコープ外（不採用）**。
 
 ---
 
@@ -172,6 +168,10 @@ macOS CI 専用。
 7. コード変更（機能実装・バグ修正・設計変更）を伴う場合は、`ROADMAP.md` /
    `README*.md` / `docs/` の記述と Issue 参照が実態と一致するよう更新したか確認する
    （詳細は §6.2）。
+8. `README*.md` / `ROADMAP.md` / `AGENTS.md` / `CLAUDE.md` / `docs/` /
+   `.claude/skills/` / `.agents/skills/` を変更した場合は
+   `python3 scripts/docs-lint.py` を実行し、`DECISIVE` を 0 に戻す。`HEURISTIC` は
+   件数をゼロにするのが目的ではない（詳細は §6.3 と `doc-governance` スキル）。
 
 セルフレビューで問題が見つかった場合は、プッシュ前に修正すること。
 発見したバグや P1 / P2 レベルの問題は、当該変更のスコープ内であれば
@@ -267,13 +267,13 @@ project / repo / area / agent ラベル欠落、`Migrated` issue の GitHub link
   ユーザに確認させる導線になっているかを確認する（spec proposal の
   "Preview before mutation" 原則）。
 
-### 6.2 コード変更時の進捗反映
+### 6.2 コード / 仕様変更時のドキュメント同期
 
 機能実装・バグ修正・設計変更を行った場合は、コード差分だけで完了扱いにしない。
 PR 前に以下を確認する。
 
-- `ROADMAP.md` の該当タスクのステータス・DoD・対象ファイル・進捗メモが実態と
-  一致しているか。
+- `ROADMAP.md` の該当タスクの **DoD・対象ファイル・依存関係** が実態と一致しているか。
+  進捗と完了状態は `ROADMAP.md` に書かない（正典は Linear。§6.3）。
 - `README.md` / `README.ja.md` の機能一覧・ビルド手順・手動テスト手順が
   古くなっていないか。
 - `docs/` 配下の仕様・architecture note が実装と矛盾していないか
@@ -283,8 +283,30 @@ PR 前に以下を確認する。
   `References #N` を併記する（§6.1.1 / §6.1.2）。
 - セッション内で修正しない新規バグ / pending は §6.1.1 に従って Linear に起票する。
 
-特に `ROADMAP.md` 上で「未着手」「設計済み」「実装予定」と書かれている項目を
-実装した場合は、同じ PR で `ROADMAP.md` を更新すること。
+実装によって `ROADMAP.md` や `docs/` の既存記述が**偽になる**場合は、同じ PR で
+その記述を消すか定義文へ書き換える。spec が実装に追いつかないのは、たいてい
+「実装 PR は docs を更新しなくてもマージできる」からである。
+
+---
+
+### 6.3 状態語・実体参照・正典重複の禁止
+
+`README*.md` / `ROADMAP.md` / `AGENTS.md` / `docs/` 全般に適用する。詳細と手順は
+`doc-governance` スキル、検出は `python3 scripts/docs-lint.py`。
+
+- **見出しは状態を主張しない。** 本文は日付を伴えば過去の記録として読まれるが、
+  見出しは骨格で拾い読みの対象であり、日付を添える余地がない。`✅ 完了 (PR #7)`
+  `（未着手）``（2026-06-09 時点）` はいずれも書かない。
+- 「現状」「実装済み」「未実装」「暫定」等の状態語は、Linear から導出できるなら
+  書かない。書きたくなったら定義文（「X は P2-β が実装する」等）へ言い換える。
+  語彙は `python3 scripts/docs-lint.py --print-words` で得る（どこにも書き写さない）。
+- コード参照に行番号・実測件数（テスト件数など）を書かない。ファイル名・型名・
+  関数名までに留める。行番号と件数はリファクタで即座に陳腐化する。
+- 完了マーカーを消す前に、その完了が Linear に記録として存在するか確かめる。
+  `ROADMAP.md` が唯一のトラッカーだった期間の記録は、削除せず日付つきで
+  `docs/archive/` へ移す。
+- 更新しない前提のスナップショット文書は `docs/archive/` へ移すか、先頭に
+  `<!-- lint:allow-file heading-state,status -->` を置いて記録であることを宣言する。
 
 ---
 
@@ -308,6 +330,7 @@ Codex CLI は `.agents/skills/`、Claude Code は `.claude/skills/` を参照す
 | `xcodegen-regen` | `project.yml` 編集、`.swift` ファイル追加・削除、`xcodebuild` でファイル不一致エラー時 |
 | `alarmkit-scheduling` | `AlarmScheduler` / `DayResolver` / `RotationExpander` / BG lookahead を編集・デバッグするとき |
 | `swiftdata-migration` | `Sources/Domain/` の `@Model` を追加・変更・削除、App Group ストアや `.shiftalarm` JSON 連動が絡むとき |
+| `doc-governance` | `README*.md` / `ROADMAP.md` / `AGENTS.md` / `docs/` を変更・追加するとき（`dolquis/agent-ops` origin の共有スキル。本 repo では本文を編集しない） |
 
 各スキルの本文は `SKILL.md`、補足は `references/` 配下（`day-resolver.md` /
 `app-group-store.md`）にある。precedence や App Group の運用ルールはこの references が
@@ -355,17 +378,21 @@ diff -qr .claude/skills .agents/skills || true
 
 `README*.md` / `ROADMAP.md` / `AGENTS.md` / `docs/`（`docs/archive/` を除く）を更新した
 場合は、`.claude/skills/**/SKILL.md` と `.agents/skills/**/SKILL.md` も stale 化していな
-いか確認する。特にテスト件数・ビルド手順・Xcode / iOS バージョン・MCP / plugin 設定は
-skill 側に古い値が残りやすいため、PR 前に grep すること。
+いか確認する。特にビルド手順・Xcode / iOS バージョン・MCP / plugin 設定は skill 側に古い値が
+残りやすいため、PR 前に grep すること。
 
 ```sh
-rg '85|103|121|XCTest|Swift Testing|Xcode 26|iOS 26|verify\.sh|lint\.sh|xcodebuildmcp|Context7' \
+rg 'XCTest|Swift Testing|Xcode 26|iOS 26|verify\.sh|lint\.sh|XcodeBuild|Context7' \
   -g '!docs/archive/**' README*.md AGENTS.md ROADMAP.md docs .claude .agents
 ```
 
-古いテスト件数（現状は Swift Testing 183 件 / 27 スイート / 27 ファイル）、古いビルド
-手順、古い Xcode / iOS バージョン、古い MCP / plugin 設定が見つかった場合は、該当
-文書を同じ PR で更新する（`0.85` などのしきい値は対象外）。
+**テスト件数は文書に書かない。** 件数はテストを 1 本足すたびに嘘になり、文書側は
+それに気づけない（`docs-lint` の `line-ref` が検出する。§6.3）。件数を書きたく
+なったら、`scripts/verify.sh` の出力を見るよう案内する。
+
+古いビルド手順・古い Xcode / iOS バージョン・古い MCP / plugin 設定が見つかった
+場合は、該当文書を同じ PR で更新する。両ツリーの本文差分は
+`python3 scripts/docs-lint.py --category mirror` が検出する。
 
 ## 9. MCP サーバー（`.codex/config.toml` / `.mcp.json`）
 

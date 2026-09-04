@@ -39,8 +39,8 @@ allowed-tools: Read, Edit, Grep, Glob
 
 ## 補助ツール（マーケット品を活用）
 
-- API 仕様確認：Context7 経由で <https://developer.apple.com/documentation/swiftdata/schemamigrationplan> を fetch
-- コード補完：`swift-lsp` プラグイン
+- API 仕様確認：Context7 MCP 経由で <https://developer.apple.com/documentation/swiftdata/schemamigrationplan> を fetch
+- コード補完：エディタの Swift LSP（Claude Code では `swift-lsp` プラグイン）
 
 ## やってはいけない
 
