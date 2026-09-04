@@ -1,6 +1,6 @@
 # P2-ζ. 祝日のアラーム制御（全体／個別）＋カレンダー可視化
 
-> 状態: **未着手 / 設計確定（2026-06-14）**。本ファイルが仕様・DoD の正典（AGENTS.md §6.1.2）。
+> 状態: **未着手 / 設計確定（2026-06-14）**。本ファイルが仕様・DoD の正典（AGENTS.md「プロジェクトと正典」）。
 > 状態・進捗・優先度の正典は Linear（追跡: [DEV-201](https://linear.app/dolquis/issue/DEV-201)）。ROADMAP.md §P2-ζ はサマリで、本ファイルへリンクする。
 > 関連: [P1-6 ChangePreview 共通化](../ROADMAP.md)（全体トグル波及時に利用）。
 > **スキーマ変更を伴う。着手時は `/swiftdata-migration` skill を必ず起動**（App / Widget の
@@ -158,7 +158,7 @@ public enum HolidayAlarmBehavior: Int, Codable, Sendable {
 ## 9. 全体トグル変更時の確認（preview-before-mutation）
 
 - 全体既定の変更は多数の祝日（`inherit` 行）の鳴動を一括で反転させ再スケジュールするため、
-  **適用前に「N 件が 鳴る→鳴らない に変わる」確認を必須**とする（AGENTS.md §6.1.2「Preview before mutation」）。
+  **適用前に「N 件が 鳴る→鳴らない に変わる」確認を必須**とする（AGENTS.md「実装上の不変条件」の Preview before mutation）。
 - **段階分け**: 確認自体は **Phase 1 で必須**（P1-6 未完でも **暫定確認ダイアログ**で実装する）。
   **Phase 2** は共有 `ChangePreview` コンポーネントへの統合（フィルタ／一括操作などの共通 UI 化）のみ。
 - 個別行の三値変更は単発のため確認不要。確認は全体既定の変更（および将来の一括操作）に適用する。

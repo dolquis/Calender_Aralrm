@@ -110,6 +110,38 @@ bash scripts/lint.sh check   # lint, non-zero exit on violations
 bash scripts/lint.sh fix     # reformat in place
 ```
 
+## Supplementary tooling
+
+Install the optional local tools once with `bash scripts/install-tools.sh` (`brew bundle` from the `Brewfile`).
+Device-oriented P0 checks run with `bash scripts/p0-readiness.sh`; the device build entry point is
+`bash scripts/p0-device-build.sh` (copy `Config/LocalSigning.xcconfig.example` to
+`Config/LocalSigning.xcconfig` with your Team ID / bundle id / App Group first, then `bash scripts/regen.sh`).
+
+```sh
+bash scripts/scan-secrets.sh        # gitleaks secret scan (same as CI)
+bash scripts/check-docs.sh          # typos spell check for sources and docs
+bash scripts/check-docs.sh --links  # plus lychee external link check
+bash scripts/periphery.sh           # periphery unused-code detection (needs Xcode)
+bash scripts/lsp-setup.sh           # generate buildServer.json for SourceKit-LSP
+bash scripts/coverage.sh            # coverage summary from the latest .xcresult (needs xcresultparser)
+python3 scripts/docs-lint.py --baseline .docs-lint-baseline.json   # docs drift check
+python3 scripts/check_agent_instruction_size.py                     # AGENTS.md byte budget
+pre-commit install                  # run swift-format / gitleaks / typos before each commit
+```
+
+`scripts/lint.sh check` also runs SwiftLint (`.swiftlint.yml`, non-strict) when it is installed, and
+`scripts/verify.sh` pipes through `xcbeautify` when available and enables code coverage for `test`.
+
+## Continuous integration
+
+`.github/workflows/ios.yml` runs on `macos-26` / Xcode 26+. The `build-test` job runs `scripts/lint.sh check`
+then `scripts/verify.sh`; it only starts when the `changes` job detects iOS-related file changes (docs-only or
+`.claude`-only changes skip it, while the weekly schedule and `workflow_dispatch` always run the full suite).
+PRs run `verify.sh test` without coverage; pushes to `main`, the weekly schedule and manual runs use
+`verify.sh all` with coverage. The Linux `quality` job runs gitleaks, typos, docs-lint and the AGENTS.md budget
+check, so it also works in the Claude Code on the web sandbox (`scripts/cloud-setup.sh`). Branch protection
+requires the aggregating `ci-gate` job.
+
 ## Architecture notes
 
 - `AlarmScheduler` (`Sources/Services/AlarmKit/AlarmScheduler.swift`) is the heart of the app. It

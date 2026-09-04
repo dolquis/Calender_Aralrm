@@ -115,7 +115,7 @@ grace_days = 0
 
 ## 新規 repo への導入手順
 
-1. `vendor-docs-governance.sh <repo>` で検査器（`scripts/docs-lint.py`）と設定ファイルの雛形を配る。
+1. `vendor-docs-governance.sh <repo>` で検査器（`scripts/docs-lint.py`）、AGENTS.md 予算検査器（`scripts/check_agent_instruction_size.py` とテスト）、設定ファイルの雛形を配る。
 2. `vendor-shared-skills.sh --skill doc-governance <repo>` でスキル本体を配る。検査器とスキルは別のスクリプトが運ぶ。
 3. `python3 scripts/docs-lint.py` を実行し、ベースラインを見る。
 4. `config` と `mirror` のヒットを解消する（`claude_only` の登録など、設定で片づくもの）。

@@ -15,7 +15,7 @@ main へ PR（Linear issue が無い緊急時のみ `feature/<topic>`）。
 依存関係が正典で、達成状態は持たない。
 
 - **状態・進捗・優先度・担当の正典は Linear**（team `Dev` / project
-  **Shift Alarm / Calender_Aralrm**）。運用ルールは `AGENTS.md` §6.1.2 が唯一の正。
+  **Shift Alarm / Calender_Aralrm**）。運用ルールは `AGENTS.md`「Linear・ブランチ・PR」と `docs/linear-conventions.md` が正典。
 - 各項目の**詳細仕様と DoD は本 `ROADMAP.md` の該当節が正典**で、Linear issue は
   要約と本書へのリンクに留める。GitHub Issue はミラー。
 - ビルド・テスト手順は `README.md`、アルゴリズムの詳細は `docs/` が正典。

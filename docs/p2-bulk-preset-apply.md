@@ -1,6 +1,6 @@
 # P2-ε. 日付一括選択 → プリセット一括適用 → パターン検出
 
-> 状態: **未着手 / 設計確定（2026-06-14）**。本ファイルが仕様・DoD の正典（AGENTS.md §6.1.2）。
+> 状態: **未着手 / 設計確定（2026-06-14）**。本ファイルが仕様・DoD の正典（AGENTS.md「プロジェクトと正典」）。
 > 状態・進捗・優先度の正典は Linear（追跡: [DEV-200](https://linear.app/dolquis/issue/DEV-200)）。ROADMAP.md §P2-ε はサマリで、本ファイルへリンクする。
 > 関連: [P1-6 ChangePreview 共通化](../ROADMAP.md)（前提）/ [P2-α シフトパターン自動検出](p2-algorithms.md#1-p2-α--シフトパターン自動検出)（再利用）。
 
@@ -107,7 +107,7 @@
 
 ## 9. ChangePreview 連携（前提依存）
 
-- AGENTS.md §6.1.2「Preview before mutation」原則により、**一括適用は必ず `ChangePreview` を経由**する。
+- AGENTS.md「実装上の不変条件」の Preview before mutation 原則により、**一括適用は必ず `ChangePreview` を経由**する。
 - これは **P1-6 ChangePreview 共通化が前提**。`ChangeEntityKind` に `dayAssignment` / `rotationPattern`
   が想定済みで合致する。
 - 段階対応: P1-6 未完なら **Phase 1 は暫定の確認シート**で代替し、P1-6 完了後に共通基盤へ載せ替える。
@@ -169,4 +169,4 @@
   動作は正しいが冗長）。受諾時に種日を残すか整理するかは要レビュー（既定: P2-α に倣い手動を残す）。
 - 巨大選択（数百日）時の `ChangePreview` 表示・確定性能。
 - `AlarmScheduler` / `ShiftPatternDetector` 改修時は Swift 6 strict concurrency の
-  `Sendable` 警告が増えないこと（AGENTS.md §6.1.2）。
+  `Sendable` 警告が増えないこと（AGENTS.md「実装上の不変条件」）。

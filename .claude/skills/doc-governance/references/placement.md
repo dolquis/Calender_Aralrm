@@ -19,7 +19,7 @@
 
 ## 正典マトリクスが無い repo での作り方
 
-AGENTS.md に「正典（Source of Truth）の分担」節を作り、上の表から実在する行だけを写す。存在しない文書の行は書かない。書いた直後に `python3 scripts/docs-lint.py --category link --category section` を実行し、参照先が実在することを確かめる。
+AGENTS.md に「正典（Source of Truth）の分担」節を作り、上の表から実在する行だけを写す。AGENTS.md 全体の骨子は `dolquis/agent-ops` の `templates/AGENTS.md` から起こし、常時ロードには安全規則、正典表、作業種別ごとの参照表、検証と PR の最小規約だけを残す。存在しない文書の行は書かない。書いた直後に `python3 scripts/docs-lint.py --category link --category section` を実行し、参照先が実在することを確かめる。
 
 ## 正典宣言は双方向にする
 
