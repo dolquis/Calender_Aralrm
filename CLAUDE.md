@@ -7,8 +7,11 @@
 レビュー**）はすべて **`AGENTS.md`** に集約しています。作業前に必ず
 `AGENTS.md` と `ROADMAP.md` を読んでください。
 
-セルフレビュー手順は `AGENTS.md` §6.1 が唯一の正です。重複定義を避けるため、
-本ファイルには手順を再掲しません。
+repo 固有のセルフレビュー項目と検証コマンドは `AGENTS.md` §6.1 を正典とし、共通手順は
+`pre-pr-self-review` Skill に置きます。重複定義を避けるため、本ファイルには手順を再掲しません。
+
+`dolquis/agent-ops` からベンダリングした共有スキルの本文・`references/` は origin のコピー
+です。この repo で直接編集しないでください（`AGENTS.md` §5 / §8.2）。
 
 タスク・既知のバグ・修正待ちの問題の**状態・進捗・優先度の正典は Linear**
 （team `Dev` / project **Shift Alarm / Calender_Aralrm**）です。詳細仕様・DoD は
