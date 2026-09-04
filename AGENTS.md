@@ -81,7 +81,7 @@ Shift Alarm は、iOS 26+ / Swift 6 / SwiftUI + SwiftData / AlarmKit で作る�
 - 新規 PR は Draft で作成し、`create-draft-pr` が利用可能なら使う。`scripts/verify.sh` が緑になってから ready for review にする。既存 Ready PR を Draft に戻さない。通常のマージ方法はノーマルマージとする。
 - PR 本文に何を直したか、なぜ、どうテストしたか、Linear Issue、Documentation impact を書く。GitHub ミラーがある場合のみ `Closes #N` / `References #N` を併記する。
 - Draft PR 作成で Linear を In Review、マージで Merged とし、検証メモを残してから Done へ明示遷移する。人間ゲート課題は Todo で待機させる。状態・ラベル・週次監査の規約は必要時に `docs/linear-conventions.md` の該当節を読む。
-- セッション内で直さない問題は Linear の Shift Alarm / Calender_Aralrm に起票する。ラベルは `repo:Calender_Aralrm`、`area:*`（docs は `area:docs`）、`agent:*` または `gate:human-required`、種別ラベルを付け、優先度は P0→Urgent / P1→High / P2→Medium / P3→Low にマップする。本文は要約と正典へのリンクに留め、`ROADMAP.md` の該当節の `追跡:` 行を更新する。
+- セッション内で直さない問題は Linear の Shift Alarm / Calender_Aralrm に起票する。ラベルは `repo:Calender_Aralrm`、`area:*`（docs は `area:docs`）、`agent:*` または `gate:human-required`、種別ラベルを付け、優先度は P0→Urgent / P1→High / P2→Medium / P3→Low にマップする。本文は要約と正典へのリンクに留め、`ROADMAP.md` の該当節の `追跡:` 行を更新する。repo 側の詳細仕様を Issue へ移して削除しない。
 - `agent:codex-*` は候補ラベルであり、Codex Cloud の assign / delegate / mention には人間 lead の明示許可が要る（`docs/linear-conventions.md` §2.1）。
 
 ## 8. Human Gate と編集禁止対象
