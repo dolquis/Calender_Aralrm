@@ -1,474 +1,92 @@
-# AGENTS.md — エージェント向けエントリポイント
+# AGENTS.md — Calender_Aralrm（Shift Alarm）エージェント規約
 
-このファイルは **OpenAI Codex / Claude Code / その他コーディングエージェント** が
-このリポジトリで作業を始める際に最初に読むべき要約です。
+原則として日本語で回答する。本ファイルは、このリポジトリで常時適用する最小の共通契約である。詳細は作業に必要な正典の該当 ID・節だけを読む。
 
-詳細な開発計画は **`ROADMAP.md`** を参照してください。
+## 1. プロジェクトと正典
 
----
-
-## 1. 何のプロジェクトか
-
-- iOS 26+ / Swift 6 / SwiftUI + SwiftData / AlarmKit ベースの
-  **シフト勤務者向け目覚ましカレンダーアプリ**。
-- AlarmKit を使うことで silent / focus mode を貫通してアラームを鳴らす。
-- 月カレンダー / プリセット / ローテーション / 祝日オーバーライド /
-  共有 (`.shiftalarm` JSON & URL scheme) / Widget / Live Activity / ja-en ローカライズ。
-
-詳細: `README.md` (英語) / `README.ja.md` (日本語)
-
----
-
-## 2. 開発状況
-
-**状態・進捗・優先度の正典は Linear**（team `Dev` / project **Shift Alarm /
-Calender_Aralrm**。管制塔モデルの全体像は §6.1.2）。本ファイルにも `ROADMAP.md` にも
-進捗を書かない。
-
-タスクの定義・DoD・依存関係は `ROADMAP.md`、アルゴリズムの詳細は `docs/`、
-ビルド / テスト手順は `README.md` が正典。iCloud 同期と Apple Watch は
-**スコープ外（不採用）**。
-
----
-
-## 3. 作業を始める前に必ず読むファイル
-
-| 優先度 | パス | 目的 |
-|---|---|---|
-| 必読 | `ROADMAP.md` | フェーズ・タスク・DoD・運用ルール |
-| 必読 | `README.md` または `README.ja.md` | 機能、ビルド手順、手動テスト手順 |
-| 任意 | `ROADMAP.md` §6 ファイル別索引 | 触ろうとしているファイルの注意点 |
-
----
-
-## 4. ビルド / テスト
-
-```sh
-# 初回のみ
-bash scripts/bootstrap.sh
-
-# XcodeGen で .xcodeproj 再生成
-bash scripts/regen.sh
-
-# ビルド + テスト（CI と同じ。iOS 26 simulator 自動選択）
-bash scripts/verify.sh
-
-# 固定 destination で実行したい場合
-DESTINATION='platform=iOS Simulator,name=iPhone 17 Pro,OS=26.5' bash scripts/verify.sh
-
-# Swift コードスタイル検査 / 自動整形（CI の build-test ジョブ内 lint ステップと同じ）
-bash scripts/lint.sh check   # 違反があれば非ゼロ終了
-bash scripts/lint.sh fix     # その場で整形
-```
-
-CI は `.github/workflows/ios.yml` が `macos-26` / Xcode 26+ で実行する。
-`build-test` ジョブが `scripts/lint.sh check`（`swift-format`、設定は
-`.swift-format`）→ `scripts/verify.sh` の順に走らせる（macOS ランナーは 10 倍課金の
-ため lint 専用ジョブは持たない）。`build-test` は `changes` ジョブ
-（`gh api` による変更ファイル判定）が iOS 関連ファイルの変更を検知したときのみ起動し、
-docs / `.claude` 等のみの変更ではスキップされる（週次 schedule と
-`workflow_dispatch` では無条件にフル実行）。branch protection の必須チェックは
-`ci-gate` ジョブ（Linux）が集約する。PR では `verify.sh test`（カバレッジ無効）、
-main push / 週次 / 手動ではフルの `verify.sh all`（カバレッジ有効）を実行する。
-**CI 緑 = ローカルで `verify.sh` と `lint.sh check` がともに緑** が前提。
-テストは Apple の Swift Testing（`@Test` / `#expect`）で記述。現状は 183 件のテスト
-（27 テストスイート / 27 ファイル、うち snapshot 8 件は通常 verify で skip されるため、
-`verify.sh` では 175 件）を確認する。
-実機向け P0 確認は `bash scripts/p0-readiness.sh`、実機 build 入口は
-`bash scripts/p0-device-build.sh`。
-
-### 補助的な品質ツール（任意）
-
-ローカルツールは `bash scripts/install-tools.sh`（`Brewfile` を `brew bundle`）で一括導入する。
-
-```sh
-bash scripts/scan-secrets.sh        # gitleaks: secret 混入検査（CI と同じ）
-bash scripts/check-docs.sh          # typos: ソース / ドキュメントの綴り検査
-bash scripts/check-docs.sh --links  # 追加で lychee による外部リンク切れ検査
-bash scripts/periphery.sh           # periphery: 未使用 Swift コード検出（要 Xcode）
-bash scripts/lsp-setup.sh           # buildServer.json 生成（VS Code / SourceKit-LSP）
-bash scripts/coverage.sh            # 直近の .xcresult からカバレッジ要約（要 xcresultparser）
-pre-commit install                  # commit 前に swift-format / gitleaks / typos を実行
-```
-
-CI（`.github/workflows/ios.yml`）の `quality` ジョブ（`ubuntu-latest`）が
-`scripts/scan-secrets.sh`（gitleaks）と `typos`（ソース）を実行する。これらは
-Xcode 非依存のクロスプラットフォームチェックのため、Claude Code on the Web の
-クラウド環境（Ubuntu 24.04）でも、`scripts/cloud-setup.sh` を Web UI の Setup script
-または `.claude/settings.json` の SessionStart フックに登録すれば同じツールを導入できる。
-periphery / xcresultparser / buildServer.json は Xcode 依存のためローカル mac と
-macOS CI 専用。
-
-なお `scripts/lint.sh check` は swift-format に加え、SwiftLint 導入時は
-`.swiftlint.yml`（非 strict・警告は CI を割らない）も実行する。`scripts/verify.sh`
-は `xcbeautify` があれば出力を整形し、test 時に `-enableCodeCoverage YES` を付与する
-（カバレッジ要約は `xcresultparser` 在時のみ表示）。
-
----
-
-## 5. 触ってよい / 触ってはいけないもの
-
-### 触ってよい
-- `Sources/**`, `App/**`, `Widget/**`, `Tests/**`, `Resources/**`
-  （オンボーディングは `Sources/Features/Onboarding/`、Sleep schedule は
-  `Sources/Features/SleepSchedule/`、HealthKit / App Intents は
-  `Sources/Services/HealthKit/` および `Sources/Services/AppIntents/`）
-- `project.yml`（変更後は `bash scripts/regen.sh`）
-- `Config/SigningDefaults.xcconfig`, `Config/LocalSigning.xcconfig.example`
-  （実値は git ignore 済みの `Config/LocalSigning.xcconfig` に置く）
-- `.github/workflows/*.yml`
-- `scripts/*.sh`
-
-### 触る前に必ず影響を確認
-- `Sources/Domain/Persistence/SchemaV1.swift` — SwiftData スキーマ。
-  non-optional 追加はマイグレーションが必要。
-- `App/ShiftAlarm.entitlements`, `Widget/ShiftAlarmWidget.entitlements` —
-  App Group / AlarmKit / HealthKit。
-- `Sources/Services/Sharing/ShiftBundleCodec.swift` —
-  `.shiftalarm` 公開フォーマット。互換性を壊さないこと
-  （PR #5 の legacy `exportedAt` 受け入れと `CalendarDay` を踏襲）。
-
-### 触らない
-- `ShiftAlarm.xcodeproj/` の中身を **手で編集しない**。
-  すべて `project.yml` 経由 → `scripts/regen.sh`。
-- `.claude/skills/` / `.agents/skills/` の**共有スキル本文と `references/`** を直接編集しない
-  （origin は `dolquis/agent-ops`。§8.2）。
-- `main` への直接 push 禁止。
-
----
-
-## 6. ブランチ / PR 運用
-
-1. Linear issue から生成されるブランチ名 `dolquis/dev-xx-*` を `main` から切る
-   （Linear issue が無い緊急時のみ `feature/<topic>` / `fix/<topic>`）。
-2. PR は **draft で作成**（新規 PR の作成には `create-draft-pr` スキルを使う）。
-   `scripts/verify.sh` が緑になってから ready for review。
-3. ローカライズ追加時は `Resources/Localizable.xcstrings` の **ja / en 両方** を埋める。
-4. AlarmKit / ActivityKit の API 差分対応は
-   `Sources/Services/AlarmKit/AlarmConfigurationBuilder.swift` と
-   `Sources/Services/LiveActivity/LiveActivityController.swift` に局所化する。
-5. 実機検証前は `Config/LocalSigning.xcconfig.example` を
-   `Config/LocalSigning.xcconfig` にコピーし、Team ID / bundle id / App Group を実値にする。
-   その後 `bash scripts/regen.sh` と `bash scripts/p0-readiness.sh` を実行する。
-6. PR 説明には **何を直したか / なぜ / どうテストしたか** を書く。
-7. **プッシュ・PR 作成前にセルフレビューを必ず実施する**（下記 §6.1）。
-
-### 6.1 プッシュ / PR 作成前のセルフレビュー
-
-共通手順は `pre-pr-self-review` スキル（origin は `dolquis/agent-ops`）に置く。本節は
-この repo 固有の確認項目と検証コマンドを正典とする。
-
-変更をプッシュして PR を作成する**前**に、必ず以下を実施すること。
-
-1. `git diff`（新規ファイルは `git status`）で差分全体を読み返し、
-   意図しない変更・デバッグコード・コメントアウトの残骸が混入していないか確認する。
-2. `bash scripts/lint.sh check` と `bash scripts/verify.sh` がともに緑であることを
-   確認する。実機向け変更を含む場合は `bash scripts/p0-readiness.sh` も確認する。
-3. 上記 §5「触ってよい / 触ってはいけないもの」に違反していないか確認する。
-4. ローカライズ追加時は `Resources/Localizable.xcstrings` の ja / en 両方を確認する。
-5. コミットメッセージと PR 説明に **何を直したか / なぜ / どうテストしたか** が
-   書かれているか確認する。
-6. 変更箇所およびその周辺に**バグや P1 / P2 レベルの問題**（クラッシュ、
-   データ不整合、回帰、アクセシビリティ欠落、`ROADMAP.md` で P1 / P2 と
-   位置づけられる品質課題など）がないかを能動的に確認する。
-7. コード変更（機能実装・バグ修正・設計変更）を伴う場合は、`ROADMAP.md` /
-   `README*.md` / `docs/` の記述と Issue 参照が実態と一致するよう更新したか確認する
-   （詳細は §6.2）。
-8. `README*.md` / `ROADMAP.md` / `AGENTS.md` / `CLAUDE.md` / `docs/` /
-   `.claude/skills/` / `.agents/skills/` を変更した場合は
-   `python3 scripts/docs-lint.py` を実行し、`DECISIVE` を 0 に戻す。`HEURISTIC` は
-   件数をゼロにするのが目的ではない（詳細は §6.3 と `doc-governance` スキル）。
-
-セルフレビューで問題が見つかった場合は、プッシュ前に修正すること。
-発見したバグや P1 / P2 レベルの問題は、当該変更のスコープ内であれば
-本 PR で修正する。**スコープ外で当該セッション内に修正しないものは、§6.1.1 に従い
-Linear に起票**してハンドオフする（必要なら GitHub Issue にミラーする。大きな設計変更を
-伴う場合は起票前に `AskUserQuestion` 等でユーザーに確認する）。
-
-### 6.1.1 発見したバグ・Pending 問題の Linear 起票
-
-**タスク・既知のバグ・修正待ちの問題は、まず Linear に起票して追跡する**のが本
-リポジトリの方針（状態・進捗・優先度の正典は Linear。管制塔モデルの全体像は §6.1.2）。
-セッション中に発見したが当該セッション内では修正しない問題は、以下に従って Linear に
-起票すること。
-
-1. **起票先**: Linear team **Dev** / project **Shift Alarm / Calender_Aralrm**
-   に起票する（利用可能な Linear アクセス手段で。Linear はリポジトリ同梱の MCP 設定には
-   含めず、実行環境 / アカウント側のコネクタまたは Linear Web UI で扱う — §9 参照）。
-2. **登録内容**: issue を作成し、本文に以下を含める。
-   - 問題の要約（タイトル）と再現手順（可能な場合）
-   - 影響範囲（クラッシュ / データ不整合 / アラーム沈黙 など。P0〜P3 のどれ相当か）
-   - 発見経緯と、当該セッションで直さない理由（スコープ外 / 別タスク化 等）
-   - 関連コード・ドキュメント箇所（`file:line` 形式）
-   - **詳細仕様・DoD は `ROADMAP.md` §P0-x / `docs/` に残し**、issue 本文は要約＋リンクに留める。
-3. **ラベル（必須）**: `repo:Calender_Aralrm` ＋ 技術領域 `area:*`（ドキュメント・ガバナンス整合の Issue は repo 横断の共有 `area:docs` を使用）＋ 想定担当 `agent:*`
-   （人手検証が要るものは `gate:human-required`）＋ 種別 `Bug` / `Improvement` / `Feature`（`kind:*` への統一は Phase 4。移行ルールは `docs/linear-conventions.md` §4）。
-   - **Codex 実行ポリシー**: `agent:codex-*` は候補（ルーティング）ラベルで Codex 実行許可ではない。Codex Cloud の起動（assign / delegate / mention）は人間の明示許可があるときのみで、Claude は行わない。正典は `docs/linear-conventions.md` §2.1。
-4. **優先度**: 重要度を Linear priority にマップする — **P0→Urgent / P1→High /
-   P2→Medium / P3→Low**。
-5. **GitHub ミラー（任意）**: 外部可視性が必要なら GitHub Issue にもミラーし、Linear 側に
-   `Migrated` ラベルと GitHub への link 添付、GitHub Issue 側に Linear へのコメントを付けて
-   **双方向リンク**にする。
-6. **ドキュメントとの整合**: 既存の `ROADMAP.md` 等の本文は**残したまま**、該当節の
-   `追跡:` 行を Linear issue（必要なら GitHub ミラー）に更新する（本文の詳細仕様を
-   issue に移して削除しない）。§0「現状サマリ」の issue 一覧も必要に応じて更新する。
-
-**理由**: known bug / pending をドキュメントだけに書くとセッション間で追跡が途切れ、
-重複実装や見落としを招く。状態・進捗・優先度・エージェント・ルーティングを Linear に
-一元化することで、複数セッション・複数エージェント間のハンドオフが確実になる。
-
-### 6.1.2 Linear 運用（管制塔）
-
-タスク管理は Linear を管制塔（control tower）とするハイブリッドモデルで運用する。
-
-**正典マトリクス**
+Shift Alarm は、iOS 26+ / Swift 6 / SwiftUI + SwiftData / AlarmKit で作るシフト勤務者向け目覚ましカレンダーアプリである。AlarmKit で silent / focus mode を貫通して鳴らし、月カレンダー、プリセット、ローテーション、祝日オーバーライド、`.shiftalarm` 共有、Widget / Live Activity、ja-en ローカライズを持つ。iCloud 同期と Apple Watch はスコープ外である。
 
 | 対象 | 正典 |
 |---|---|
-| 状態 / 進捗 / 優先度 / エージェント・ルーティング / 計画 | **Linear**（project Shift Alarm / Calender_Aralrm） |
-| 仕様 / DoD / アルゴリズム詳細 | **repo docs**（`ROADMAP.md` §P0-x / `docs/`） |
-| ビルド / テスト / 運用ルール | 本 `AGENTS.md` |
-| 外部可視の課題ミラー | **GitHub Issue**（`Migrated` ラベル＋双方向リンク） |
+| フェーズ・タスク定義、DoD、依存関係、対象ファイル | `ROADMAP.md`（§P0-x 〜 §P3-x） |
+| ファイル別の触るときの注意 | `ROADMAP.md` §6 |
+| アルゴリズム詳細、P2 設計仕様 | `docs/p2-*.md` |
+| 状態・進捗・優先度・担当・計画 | Linear の Shift Alarm / Calender_Aralrm |
+| Linear 運用（共有コアと §13 Project Delta） | `docs/linear-conventions.md` |
+| 機能一覧、ビルド・テスト・手動確認手順、補助ツール | `README.md`（英語）/ `README.ja.md`（日本語） |
+| CI の構成 | `.github/workflows/ios.yml` |
+| MCP・プラグイン・ホスト前提 | `.mcp.json`、`.codex/config.toml`、`docs/agent-tooling-setup.md` |
 
-**ラベル規約**: `repo:Calender_Aralrm`（リポジトリ識別）/ `area:*`（技術領域）/
-`agent:*`（AI 担当）/ `gate:human-required`（人手検証要）/ `Migrated`（GitHub 由来）/
-種別 `Bug` / `Improvement` / `Feature`。
+進捗・完了状態は本ファイルにも `ROADMAP.md` にも書かず Linear に置く。
 
-**状態ライフサイクル**: Backlog → Todo → In Progress → In Review → Merged → Done
-（中止は Canceled、重複は Duplicate）。ブランチ作成・PR で In Progress / In Review へ、
-PR マージで Merged へ（自動 Done にしない）、
-Done は検証メモ記載後に明示遷移する（`docs/linear-conventions.md` §7.1.3）。人間ゲート課題は
-In Review / Merged に置かず Todo で待機、`type:tracking` は子完了まで In Progress（同 §3.1）。
+## 2. 作業開始と変更方針
 
-**記録の鮮度**: description には Linear の状態から導出できる記述（状態名・残件数・「〜待ち」）を書かず、現在は Linear の生データに語らせる。状態依存の記録（Current focus / Next AI Tasks / Next checkpoint）は日付つきの器へ置く。Project は **Project Status Update**（14 日に 1 本以上、3 節そろえる）に置く。tracking Issue は `Status snapshot YYYY-MM-DD` 見出しのコメントに置く（`docs/linear-conventions.md` §7.2 / §12）。
+- 進捗や PR の確認前は必要に応じて `git fetch origin` で更新し、作業ブランチを切り替えずに `origin/main` との差を確認する。
+- 対象タスクの DoD・対象ファイルが `ROADMAP.md` に無ければ確認を取り、推測で schema、既定値、アルゴリズムを確定しない。
+- 最小差分を基本とし、無関係なリファクタリング、整形、rename を混ぜない。大きな設計変更は着手前にユーザーへ確認する。
 
-**ブランチ命名**: Linear issue が自動生成する `dolquis/dev-xx-*` を基本とする。
+## 3. 条件付きで読む資料
 
-**週次監査**: Linear の recurring issue **DEV-23**「Linear control tower audit」で、
-project / repo / area / agent ラベル欠落、`Migrated` issue の GitHub link 欠落、
-`gate:human-required` 欠落、tracking issue の子リンク欠落、Done issue の検証メモ欠落、
-および Codex safety checks（無許可の Codex delegate / mention、放置された delegate 済み
-課題など。`docs/linear-conventions.md` §11）を点検する。監査は Linear の routing / handoff
-のみを対象とし、GitHub docs の仕様本文は書き換えない。
+全資料を一律に全文読込しない。`ROADMAP.md` は大きいので、Issue が示す §P0-x 等の見出しを `rg` で特定し、必要な節を前後の文脈とともに読む。
 
-**新規タスク群のレビュー観点（2026-05-27 仕様提案書取り込みで追加）**
-
-`ROADMAP.md` §P0-4 / §P0-5 / §P1-5 / §P1-6 / §P2-α A2 / §P2-β / §P2-γ Phase 1
-配下の作業時は、上記 1〜6 に加えて次を確認する:
-
-- **`Sources/Services/AlarmKit/AlarmService.swift` / `AlarmScheduler.swift` を
-  触ったか?**: `bash scripts/verify.sh` で `Sendable` 警告が増えていないことを
-  確認する。Swift 6 strict concurrency 下で actor → protocol 化する箇所は
-  `Sendable` / `@MainActor` の境界が崩れやすい。
-- **`Sources/Domain/Models/` を触ったか?**: `.claude/skills/swiftdata-migration`
-  または `.agents/skills/swiftdata-migration` の SKILL.md を読み、App と Widget
-  の双方で同 schema を扱えていることを確認する。`Widget/` 配下の
-  `ModelContainer` 初期化も含めて目視する。
-- **`Resources/Localizable.xcstrings` を触ったか?**: ja / en 両方に key を追加
-  したか確認する。`ShiftBundleValidationCode` のメッセージなど、片言語のみだと
-  バリデーション結果が空表示になる可能性がある。P3-12 整合チェック自動化は
-  未着手のため、当面は目視で担保する。
-- **`ChangePreview` を経由する破壊的変更を追加したか?**: 画像インポート / DOW
-  ルール展開 / 連休グルーピングは、Apply 前に必ず `ChangePreview` 経由で
-  ユーザに確認させる導線になっているかを確認する（spec proposal の
-  "Preview before mutation" 原則）。
-
-### 6.2 コード / 仕様変更時のドキュメント同期
-
-機能実装・バグ修正・設計変更を行った場合は、コード差分だけで完了扱いにしない。
-PR 前に以下を確認する。
-
-- `ROADMAP.md` の該当タスクの **DoD・対象ファイル・依存関係** が実態と一致しているか。
-  進捗と完了状態は `ROADMAP.md` に書かない（正典は Linear。§6.3）。
-- `README.md` / `README.ja.md` の機能一覧・ビルド手順・手動テスト手順が
-  古くなっていないか。
-- `docs/` 配下の仕様・architecture note が実装と矛盾していないか
-  （`docs/archive/` の歴史的記録は対象外）。
-- 完了したタスクは Linear issue を **Done** に遷移させる（ブランチ / PR で自動遷移する
-  場合も状態を確認する）。GitHub ミラーがある場合のみ PR 本文に `Closes #N`、参照のみは
-  `References #N` を併記する（§6.1.1 / §6.1.2）。
-- セッション内で修正しない新規バグ / pending は §6.1.1 に従って Linear に起票する。
-
-実装によって `ROADMAP.md` や `docs/` の既存記述が**偽になる**場合は、同じ PR で
-その記述を消すか定義文へ書き換える。spec が実装に追いつかないのは、たいてい
-「実装 PR は docs を更新しなくてもマージできる」からである。
-
----
-
-### 6.3 状態語・実体参照・正典重複の禁止
-
-`README*.md` / `ROADMAP.md` / `AGENTS.md` / `docs/` 全般に適用する。詳細と手順は
-`doc-governance` スキル、検出は `python3 scripts/docs-lint.py`。
-
-- **見出しは状態を主張しない。** 本文は日付を伴えば過去の記録として読まれるが、
-  見出しは骨格で拾い読みの対象であり、日付を添える余地がない。`✅ 完了 (PR #7)`
-  `（未着手）``（2026-06-09 時点）` はいずれも書かない。
-- 「現状」「実装済み」「未実装」「暫定」等の状態語は、Linear から導出できるなら
-  書かない。書きたくなったら定義文（「X は P2-β が実装する」等）へ言い換える。
-  語彙は `python3 scripts/docs-lint.py --print-words` で得る（どこにも書き写さない）。
-- コード参照に行番号・実測件数（テスト件数など）を書かない。ファイル名・型名・
-  関数名までに留める。行番号と件数はリファクタで即座に陳腐化する。
-- 完了マーカーを消す前に、その完了が Linear に記録として存在するか確かめる。
-  `ROADMAP.md` が唯一のトラッカーだった期間の記録は、削除せず日付つきで
-  `docs/archive/` へ移す。
-- 更新しない前提のスナップショット文書は `docs/archive/` へ移すか、先頭に
-  `<!-- lint:allow-file heading-state,status -->` を置いて記録であることを宣言する。
-
----
-
-## 7. 困ったときの参照順
-
-1. `ROADMAP.md` の該当タスクの「対象ファイル」「DoD」
-2. `ROADMAP.md` §6「ファイル別の触るときの注意」
-3. 過去 PR の説明文（特に #1 / #2 / #5 / #6 / #7 / #10 / #11 / #14）
-4. `README.md` の Architecture notes セクション
-
----
-
-## 8. スキル（`.agents/skills/` / `.claude/skills/`）
-
-Codex CLI は `.agents/skills/`、Claude Code は `.claude/skills/` を参照する。本文は
-**「意図的非対称を除いて」同一**（同期・例外規定は §8.2 参照、将来 symlink 統合の
-余地は残す）。
-
-| name | 自動発動条件（概略） |
+| 作業 | 読むもの |
 |---|---|
-| `xcodegen-regen` | `project.yml` 編集、`.swift` ファイル追加・削除、`xcodebuild` でファイル不一致エラー時 |
-| `alarmkit-scheduling` | `AlarmScheduler` / `DayResolver` / `RotationExpander` / BG lookahead を編集・デバッグするとき |
-| `swiftdata-migration` | `Sources/Domain/` の `@Model` を追加・変更・削除、App Group ストアや `.shiftalarm` JSON 連動が絡むとき |
-| `doc-governance` | `README*.md` / `ROADMAP.md` / `AGENTS.md` / `docs/` を変更・追加するとき（`dolquis/agent-ops` origin の共有スキル。本 repo では本文を編集しない） |
+| 通常の実装・修正 | Issue が示す `ROADMAP.md` の節（対象ファイル・DoD）、同 §6 の該当ファイル行、関連実装・テスト |
+| AlarmKit スケジューリング、DayResolver、ローテーション展開、休暇オーバーライド | `alarmkit-scheduling` と同 Skill の `references/` |
+| SwiftData `@Model` の追加・変更、App Group ストア、Widget との共有 | `swiftdata-migration` と同 Skill の `references/` |
+| `project.yml` 編集、ファイル追加・削除、`.xcodeproj` 不整合 | `xcodegen-regen` |
+| P2 の新機能（一括プリセット適用、休日アラーム制御など） | `docs/p2-*.md` の該当仕様と `ROADMAP.md` §9 のテスト項目 |
+| 実機検証、署名、P0 確認 | `README.md` の Build 節、`scripts/p0-readiness.sh`、`scripts/p0-device-build.sh` |
+| Linear / PR 状態変更、起票、ラベル | `docs/linear-conventions.md` の該当節と §13 Project Delta、既存 Issue / PR の最新状態 |
+| 日本語の本格的な文書作業 | `japanese-doc-workflow`。短いコメントやコミット文には使わない |
+| docs の軽微な修正 | 対象文書、docs lint（手順は `doc-governance`）。無関係な正典は読まない |
+| MCP・ツール・ホスト前提 | `.mcp.json`、`.codex/config.toml`、`docs/agent-tooling-setup.md` |
 
-各スキルの本文は `SKILL.md`、補足は `references/` 配下（`day-resolver.md` /
-`app-group-store.md`）にある。precedence や App Group の運用ルールはこの references が
-唯一の正。
+## 4. 調査・実装ツール
 
-### 8.1 意図的非対称（Claude / Codex 間で異なる部分）
+- 単一ファイルや単純検索は Read / Edit / `rg` を使う。
+- `.codegraph/` があり CodeGraph が利用可能で、構造や影響範囲が不明なら先に使う。結果は実ファイルとテストで確認する。
+- Serena が利用可能なら symbol の宣言、実装、参照、診断、意味的リファクタリングに使う。開始前に project / languages を確認する。
+- Context-Mode が利用可能なら大量の文書、検索結果、diff、ログ、CI 出力の整理に使う。要約だけで完了判断しない。
+- Context7 が利用可能なら AlarmKit / WidgetKit / ActivityKit / SwiftData / HealthKit の Apple ドキュメント参照に使う。xcodebuild MCP は macOS + Xcode 26 でのみ動く。
+- SwiftData schema、entitlements、`.shiftalarm` 公開フォーマットなどの影響確認では、利用可能な構造解析を使い、使えない環境では `rg`、実ファイル、関連テスト、文書で確認する。
+- GitHub connector が利用可能なら優先し、使えない場合は `gh` を使う。
 
-| 箇所 | Claude 版（`.claude/skills/`） | Codex 版（`.agents/skills/`） | 理由 |
-|---|---|---|---|
-| frontmatter `allowed-tools` | あり（`Bash, Read, Edit` 等） | なし | Codex SKILL.md 仕様は frontmatter に `name` / `description` のみ |
-| 補助ツール節の `swift-lsp` 言及 | あり | なし | swift-lsp は Claude Code 公式マーケットのプラグインで Codex には存在しない |
-| 補助ツール節の `Context7` / `XcodeBuildMCP` 表記 | プラグイン名に揃え（PascalCase） | MCP サーバー名に揃え（小文字 `context7` / `xcodebuild MCP`） | 各ツール側の表記慣習に合わせる |
-| `references/` 配下 | 同一内容 | 同一内容 | 例外なし。`diff -q` で常に一致すべき |
+## 5. 実装上の不変条件
 
-同期時はこの表の左右を**フィールド単位で個別に維持**する。「単純な丸ごとコピー」で
-上書きすると Claude 固有の `allowed-tools` 等が消えてプラグイン挙動が壊れるので注意。
+- `ShiftAlarm.xcodeproj/` の中身を手で編集しない。すべて `project.yml` 経由で `bash scripts/regen.sh` する。
+- `Sources/Domain/Persistence/SchemaV1.swift` の non-optional 追加はマイグレーションが必要である。`Sources/Domain/Models/` を触ったら `swiftdata-migration` に従い、App と Widget の双方（`Widget/` の `ModelContainer` 初期化を含む）で同 schema を扱えることを確認する。
+- `App/ShiftAlarm.entitlements` と `Widget/ShiftAlarmWidget.entitlements`（App Group / AlarmKit / HealthKit）の変更は影響を確認してから行う。
+- `Sources/Services/Sharing/ShiftBundleCodec.swift` の `.shiftalarm` 公開フォーマットは互換性を壊さない（legacy `exportedAt` の受け入れと `CalendarDay` を踏襲）。
+- AlarmKit / ActivityKit の API 差分対応は `AlarmConfigurationBuilder.swift` と `LiveActivityController.swift` に局所化する。`AlarmService.swift` / `AlarmScheduler.swift` を触ったら `bash scripts/verify.sh` で `Sendable` 警告が増えないことを確認する。
+- ローカライズ追加時は `Resources/Localizable.xcstrings` の ja / en 両方を埋める。片言語のみだとバリデーション結果が空表示になりうる。
+- 画像インポート、DOW ルール展開、連休グルーピングなど破壊的変更は、Apply 前に必ず `ChangePreview` 経由でユーザーに確認させる（Preview before mutation）。
+- 署名の実値は git ignore 済みの `Config/LocalSigning.xcconfig` に置き、`Config/SigningDefaults.xcconfig` と `.example` に書かない。
+- repo docs は定義だけを持ち、状態を持たない。見出しで進捗・完了を主張せず、状態語（語彙は `python3 scripts/docs-lint.py --print-words`）を地の文へ書かず、行番号や実測件数（テスト件数など）をコード参照に書かない。状態の正典は Linear である。
+- 実装で `ROADMAP.md`、`README*.md`、`docs/` の既存記述が偽になる場合は、同じ PR で DoD・対象ファイル・手順を定義文へ書き換える。`ROADMAP.md` が唯一のトラッカーだった期間の記録は削除せず `docs/archive/` へ移す。
+- MCP の secret は設定ファイルへ直書きせず、`${ENV_VAR}` 経由で渡す。MCP 定義の増減は `.mcp.json` と `.codex/config.toml` の両方に反映する。
 
-さらに、`doc-coauthoring` スキルは **Claude 専用**で `.claude/skills/` のみに置き、Codex の
-`.agents/skills/` には置かない（サブエージェント検証・Claude 固有の編集ツールを前提とするため。
-`dolquis/agent-ops` origin の方針）。§8.2 の `diff -qr` で `Only in .claude/skills: doc-coauthoring`
-が出るのは意図的非対称であり、更新漏れではない。
+## 6. 検証とセルフレビュー
 
-### 8.2 skills 同期ルール
+- 最小ゲートは `bash scripts/lint.sh check` と `bash scripts/verify.sh`（CI と同じ。macOS + Xcode 26 が必要）。CI 緑はこの 2 つがローカルで緑であることを前提とする。実機向け変更を含む場合は `bash scripts/p0-readiness.sh` も確認する。個別コマンドと補助ツールは `README.md` にある。
+- `README*.md`、`ROADMAP.md`、`AGENTS.md`、`CLAUDE.md`、`docs/`、Skill を変更したら `python3 scripts/docs-lint.py --baseline .docs-lint-baseline.json` と `python3 scripts/check_agent_instruction_size.py` を実行し、ベースラインからの増加と予算超過がないことを確認する。
+- repo 内ファイルを変更したら、最終報告前と stage、commit、push、PR 更新前に `pre-pr-self-review` を使う。利用できない環境では、`origin/main` との全差分と未追跡ファイル、secret や生成物の混入、編集境界、P1 / P2、文書同期、検証結果を確認する。
+- 変更起因の問題は修正して関連検証を再実行する。無関係な既存問題は勝手に直さず報告する。未実施・失敗・既存失敗は理由と影響を明記する。
+- Linux / Claude Code on the web では Xcode 依存の build / test は実行できない。gitleaks、typos、docs-lint、予算検査だけを回し、実機・シミュレータ確認は人間へ引き渡す。
 
-このルールは**このプロジェクト固有のスキル**に適用する。`dolquis/agent-ops` からベンダリング
-した共有スキル（対象は origin の `scripts/shared-skills.txt` が定める）は例外で、本文と
-`references/` をこの repo で編集しない。改訂は origin 側で行い、
-`scripts/vendor-shared-skills.sh --force --skill <name> <この repo>` で両ツリーへ再配布する
-（乖離の検出は同スクリプトの `--check`）。共有スキルでは両ツリーが origin のコピーとして
-一致し、差異は `allowed-tools` frontmatter だけになる。
+## 7. Linear・ブランチ・PR
 
-`.claude/skills/` と `.agents/skills/` は、プロジェクト固有の仕様・禁止事項・
-確認手順が**意味的に一致**した状態を保つ。ただし §8.1 の意図的非対称
-（`allowed-tools` frontmatter、`swift-lsp` 言及、`Context7` / `xcodebuild` の表記差）は
-維持する。
+- 実装は Linear Issue 起点とし、原則 `dolquis/dev-<番号>-<slug>`、1 Issue = 1 branch = 1 Draft PR とする。
+- `main` へ直接 push / force push しない。PR は `dolquis/Calender_Aralrm` の `main` 向けとし、base / head / compare 範囲と同一 head の既存 PR を確認する。
+- 新規 PR は Draft で作成し、`create-draft-pr` が利用可能なら使う。`scripts/verify.sh` が緑になってから ready for review にする。既存 Ready PR を Draft に戻さない。通常のマージ方法はノーマルマージとする。
+- PR 本文に何を直したか、なぜ、どうテストしたか、Linear Issue、Documentation impact を書く。GitHub ミラーがある場合のみ `Closes #N` / `References #N` を併記する。
+- Draft PR 作成で Linear を In Review、マージで Merged とし、検証メモを残してから Done へ明示遷移する。人間ゲート課題は Todo で待機させる。状態・ラベル・週次監査の規約は必要時に `docs/linear-conventions.md` の該当節を読む。
+- セッション内で直さない問題は Linear の Shift Alarm / Calender_Aralrm に起票する。ラベルは `repo:Calender_Aralrm`、`area:*`（docs は `area:docs`）、`agent:*` または `gate:human-required`、種別ラベルを付け、優先度は P0→Urgent / P1→High / P2→Medium / P3→Low にマップする。本文は要約と正典へのリンクに留め、`ROADMAP.md` の該当節の `追跡:` 行を更新する。
+- `agent:codex-*` は候補ラベルであり、Codex Cloud の assign / delegate / mention には人間 lead の明示許可が要る（`docs/linear-conventions.md` §2.1）。
 
-- 同期時に片方をもう片方へ**丸ごとコピーして上書きしない**。
-- `SKILL.md` 本文は「完全一致」ではなく**内容同等**を目標とする。
-- `references/` 配下は原則として**完全一致**を確認する。
+## 8. Human Gate と編集禁止対象
 
-同期後は次で差分を確認する。
-
-```sh
-diff -qr .claude/skills .agents/skills || true
-```
-
-`SKILL.md` が差分として出るのは frontmatter 等の意図的非対称によるもので想定内。
-差分が出た場合は、それが §8.1 の意図的非対称なのか単なる更新漏れなのかを判断し、
-更新漏れなら同じ PR で修正する。
-
-### 8.3 ドキュメント・スキル鮮度チェック
-
-`README*.md` / `ROADMAP.md` / `AGENTS.md` / `docs/`（`docs/archive/` を除く）を更新した
-場合は、`.claude/skills/**/SKILL.md` と `.agents/skills/**/SKILL.md` も stale 化していな
-いか確認する。特にビルド手順・Xcode / iOS バージョン・MCP / plugin 設定は skill 側に古い値が
-残りやすいため、PR 前に grep すること。
-
-```sh
-rg 'XCTest|Swift Testing|Xcode 26|iOS 26|verify\.sh|lint\.sh|XcodeBuild|Context7' \
-  -g '!docs/archive/**' README*.md AGENTS.md ROADMAP.md docs .claude .agents
-```
-
-**テスト件数は文書に書かない。** 件数はテストを 1 本足すたびに嘘になり、文書側は
-それに気づけない（`docs-lint` の `line-ref` が検出する。§6.3）。件数を書きたく
-なったら、`scripts/verify.sh` の出力を見るよう案内する。
-
-古いビルド手順・古い Xcode / iOS バージョン・古い MCP / plugin 設定が見つかった
-場合は、該当文書を同じ PR で更新する。両ツリーの本文差分は
-`python3 scripts/docs-lint.py --category mirror` が検出する。
-
-## 9. MCP サーバー（`.codex/config.toml` / `.mcp.json`）
-
-| name | 用途 | 起動方式 |
-|---|---|---|
-| `context7` | AlarmKit / WidgetKit / ActivityKit / SwiftData / HealthKit の Apple ドキュメント参照 | HTTP (`https://mcp.context7.com/mcp`) |
-| `xcodebuild` | Xcode ビルド・iOS 26 シミュレータ制御を構造化 JSON で扱う | stdio (`npx -y xcodebuildmcp@latest mcp`、Node 18+ 必須。`mcp` サブコマンドが無いと CLI モードで起動して MCP サーバーが立たない) |
-
-macOS + Xcode 26 前提。Linux / Windows では `xcodebuild` MCP が起動失敗するが
-想定動作（`context7` は全 OS で動く）。シークレットは設定ファイルに直書きせず、
-必要なら `${ENV_VAR}` 経由で渡す。
-
-> **Linear（管制塔）はこのリポジトリ同梱の MCP 設定には含めない**。repo bootstrap で
-> 提供されるのは上表の `context7` / `xcodebuild` のみ。Linear へのアクセスは実行環境 /
-> アカウント側のコネクタ（Claude Code / Codex の Linear 連携）または Linear Web UI で
-> 行う想定で、特定の MCP ツール名（`save_issue` 等）に依存しない。§6.1.1 の起票は
-> その時点で利用可能な Linear アクセス手段を使う。
-
-## 10. 二重管理ルール（Claude Code 用と Codex 用）
-
-`.claude/` と `.codex/` / `.agents/` は独立に維持する方針。両方を有意に保つために
-以下を守ること：
-
-1. スキル本文（`xcodegen-regen` / `alarmkit-scheduling` / `swiftdata-migration` の
-   `SKILL.md` および `references/`）を変更したら、`.claude/skills/` と
-   `.agents/skills/` の **両方** を同時に更新する。同期の具体的手順・意図的非対称の
-   扱い・`diff -qr` 確認は **§8.2 が正**（重複定義を避けるためここでは再掲しない）。
-2. MCP サーバー定義を増減した場合、`.mcp.json` と `.codex/config.toml` の両方を
-   更新する（用途と起動方式が一致するように）。
-3. ビルド / swift-format / Widget の運用ルールはこの `AGENTS.md`（§4 / §5 / §6）が
-   唯一の正。`CLAUDE.md` はポインタのみで重複させない。
-4. Claude Code / Codex の bootstrap ドキュメントは setup 完了済みのため
-   `docs/archive/`（`claude-code-bootstrap.md` / `codex-bootstrap.md`）へアーカイブ済み。
-   歴史的記録であり、運用ルールの正は本 `AGENTS.md`、スキル本文の正は各 `SKILL.md`。
-   アーカイブは凍結扱いで鮮度チェック（§8.3）の対象外。
-
-## 日本語技術文書の執筆・推敲
-
-日本語の技術文書、README、設計書、ADR、仕様書、解説記事、書籍原稿を作成・修正・レビューするときは、必要に応じて `japanese-doc-workflow` スキルを入口に使う。
-
-特に次の場合は、このワークフローを優先する。
-
-- 日本語の説明文、設計文書、README、ADR、仕様書を新規作成する。
-- 既存の日本語ドキュメントを読みやすく、論理的に直す。
-- 文章の論理の飛躍、段落構成、冗長さ、LLM っぽい表現を点検する。
-- README、API docs、ADR、CHANGELOG、Contributing Guide など、定型構造を持つ文書を書く。
-
-使い分けの目安:
-
-- 日本語技術文書としての文体、冗長さ、見出し、表現を整えるときは `japanese-tech-writing` を使う。
-- 段落間の論理の飛躍や議論の無理筋を直すときは `argument-gap-edit` を使う。
-- 新規文書の共同設計やアウトライン作成には `doc-coauthoring` を使う（**Claude Code のみ**。Codex CLI では `japanese-doc-workflow` の手順に従い、この工程は省略する）。
-- 迷った場合は `japanese-doc-workflow` を入口にする（上記スキルを束ねる）。
-
-使わない条件:
-
-- コードだけの変更。
-- 短いコメント、コミットメッセージ、軽い箇条書きだけの作成。
-- 日本語技術文書ではない創作、雑談、翻訳。
-- ユーザーが明示的に「スキルを使わない」「軽く答えて」と言った場合。
-
-作業時の注意:
-
-- 既存文書を編集するときは、事実関係や用語、既存の文体を勝手に変えない。
-- 根拠のない断定、架空の引用、未確認の仕様説明を追加しない。
-- 大きく書き換える前に、必要なら「レビューのみ」「差分修正」「全面リライト」のどれを行うか確認する。
+- 実機での AlarmKit 動作、署名、Apple Developer 設定、App Store 提出に関わる確認は CI やシミュレータで代替せず、人間へ引き渡す。
+- `docs/linear-conventions.md` の共有コア（§1〜§12）、`scripts/docs-lint.py`、`scripts/check_agent_instruction_size.py` とそのテスト、`dolquis/agent-ops` からベンダリングした共有 Skill の本文・`references/` をこの repo で直接編集しない。変更は origin で行い配布し直す。Project Delta、`.docs-lint.toml`、repo 所有のドメイン Skill は Issue の範囲で変更できる。
+- repo 所有 Skill（`xcodegen-regen`、`alarmkit-scheduling`、`swiftdata-migration`）は `.agents/skills/` と `.claude/skills/` を同じ PR で同期する。`references/` は完全一致、`SKILL.md` は frontmatter と `swift-lsp` 言及などの意図的非対称（`docs/agent-tooling-setup.md`）を除いて同一に保つ。`doc-coauthoring` が Claude 側だけにある非対称は意図的である。
+- secret、credential、token、`.env`、`Config/LocalSigning.xcconfig`、生成物、ローカル設定、`.codegraph/`、`.serena/` の cache と memories、`.context-mode/`、`.ctx/`、キャッシュ、セッションログを編集・index・commit しない。

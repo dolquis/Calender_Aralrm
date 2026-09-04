@@ -40,3 +40,7 @@ buildServer.json
 *.log
 .env
 .env.*
+
+# Agent tooling (local index / cache; .codegraph and .serena carry their own .gitignore)
+.context-mode/
+.ctx/
