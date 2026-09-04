@@ -135,6 +135,8 @@ macOS CI 専用。
 ### 触らない
 - `ShiftAlarm.xcodeproj/` の中身を **手で編集しない**。
   すべて `project.yml` 経由 → `scripts/regen.sh`。
+- `.claude/skills/` / `.agents/skills/` の**共有スキル本文と `references/`** を直接編集しない
+  （origin は `dolquis/agent-ops`。§8.2）。
 - `main` への直接 push 禁止。
 
 ---
@@ -143,7 +145,8 @@ macOS CI 専用。
 
 1. Linear issue から生成されるブランチ名 `dolquis/dev-xx-*` を `main` から切る
    （Linear issue が無い緊急時のみ `feature/<topic>` / `fix/<topic>`）。
-2. PR は **draft で作成**。`scripts/verify.sh` が緑になってから ready for review。
+2. PR は **draft で作成**（新規 PR の作成には `create-draft-pr` スキルを使う）。
+   `scripts/verify.sh` が緑になってから ready for review。
 3. ローカライズ追加時は `Resources/Localizable.xcstrings` の **ja / en 両方** を埋める。
 4. AlarmKit / ActivityKit の API 差分対応は
    `Sources/Services/AlarmKit/AlarmConfigurationBuilder.swift` と
@@ -155,6 +158,9 @@ macOS CI 専用。
 7. **プッシュ・PR 作成前にセルフレビューを必ず実施する**（下記 §6.1）。
 
 ### 6.1 プッシュ / PR 作成前のセルフレビュー
+
+共通手順は `pre-pr-self-review` スキル（origin は `dolquis/agent-ops`）に置く。本節は
+この repo 固有の確認項目と検証コマンドを正典とする。
 
 変更をプッシュして PR を作成する**前**に、必ず以下を実施すること。
 
@@ -331,6 +337,13 @@ Codex CLI は `.agents/skills/`、Claude Code は `.claude/skills/` を参照す
 が出るのは意図的非対称であり、更新漏れではない。
 
 ### 8.2 skills 同期ルール
+
+このルールは**このプロジェクト固有のスキル**に適用する。`dolquis/agent-ops` からベンダリング
+した共有スキル（対象は origin の `scripts/shared-skills.txt` が定める）は例外で、本文と
+`references/` をこの repo で編集しない。改訂は origin 側で行い、
+`scripts/vendor-shared-skills.sh --force --skill <name> <この repo>` で両ツリーへ再配布する
+（乖離の検出は同スクリプトの `--check`）。共有スキルでは両ツリーが origin のコピーとして
+一致し、差異は `allowed-tools` frontmatter だけになる。
 
 `.claude/skills/` と `.agents/skills/` は、プロジェクト固有の仕様・禁止事項・
 確認手順が**意味的に一致**した状態を保つ。ただし §8.1 の意図的非対称
